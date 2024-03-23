@@ -806,12 +806,12 @@ func Migrate() {
 		},
 
 		{
-			ID: "0076-thumbnail-flag",
+			ID: "0076-file-thumbnail-flag",
 			Migrate: func(tx *gorm.DB) error {
-				type Scene struct {
+				type File struct {
 					HasThumbnail bool `json:"has_thumbnail" gorm:"default:false"`
 				}
-				return tx.AutoMigrate(Scene{}).Error
+				return tx.AutoMigrate(File{}).Error
 			},
 		},
 

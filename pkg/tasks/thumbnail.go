@@ -23,29 +23,23 @@ func GenerateThumnbnails(endTime *time.Time) {
 		db, _ := models.GetDB()
 		defer db.Close()
 
-		var scenes []models.Scene
-		db.Model(&models.Scene{}).Where("is_available = ?", true).Where("has_thumbnail = ?", false).Order("release_date desc").Find(&scenes)
+		
+		var files []models.File
+		db.Model(&models.File{}).Where("type = ?", "video").Where("scene_id != ?", 0).Where("has_thumbnail = ?", false).Order("created_time desc").Find(&files)
+		for _, file := range files {
 
-		for _, scene := range scenes {
-			log.Infof("Thumbnail Checking %v", scene.SceneID)
-
-			files, _ := scene.GetFiles()
-			if len(files) > 0 {
 				if endTime != nil && time.Now().After(*endTime) {
 					return
 				}
-				i := 0
-
-				log.Infof("Thumbnail Rendering %v", scene.SceneID)
-
-				for i < len(files) && files[i].Exists() {
-					if files[i].Type == "video" {
-						log.Infof("Thumbnail Rendering File_ID %v", strconv.FormatUint(uint64(files[i].ID), 10))
-						destFile := filepath.Join(common.VideoThumbnailDir,  strconv.FormatUint(uint64(files[i].ID), 10) +".jpg")
+				log.Infof("Thumbnail Checking %v", file.ID)
+				if file.Exists() && file.Type == "video" {
+						// log.Infof("Thumbnail Rendering File_ID %v", strconv.FormatUint(uint64(file.ID), 10))
+						log.Infof("Thumbnail Rendering File_ID %v - Start", file.ID)
+						destFile := filepath.Join(common.VideoThumbnailDir,  strconv.FormatUint(uint64(file.ID), 10) +".jpg")
 						err := RenderThumnbnails(
-							files[i].GetPath(),
+							file.GetPath(),
 							destFile,
-							files[i].VideoProjection,
+							file.VideoProjection,
 							config.Config.Library.Preview.StartTime,
 							config.Config.Library.Preview.SnippetLength,
 							config.Config.Library.Preview.SnippetAmount,
@@ -53,18 +47,57 @@ func GenerateThumnbnails(endTime *time.Time) {
 							config.Config.Library.Preview.ExtraSnippet,
 						)
 						if err == nil {
-							log.Infof("Thumbnail Rendering File_ID %v - Finish", files[i].ID)
-							scene.HasThumbnail = true
-							scene.Save()
+							log.Infof("Thumbnail Rendering File_ID %v - Finish", file.ID)
+							file.HasThumbnail = true
+							file.Save()
 							// break
 						} else {
 							log.Warn(err)
 						}
-					}
-					i++
 				}
-			}
 		}
+
+		// var scenes []models.Scene
+		// db.Model(&models.Scene{}).Where("is_available = ?", true).Where("has_thumbnail = ?", false).Order("release_date desc").Find(&scenes)
+		// for _, scene := range scenes {
+		// 	log.Infof("Thumbnail Checking %v", scene.SceneID)
+
+		// 	files, _ := scene.GetFiles()
+		// 	if len(files) > 0 {
+		// 		if endTime != nil && time.Now().After(*endTime) {
+		// 			return
+		// 		}
+		// 		i := 0
+
+		// 		log.Infof("Thumbnail Rendering %v", scene.SceneID)
+
+		// 		for i < len(files) && files[i].Exists() {
+		// 			if files[i].Type == "video" {
+		// 				log.Infof("Thumbnail Rendering File_ID %v", strconv.FormatUint(uint64(files[i].ID), 10))
+		// 				destFile := filepath.Join(common.VideoThumbnailDir,  strconv.FormatUint(uint64(files[i].ID), 10) +".jpg")
+		// 				err := RenderThumnbnails(
+		// 					files[i].GetPath(),
+		// 					destFile,
+		// 					files[i].VideoProjection,
+		// 					config.Config.Library.Preview.StartTime,
+		// 					config.Config.Library.Preview.SnippetLength,
+		// 					config.Config.Library.Preview.SnippetAmount,
+		// 					config.Config.Library.Preview.Resolution,
+		// 					config.Config.Library.Preview.ExtraSnippet,
+		// 				)
+		// 				if err == nil {
+		// 					log.Infof("Thumbnail Rendering File_ID %v - Finish", files[i].ID)
+		// 					scene.HasThumbnail = true
+		// 					scene.Save()
+		// 					// break
+		// 				} else {
+		// 					log.Warn(err)
+		// 				}
+		// 			}
+		// 			i++
+		// 		}
+		// 	}
+		// }
 	}
 	log.Infof("Thumnbnails generated")
 }
