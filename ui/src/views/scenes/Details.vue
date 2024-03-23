@@ -704,7 +704,7 @@ watch:{
 
       objectAspectRatio = this.calculateAspectRatio(aspectRatio)
       var objectWidthPercentage = this.calculateObjectWidthPercentage(screenAspectRatio, objectAspectRatio, objectHeightPercentage);
-      this.setLeftColumnWidth(objectWidthPercentage + "%");
+      this.setLeftColumnWidth(Math.min(80,objectWidthPercentage) + "%");
 
     },
 
