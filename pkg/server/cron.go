@@ -36,6 +36,11 @@ func SetupCron() {
 		ps := formatCronSchedule(config.CronSchedule(config.Config.Cron.PreviewSchedule))
 		previewTask, _ = cronInstance.AddFunc(ps, generatePreviewCron)
 	}
+	if config.Config.Cron.ThumbnailSchedule.Enabled {
+		log.Println(fmt.Sprintf("Setup Thumbnail Generation Task %v", formatCronSchedule(config.CronSchedule(config.Config.Cron.ThumbnailSchedule))))
+		ps := formatCronSchedule(config.CronSchedule(config.Config.Cron.ThumbnailSchedule))
+		previewTask, _ = cronInstance.AddFunc(ps, generateThumbnailCron)
+	}
 	if config.Config.Cron.ActorRescrapeSchedule.Enabled {
 		log.Println(fmt.Sprintf("Setup Actor Rescrape Task %v", formatCronSchedule(config.CronSchedule(config.Config.Cron.ActorRescrapeSchedule))))
 		actorScrapeTask, _ = cronInstance.AddFunc(formatCronSchedule(config.CronSchedule(config.Config.Cron.ActorRescrapeSchedule)), actorRescrapeCron)
@@ -60,6 +65,9 @@ func SetupCron() {
 	}
 	if config.Config.Cron.PreviewSchedule.RunAtStartDelay > 0 {
 		time.AfterFunc(time.Duration(config.Config.Cron.PreviewSchedule.RunAtStartDelay)*time.Minute, generatePreviewCron)
+	}
+	if config.Config.Cron.ThumbnailSchedule.RunAtStartDelay > 0 {
+		time.AfterFunc(time.Duration(config.Config.Cron.ThumbnailSchedule.RunAtStartDelay)*time.Minute, generatePreviewCron)
 	}
 	if config.Config.Cron.ActorRescrapeSchedule.RunAtStartDelay > 0 {
 		time.AfterFunc(time.Duration(config.Config.Cron.ActorRescrapeSchedule.RunAtStartDelay)*time.Minute, actorRescrapeCron)
@@ -131,6 +139,27 @@ func generatePreviewCron() {
 	}
 	log.Println(fmt.Sprintf("Next Preview Generation Task at %v", cronInstance.Entry(previewTask).Next))
 }
+
+var thumbnailGenerateInProgress = false
+
+func generateThumbnailCron() {
+	if !session.HasActiveSession() || !thumbnailGenerateInProgress {
+		thumbnailGenerateInProgress = true
+		defer func() {
+			thumbnailGenerateInProgress = false
+		}()
+
+		if !config.Config.Cron.ThumbnailSchedule.UseRange {
+			tasks.GenerateThumnbnails(nil)
+		} else {
+			endTime := calcEndTime(config.Config.Cron.ThumbnailSchedule.HourStart, config.Config.Cron.ThumbnailSchedule.HourEnd, config.Config.Cron.ThumbnailSchedule.MinuteStart)
+			log.Infof("Thumbnail Generation will stop at %v", endTime)
+			tasks.GenerateThumnbnails(&endTime)
+		}
+	}
+	log.Println(fmt.Sprintf("Next Thumbnail Generation Task at %v", cronInstance.Entry(previewTask).Next))
+}
+
 func formatCronSchedule(schedule config.CronSchedule) string {
 	// 	this routine will format a crontab range description, https://crontab.guru is a good tool to decode the range description generated
 	// 	if the start hour > end hour then the time range will extend across midnight into the next day

@@ -19,7 +19,7 @@
     <div class="modal-background"></div>
 
     <div class="modal-card">
-      <section class="modal-card-body">
+      <section class="modal-card-body" style="background:#222222;color:whitesmoke">
         <div class="columns">
 
           <div class="column left-column">
@@ -63,14 +63,28 @@
                   </b-field>
                 </b-field>
 
-                  <!-- アスペクト比切り替えボタン -->
-            <div class="aspect-ratio-buttons">
-              <b-button class="btn01" @click="changeAspectRatio('16:9')">16:9</b-button>
-              <b-button class="btn01" @click="changeAspectRatio('4:3')">4:3</b-button>
-              <b-button class="btn01" @click="changeAspectRatio('1:1')">1:1</b-button>
-              <b-button class="btn01" @click="changeAspectRatio('3:4')">3:4</b-button>
-              <b-button class="btn01" @click="changeAspectRatio('9:16')">9:16</b-button>
-            </div>
+                <div style="display: grid; grid-template-columns: auto auto auto;">
+                    <!-- アスペクト比切り替えボタン -->
+                  <div class="aspect-ratio-buttons">
+                    <b-button class="btn01" @click="changeAspectRatio('16:9')">16:9</b-button>
+                    <b-button class="btn01" @click="changeAspectRatio('4:3')">4:3</b-button>
+                    <b-button class="btn01" @click="changeAspectRatio('1:1')">1:1</b-button>
+                    <b-button class="btn01" @click="changeAspectRatio('3:4')">3:4</b-button>
+                    <b-button class="btn01" @click="changeAspectRatio('9:16')">9:16</b-button>
+                  </div>
+                  <div class="projection-mode-buttons">
+                    <b-button class="btn01" @click="changeProjection('NONE')">flat</b-button>
+                    <b-button class="btn01" @click="changeProjection('180')">180</b-button>
+                    <b-button class="btn01" @click="changeProjection('360_TB')">360_TB</b-button>
+                    <b-button class="btn01" @click="setCurrentTime(500)">test</b-button>
+                  </div>
+                  <div>
+                    <img v-if="thumbnail" :src="thumbnail" alt="Thumbnail">
+                  </div>
+                </div>
+
+
+
              </b-tab-item>
 
             </b-tabs>
@@ -83,7 +97,7 @@
             <div class="block-info block">
               <div class="content">
                 <h3>
-                  <span v-if="item.title">{{ item.title }}</span>
+                  <span  style="color:navajowhite" v-if="item.title">{{ item.title }}</span>
                   <span v-else class="missing">(no title)</span>                  
                   <small class="is-pulled-right">
                     {{ format(parseISO(item.release_date), "yyyy-MM-dd") }}
@@ -116,7 +130,7 @@
                   </div>
                   <div class="column pt-0">
                     <div class="is-flex is-pulled-right" style="gap: 0.25rem">
-                      <a class="button is-primary is-outlined is-small" @click="searchAlternateSourceScene()" title="Serach for a different scene" v-if="displayingAlternateSource">
+                      <a class="button is-primary is-outlined is-small" @click="searchAlternateSourceScene()" title="Search for a different scene" v-if="displayingAlternateSource">
                         <b-icon pack="mdi" icon="movie-search-outline" size="is-small"/>
                       </a>
                       <a class="button is-primary is-outlined is-small" @click="scrapeScene()" title="Scrape and create an XBVR scene (not a link)" v-if="displayingAlternateSource">
@@ -227,7 +241,7 @@
               <b-tabs v-model="activeTab" :animated="false">
 
                 <b-tab-item :label="`Files (${fileCount})`" v-if="!displayingAlternateSource">
-                  <div class="block-tab-content block">
+                  <div class="block-tab-content block" >
                     <div class="content media is-small" v-for="(f, idx) in filesByType" :key="idx">
                       <div class="media-left">
                         <button rounded class="button is-success is-small" @click='playFile(f)'
@@ -250,7 +264,7 @@
                         </button>
                       </div>
                       <div class="media-content" style="overflow-wrap: break-word;">
-                        <strong>{{ f.filename }}</strong><br/>
+                        <strong style="color:navajowhite">{{ f.filename }}</strong><br/>
                         <small>
                           <span class="pathDetails">{{ f.path }}</span>
                           <br/>
@@ -405,6 +419,8 @@
 import ky from 'ky'
 import videojs from 'video.js'
 import 'videojs-vr/dist/videojs-vr.min.js'
+import 'videojs-thumbnail-sprite';
+import { createFFmpeg, fetchFile } from '@ffmpeg/ffmpeg';
 import { format, formatDistance, parseISO } from 'date-fns'
 import prettyBytes from 'pretty-bytes'
 import VueLoadImage from 'vue-load-image'
@@ -450,6 +466,11 @@ export default {
       searchfields: [],
       alternateSources: [],
       waitingForQuickFind: false,
+      currentAspect: '4:3',
+      currentFileNo: 0,
+      currentProjection: '180',
+      currentDuraiton: 0,
+      thumbnail: null
     }
   },
   computed: {
@@ -636,6 +657,17 @@ watch:{
   },
 },
   methods: {
+    async generateSprit(file) {
+      if (!file) return;
+
+      const cropOptions = 'iw/2:ih:iw/2:ih'; // 例として "iw/2:ih:iw/2:ih" を指定しています
+      ky.post(`/api/thumbs/generate`, {json:{file_id: file.id, crop: cropOptions}}).blob().then(data => {
+            //this.$store.commit('overlay/showDetails', { scene: data })
+            // this.$store.commit('sceneList/updateScene', data)
+            this.thumbnail = data
+          })
+    },
+
     calculateAspectRatio(aspectRatioString) {
       var aspectRatioArray = aspectRatioString.split(':');
       var width = parseInt(aspectRatioArray[0]);
@@ -667,25 +699,10 @@ watch:{
       var height = window.innerHeight;
       var screenAspectRatio = width / height;
 
-      //var screenAspectRatio = 1.7;
       var objectAspectRatio = 0.56;
-      var objectHeightPercentage = 80;
+      var objectHeightPercentage = 93;
 
       objectAspectRatio = this.calculateAspectRatio(aspectRatio)
-      // switch(aspectRatio) {
-      //   case '1:1':
-      //     objectAspectRatio = 1.0
-      //     break;
-      //   case '16:9':
-      //     objectAspectRatio = 16/9
-      //     break;
-      //   case '4:3':
-      //     objectAspectRatio = 4/3
-      //     break;
-      //   case '9:16':
-      //     objectAspectRatio = 9/16
-      //     break;
-      // }
       var objectWidthPercentage = this.calculateObjectWidthPercentage(screenAspectRatio, objectAspectRatio, objectHeightPercentage);
       this.setLeftColumnWidth(objectWidthPercentage + "%");
 
@@ -698,27 +715,141 @@ watch:{
       }
     },
 
+    setCurrentTime(seconds) {
+      if (!this.player.paused()) {
+        this.player.pause();
+      }
+      setTimeout(() => {
+        this.player.currentTime(Math.floor(seconds));
+        this.player.play();
+        this.currentDuraiton = currentDuration
+      }, 0);
+    },
+
+    restartPlayer(projection)
+    {
+
+      const parentElement = this.player.el().parentElement
+      this.player.dispose()
+      const videoElement = document.createElement('video');
+      videoElement.setAttribute('id', 'player');
+      videoElement.setAttribute('controls', 'controls');
+      videoElement.setAttribute('playsinline', '');
+      videoElement.setAttribute('preload', 'none');
+      videoElement.setAttribute('class', 'video-js vjs-default-skin');
+      parentElement.insertBefore(videoElement, parentElement.firstChild);
+      this.setupPlayerWithAspectById(this.currentAspect)
+
+
+    },
+
+    changeProjection(projection) {
+      const currentSource = this.player.currentSource();
+      const currentDuration = this.player.currentTime();
+      this.currentDuraiton = currentDuration
+      this.restartPlayer(projection)
+      this.updatePlayer(currentSource.src, projection)
+      this.setCurrentTime(currentDuration)
+      this.currentProjection = projection
+
+      this.player.play()
+    },
+
     changeAspectRatio(aspectRatio) {
-      let projection;
-      
+      const currentDuration = this.player.currentTime();
+      const currentSource = this.player.currentSource();
       this.player.aspectRatio(aspectRatio);
-      // this.activeMedia = 1;
+      this.updatePlayer(currentSource.src, this.currentProjection)
+      this.resizeColumnForAspect(aspectRatio) 
+      this.setCurrentTime(currentDuration)
+      this.player.play()
+    },
 
-      // try {
-      //   projection = this.item.file[0].projection;
-      // } catch {
-      //   projection == '180';
-      // }
+    setupSprite(file) {
+      if (this.player.hasOwnProperty('thumbnailSprite')) {
+        this.player.thumbnailSprite(false); // プラグインを解除する
+      }
+      const thumbnailUrl = '/api/dms/thumbnail/' + file.id
+      const img = new Image();
+      img.onload = function(player) {
+        player.thumbnailSprite({
+          sprites: [
+            {
+              url: thumbnailUrl,
+              duration: 6000,
+              start: 25,
+              interval: 30,
+              width: 200,
+              height: 200,
+            },
+          ],
+        });
+      }(this.player);
+      img.src = thumbnailUrl;
 
-      // this.updatePlayer('/api/dms/file/' + this.item.file[0].id() + '?dnt=true', (projection == 'flat' ? 'NONE' : '180'))
-      // this.player.play()
-
-      this.playFile(this.item.file[0])
-      this.resizeColumnForAspect(aspectRatio)
+      // this.player.thumbnailSprite({
+      //   sprites: [
+      //     {
+      //       url: thumbnailUrl,
+      //       duration: 6000,
+      //       start: 5,
+      //       interval: 30,
+      //       width: 200,
+      //       height: 200,
+      //     },
+      //   ],
+      // });
     },
 
     setupPlayer() {
-      this.setupPlayerWithAspect('4:3');
+      this.setupPlayerWithAspect('4:3')
+      this.resizeColumnForAspect('4:3') 
+      // this.generateSprit(this.item.file[0])
+    },
+
+    setupPlayerWithAspectById (aspectRatio) {
+      this.player = videojs('player', {
+        aspectRatio: aspectRatio,
+        fluid: true,
+        loop: true,
+        muted: true,
+        autoplay: false
+      })
+      this.currentAspect = aspectRatio
+
+      // this.setupSprite()
+
+      this.player.hotkeys({
+        alwaysCaptureHotkeys: true,
+        volumeStep: 0.1,
+        seekStep: 5,
+        enableModifiersForNumbers: false,
+        enableVolumeScroll: false,
+        customKeys: {
+          closeModal: {
+            key: function (event) {
+              return event.which === 27
+            },
+            handler: (player, options, event) => {
+              if (!this.displayingAlternateSource) this.player.dispose()
+              this.$store.commit('overlay/hideDetails')
+            }
+          },
+          zoomIn: {
+            handler: (player, options, event) => {
+              this.zoomHandler(true)
+            }
+          },
+          zoomOut: {
+            handler: (player, options, event) => {
+              this.zoomHandler(false)
+            }
+          }
+        }
+      })
+
+      const videoElement = this.player.el();
+      videoElement.addEventListener('wheel', this.zoomHandlerWeb.bind(this))
     },
 
     setupPlayerWithAspect (aspectRatio) {
@@ -726,8 +857,11 @@ watch:{
         aspectRatio: aspectRatio,
         fluid: true,
         loop: true,
-        muted: true 
+        muted: true,
+        autoplay: false
       })
+
+      // this.setupSprite()
 
       this.player.hotkeys({
         alwaysCaptureHotkeys: true,
@@ -787,18 +921,21 @@ watch:{
     updatePlayer (src, projection) {
       this.player.reset()
       /* const vr = */ this.player.vr({
-        projection: projection,
-        forceCardboard: false
-      })
+          projection: projection,
+          forceCardboard: false,
+          autoplay: true
+        })
 
       this.player.on('loadedmetadata', function () {
-        // vr.camera.position.set(-1, 0, 2);
+        vr.camera.position.set(-1, 0, 2);
       })
 
       if (src) {
         this.player.src({ src: src, type: 'video/mp4' })
-      }
+      } 
       this.player.poster(this.getImageURL(this.item.cover_url, ''))
+
+      this.currentProjection = projection
     },
     showCastScenes (actor) {
       this.$store.state.sceneList.filters.cast = actor
@@ -848,8 +985,11 @@ watch:{
     },
     playFile (file) {
       this.activeMedia = 1
+      this.restartPlayer(this.currentProjection)
       this.updatePlayer('/api/dms/file/' + file.id + '?dnt=true', (file.projection == 'flat' ? 'NONE' : '180'))
+      this.setupSprite(file)
       this.player.play()
+      this.curerntFileNo = file.id
     },
     unmatchFile (file) {
       this.$buefy.dialog.confirm({
@@ -872,6 +1012,8 @@ watch:{
         type: 'is-danger',
         hasIcon: true,
         onConfirm: () => {
+          this.activeMedia = 0
+          this.updatePlayer(undefined, this.currentProjection)
           ky.delete(`/api/files/file/${file.id}`).json().then(data => {
             this.$store.commit('overlay/showDetails', { scene: data })
           })
@@ -913,9 +1055,12 @@ watch:{
         return u
       }
       try {
-        if (u.startsWith('http') || u.startsWith('https')) {
-          return '/img/' + size + '/' + encodeURI(u)
-        } else {
+        if (u.startsWith('http')) {
+          if (u.search("%") == -1) {
+            return '/img/' + size + '/' + encodeURI(u)
+          } else {
+            return '/img/' + size + '/' + encodeURI(decodeURI(u))
+          } 
           return u
         }
       } catch {
@@ -1258,7 +1403,7 @@ watch:{
         this.$store.state.overlay.details.prevscene = this.$store.state.overlay.quickFind.selectedScene;
         this.$buefy.toast.open({ message: `The scene was unlinked and will not be relinked to any scene`, type: 'is-primary', duration: 3000 });
       }
-    },    
+    },
     format,
     parseISO,
     prettyBytes,
@@ -1288,6 +1433,7 @@ watch:{
 
 .modal-card {
   width: 95%;
+  height: 100%;
 }
 
 .missing {

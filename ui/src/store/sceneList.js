@@ -33,7 +33,7 @@ const state = {
   isLoading: false,
   offset: 0,
   total: 0,
-  limit: 80,
+  limit: 500,
   counts: {
     any: 0,
     available: 0,
@@ -166,7 +166,10 @@ const actions = {
     q.limit = state.limit
 
     const data = await ky
-      .post('/api/scene/list', { json: q })
+      .post('/api/scene/list', {
+        json: q,
+        timeout: 6e6
+      })
       .json()
 
     state.isLoading = false

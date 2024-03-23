@@ -116,6 +116,8 @@ type Scene struct {
 	Score       float64 `gorm:"-" json:"_score" xbvrbackup:"-"`
 
 	AlternateSource []ExternalReferenceLink `json:"alternate_source" xbvrbackup:"-"`
+
+	HasThumbnail bool `json:"has_thumbnail" gorm:"default:false" xbvrbackup:"-"`
 }
 
 type Image struct {
@@ -296,6 +298,16 @@ func (o *Scene) PreviewExists() bool {
 	return true
 }
 
+func (o *Scene) ThumbnailExists() bool {
+	
+	// name := filepath.Base(o.Files[0].Filename)
+	// nameWithoutExt := strings.TrimSuffix(name, filepath.Ext(name))
+	if _, err := os.Stat(filepath.Join(common.VideoThumbnailDir, fmt.Sprintf("%v.jpg", strconv.FormatUint(uint64(o.Files[0].ID), 10)))); os.IsNotExist(err) {
+		return false
+	}
+	return true
+}
+
 func (o *Scene) UpdateStatus() {
 	// Check if file with scene association exists
 	files, err := o.GetFiles()
@@ -390,6 +402,16 @@ func (o *Scene) UpdateStatus() {
 
 	if !o.HasVideoPreview && o.PreviewExists() {
 		o.HasVideoPreview = true
+		changed = true
+	}
+
+	if o.HasThumbnail && !o.ThumbnailExists() {
+		o.HasThumbnail = false
+		changed = true
+	}
+
+	if !o.HasThumbnail && o.ThumbnailExists() {
+		o.HasThumbnail = true
 		changed = true
 	}
 
@@ -829,6 +851,8 @@ func queryScenes(db *gorm.DB, r RequestSceneList) (*gorm.DB, *gorm.DB) {
 			where = "is_subscribed = 1"
 		case "Rating":
 			where = "scenes.star_rating = " + value
+		case "No Actor/Cast":
+			where = "exists (select 1 from scenes s left join scene_cast sc on sc.scene_id =s.id where s.id=scenes.id and  sc.scene_id is NULL)"
 		case "Cast 6+":
 			where = "exists (select 1 from scene_cast join actors on actors.id = scene_cast.actor_id where scene_cast.scene_id = scenes.id and actors.name not like 'aka:%' group by scene_cast.scene_id having count(*) > 5)"
 		case "Cast 1", "Cast 2", "Cast 3", "Cast 4", "Cast 5":
@@ -928,6 +952,8 @@ func queryScenes(db *gorm.DB, r RequestSceneList) (*gorm.DB, *gorm.DB) {
 			where = "exists (select 1 from external_reference_links where external_source like 'alternate scene %' and external_id like 'slr-%' and internal_db_id = scenes.id)"
 		case "Available from Alternate Sites":
 			where = "exists (select 1 from external_reference_links where external_source like 'alternate scene %' and internal_db_id = scenes.id)"
+		case "Multiple Scenes Available at an Alternate Site":
+			where = "exists (select 1 from external_reference_links where external_source like 'alternate scene %' and internal_db_id = scenes.id  group by external_source having count(*)>1)"
 		}
 
 		if negate {

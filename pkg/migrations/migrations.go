@@ -760,10 +760,12 @@ func Migrate() {
 			ID: "0073-scene-_id-index-plus-columns_size_changes",
 			Migrate: func(tx *gorm.DB) error {
 				type Scene struct {
-					SceneID  string `gorm:"index" json:"scene_id" xbvrbackup:"scene_id"`
 					CoverURL string `gorm:"size:500" json:"cover_url" xbvrbackup:"cover_url"`
 					SceneURL string `gorm:"size:500" json:"scene_url" xbvrbackup:"scene_url"`
 				}
+
+				sql := `CREATE INDEX idx_scenes_scene_id ON scenes (scene_id)`
+				tx.Exec(sql)
 				return tx.AutoMigrate(&Scene{}).Error
 			},
 		},
@@ -800,6 +802,16 @@ func Migrate() {
 					return err
 				}
 				return tx.AutoMigrate(ExternalReference{}).Error
+			},
+		},
+
+		{
+			ID: "0076-thumbnail-flag",
+			Migrate: func(tx *gorm.DB) error {
+				type Scene struct {
+					HasThumbnail bool `json:"has_thumbnail" gorm:"default:false"`
+				}
+				return tx.AutoMigrate(Scene{}).Error
 			},
 		},
 
