@@ -766,26 +766,78 @@ watch:{
     },
 
     setupSprite(file) {
+
       if (this.player.hasOwnProperty('thumbnailSprite')) {
         this.player.thumbnailSprite(false); // プラグインを解除する
       }
       const thumbnailUrl = '/api/dms/thumbnail/' + file.id
-      const img = new Image();
-      img.onload = function(player) {
-        player.thumbnailSprite({
-          sprites: [
-            {
-              url: thumbnailUrl,
-              duration: 6000,
-              start: 25,
-              interval: 30,
-              width: 200,
-              height: 200,
-            },
-          ],
-        });
-      }(this.player);
-      img.src = thumbnailUrl;
+
+      var videPlayer = this.player
+      this.checkImageExists(thumbnailUrl, function(exists) {
+        if (exists) {
+          videPlayer.thumbnailSprite({
+              sprites: [
+                {
+                  url: thumbnailUrl,
+                  duration: 6000,
+                  start: 25,
+                  interval: 30,
+                  width: 200,
+                  height: 200,
+                },
+              ],
+            });
+        } else {
+          videPlayer.thumbnailSprite(false);
+        }
+      });
+
+// XMLHttpRequestを使用して画像のURLに対してリクエストを送信します
+// var xhr = new XMLHttpRequest();
+// xhr.open('GET', thumbnailUrl, true);
+// xhr.send();
+// xhr.onload = function(player) {
+//     if (xhr.status === 404) {
+//         player.thumbnailSprite(false);
+
+//     } else {
+//       player.thumbnailSprite({
+//           sprites: [
+//             {
+//               url: thumbnailUrl,
+//               duration: 6000,
+//               start: 25,
+//               interval: 30,
+//               width: 200,
+//               height: 200,
+//             },
+//           ],
+//         });
+//     }
+// }(this.player)
+
+
+      // const img = new Image();
+      // img.onload = function(player) {
+      //   player.thumbnailSprite({
+      //     sprites: [
+      //       {
+      //         url: thumbnailUrl,
+      //         duration: 6000,
+      //         start: 25,
+      //         interval: 30,
+      //         width: 200,
+      //         height: 200,
+      //       },
+      //     ],
+      //   });
+      // }(this.player);
+
+      // img.onerror = function(player) {
+      //   player.thumbnailSprite(false);
+      // }(this.player)
+
+      // img.src = thumbnailUrl;
 
       // this.player.thumbnailSprite({
       //   sprites: [
@@ -800,7 +852,16 @@ watch:{
       //   ],
       // });
     },
-
+    checkImageExists(url, callback) {
+      var img = new Image();
+      img.onload = function() {
+          callback(true);
+      };
+      img.onerror = function() {
+          callback(false);
+      };
+      img.src = url;
+    },
     setupPlayer() {
       this.setupPlayerWithAspect('4:3')
       this.resizeColumnForAspect('4:3') 
@@ -920,14 +981,14 @@ watch:{
     },
     updatePlayer (src, projection) {
       this.player.reset()
-      /* const vr = */ this.player.vr({
+      const vr = this.player.vr({
           projection: projection,
           forceCardboard: false,
           autoplay: true
         })
 
       this.player.on('loadedmetadata', function () {
-        vr.camera.position.set(-1, 0, 2);
+        vr.camera.position.set(0, 0, 2);
       })
 
       if (src) {
