@@ -56,48 +56,6 @@ func GenerateThumnbnails(endTime *time.Time) {
 						}
 				}
 		}
-
-		// var scenes []models.Scene
-		// db.Model(&models.Scene{}).Where("is_available = ?", true).Where("has_thumbnail = ?", false).Order("release_date desc").Find(&scenes)
-		// for _, scene := range scenes {
-		// 	log.Infof("Thumbnail Checking %v", scene.SceneID)
-
-		// 	files, _ := scene.GetFiles()
-		// 	if len(files) > 0 {
-		// 		if endTime != nil && time.Now().After(*endTime) {
-		// 			return
-		// 		}
-		// 		i := 0
-
-		// 		log.Infof("Thumbnail Rendering %v", scene.SceneID)
-
-		// 		for i < len(files) && files[i].Exists() {
-		// 			if files[i].Type == "video" {
-		// 				log.Infof("Thumbnail Rendering File_ID %v", strconv.FormatUint(uint64(files[i].ID), 10))
-		// 				destFile := filepath.Join(common.VideoThumbnailDir,  strconv.FormatUint(uint64(files[i].ID), 10) +".jpg")
-		// 				err := RenderThumnbnails(
-		// 					files[i].GetPath(),
-		// 					destFile,
-		// 					files[i].VideoProjection,
-		// 					config.Config.Library.Preview.StartTime,
-		// 					config.Config.Library.Preview.SnippetLength,
-		// 					config.Config.Library.Preview.SnippetAmount,
-		// 					config.Config.Library.Preview.Resolution,
-		// 					config.Config.Library.Preview.ExtraSnippet,
-		// 				)
-		// 				if err == nil {
-		// 					log.Infof("Thumbnail Rendering File_ID %v - Finish", files[i].ID)
-		// 					scene.HasThumbnail = true
-		// 					scene.Save()
-		// 					// break
-		// 				} else {
-		// 					log.Warn(err)
-		// 				}
-		// 			}
-		// 			i++
-		// 		}
-		// 	}
-		// }
 	}
 	log.Infof("Thumnbnails generated")
 }
@@ -112,7 +70,9 @@ func RenderThumnbnails(inputFile string, destFile string, videoProjection string
 		return err
 	}
 	vs := ffdata.GetFirstVideoStream()
-	// dur := ffdata.Format.DurationSeconds
+	dur := ffdata.Format.DurationSeconds
+
+	row := (int)((dur - 5) / 600) + 1
 
 	crop := "iw/2:ih:iw/2:ih" // LR videos
 	if vs.Height == vs.Width {
@@ -123,7 +83,7 @@ func RenderThumnbnails(inputFile string, destFile string, videoProjection string
 	}
 	// Mono 360 crop args: (no way of accurately determining)
 	// "iw/2:ih:iw/4:ih"
-	vfArgs := fmt.Sprintf("crop=%v,scale=%v:-1:flags=lanczos,fps=fps=1/%v:round=down,tile=20x10", crop, 200, 30)
+	vfArgs := fmt.Sprintf("crop=%v,scale=%v:-1:flags=lanczos,fps=fps=1/%v:round=down,tile=20x%v", crop, 200, 30, row)
 
 	args := []string{}
 	if isCUDAEnabled() {
@@ -144,7 +104,7 @@ func RenderThumnbnails(inputFile string, destFile string, videoProjection string
 			//"-",
 			destFile,
 		}
-		log.Infof("Use Internal hwaccel decoders 'CUDA'")
+		log.Infof("Use Internal hwaccel decoders CUDA")
 	} else {
 		args = []string{
 			"-y",
