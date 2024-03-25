@@ -14,6 +14,7 @@ import (
 	"github.com/emicklei/go-restful/v3"
 	"github.com/markphelps/optional"
 	"github.com/xbapps/xbvr/pkg/models"
+	"github.com/xbapps/xbvr/pkg/common"
 )
 
 type RequestMatchFile struct {
@@ -419,7 +420,17 @@ func removeFileByFileId(fileId uint) models.Scene {
 		}
 
 		if deleted {
+			if file.HasThumbnail {
+				thumbFile := filepath.Join(common.VideoThumbnailDir,  strconv.FormatUint(uint64(file.ID), 10) +".jpg")
+				err := os.Remove(thumbFile)
+				if err == nil {
+					deleted = true
+				} else {
+					log.Errorf("error deleting thumbnail file: %v", err)
+				}
+			}
 			db.Delete(&file)
+
 			if file.SceneID != 0 {
 				scene.GetIfExistByPK(file.SceneID)
 				scene.UpdateStatus()
