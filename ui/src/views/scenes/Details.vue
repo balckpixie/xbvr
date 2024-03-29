@@ -383,6 +383,13 @@
                     </b-message>
                   </div>
                 </b-tab-item>
+
+                <b-tab-item label="Thumbnail">
+                  <div ref="thumbContainer" class="block-tab-content block container">
+                    <!-- <canvas class="" v-for="(item, index) in videoThumbnails" :key="index" @click="handleThumbnailClick(index)"></canvas> -->
+                  </div>
+                </b-tab-item>
+
                 <b-tab-item v-if="this.$store.state.optionsAdvanced.advanced.showSceneSearchField && !displayingAlternateSource" label="Search fields">
                   <div class="block-tab-content block">
                     <div class="content is-small">
@@ -392,6 +399,7 @@
                     </div>
                   </div>
                 </b-tab-item>
+
 
               </b-tabs>
             </div>
@@ -470,7 +478,10 @@ export default {
       currentFileNo: 0,
       currentProjection: '180',
       currentDuraiton: 0,
-      thumbnail: null
+      thumbnail: null,
+      currentFileID: null,
+      currentFile: null,
+      videoThumbnails: []
     }
   },
   computed: {
@@ -635,6 +646,15 @@ export default {
       })    
 },
 watch:{
+  activeTab(newVal, oldVal) {
+    if (newVal == 4) {
+      const thumbnailUrl = '/api/dms/thumbnail/' + this.currentFile.id
+      const canvasContainer = this.$refs.thumbContainer;
+      canvasContainer.innerHTML = '';
+      this.fetchAndDisplayThumbnails(thumbnailUrl, canvasContainer);
+    }
+  },
+
   quickFindOverlayState(newVal, oldVal){
     if (newVal == true) {
       return
@@ -657,6 +677,108 @@ watch:{
   },
 },
   methods: {
+    fetchAndDisplayThumbnails(imageUrl, container) {
+      // 画像を取得
+      const img = new Image();
+      img.crossOrigin = "Anonymous";
+      img.src = imageUrl;
+      
+      // 画像のロードが完了した後に処理を実行するPromiseを作成
+      const imgLoaded = new Promise((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = reject;
+      });
+      
+      // 画像のロードが完了したらCanvasに描画してサムネイルに分解
+      imgLoaded.then(() => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+
+        const tileWidth = 200;
+        var tileHeight = 200;
+
+        if (this.currentFile?.projection === 'flat')
+        {
+          tileHeight = (this.currentFile.video_height / this.currentFile.video_width) * tileWidth;
+        }
+        const rows = Math.floor(canvas.height / tileHeight);
+        const cols = Math.floor(canvas.width / tileWidth);
+
+        var duration = 5
+        for (let row = 0; row < rows; row++) {
+          for (let col = 0; col < cols; col++) {
+            duration += 30
+            const thumbnailCanvas = document.createElement('canvas');
+            thumbnailCanvas.width = tileWidth;
+            thumbnailCanvas.height = tileHeight;
+            thumbnailCanvas.classList.add('thumbsImage');
+            const thumbnailCtx = thumbnailCanvas.getContext('2d');
+            thumbnailCtx.drawImage(canvas, col * tileWidth, row * tileHeight, tileWidth, tileHeight, 0, 0, tileWidth, tileHeight);
+            
+            var isBlack = this.isImageBlack(thumbnailCtx)
+            if (duration > 6900) {
+console.info("")
+            }
+            if (!isBlack) {
+              thumbnailCanvas.addEventListener('click', (function(duration) {
+                              return function() {
+                                  this.thumbnailClicked(duration);
+                              }
+                          })(duration).bind(this)); // thisをバインドすることを忘れない
+              container.appendChild(thumbnailCanvas);
+            } else {
+              console.info('isBlack: ${duration}');
+
+            }
+          }
+        }
+        this.videoThumbnails.splice()
+
+      }).catch(error => {
+        console.error('Failed to load image:', error);
+      });     
+    },
+    thumbnailClicked(index) {             
+      this.setCurrentTime(index)
+    },
+    handleThumbnailClick(index) {
+      alert(`You clicked thumbnail number ${index + 1}`);
+    },
+    isImageBlack(ctx) {
+      var isBlack = true
+      const imageData = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height).data;
+      for (let i = 0; i < imageData.length; i += 4) {
+        // Check if each pixel is black (R = 0, G = 0, B = 0)
+        if (imageData[i] > 10 && imageData[i + 1] > 10 && imageData[i + 2] > 10) {
+          isBlack = false;
+          break  
+          //return false; // Image is not all black
+        }
+      }
+      return isBlack; // Image is all black
+    },
+
+    // addCanvas() {
+    //   const canvasContainer = this.$refs.thumbContainer;
+    //   const canvas = document.createElement('canvas');
+    //   const ctx = canvas.getContext('2d');
+      
+    //   // Canvasのサイズやスタイルを設定
+    //   canvas.width = 200; // Canvasの幅
+    //   canvas.height = 200; // Canvasの高さ
+    //   canvas.style.border = '1px solid black'; // Canvasの枠線
+      
+    //   // Canvasに描画する処理
+    //   ctx.fillStyle = 'blue'; // 四角形の塗りつぶし色
+    //   ctx.fillRect(50, 50, 100, 100); // 四角形の描画
+      
+    //   // CanvasをDIVに追加
+    //   canvasContainer.appendChild(canvas);
+    // },
+
     async generateSprit(file) {
       if (!file) return;
 
@@ -1050,7 +1172,8 @@ watch:{
       this.updatePlayer('/api/dms/file/' + file.id + '?dnt=true', (file.projection == 'flat' ? 'NONE' : '180'))
       this.setupSprite(file)
       this.player.play()
-      this.curerntFileNo = file.id
+      // this.currentFileID = file.id
+      this.currentFile = file
     },
     unmatchFile (file) {
       this.$buefy.dialog.confirm({
@@ -1474,6 +1597,7 @@ watch:{
 </script>
 
 <style lang="less" scoped>
+
 .bbox {
   flex: 1 0 calc(25%);
   display: flex;
@@ -1652,5 +1776,17 @@ span.is-active img {
     background-color: #333;
     color: #fff;
 }
+.container {
+  max-width: calc(100% - 20px); /* 余白の最大までの幅 */
+  max-height: calc(100vh - 400px);
+  margin: 0 auto; /* 中央揃え */
+  background-color: #222222; /* 見やすいように背景色を指定 */
+  overflow-y: auto; /* 縦方向のスクロールバーを表示する */
+}
+</style>
 
+<style lang="less">
+.thumbsImage {
+  width: 120px;
+}
 </style>
