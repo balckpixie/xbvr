@@ -30,7 +30,7 @@
                 <b-carousel v-model="carouselSlide" @change="scrollToActiveIndicator" :autoplay="false" :indicator-inside="false">
                   <b-carousel-item v-for="(carousel, i) in images" :key="i">
                     <div class="image is-1by1 is-full"
-                         v-bind:style="{backgroundImage: `url(${getImageURL(carousel.url, '700,fit')})`, backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat'}"></div>
+                         v-bind:style="{backgroundImage: `url(${getImageURL(carousel.url, '700,fit')})`, backgroundSize: 'contain', backgroundPosition: 'center top', backgroundRepeat: 'no-repeat'}"></div>
                   </b-carousel-item>
                   <template slot="indicators" slot-scope="props">
                       <span class="al image" style="width:max-content;">
@@ -67,6 +67,7 @@
                     <!-- アスペクト比切り替えボタン -->
                   <div class="aspect-ratio-buttons">
                     <b-button class="btn01" @click="changeAspectRatio('16:9')">16:9</b-button>
+                    <b-button class="btn01" @click="changeAspectRatio('16:10')">16:10</b-button>
                     <b-button class="btn01" @click="changeAspectRatio('4:3')">4:3</b-button>
                     <b-button class="btn01" @click="changeAspectRatio('1:1')">1:1</b-button>
                     <b-button class="btn01" @click="changeAspectRatio('3:4')">3:4</b-button>
@@ -78,9 +79,9 @@
                     <b-button class="btn01" @click="changeProjection('360_TB')">360_TB</b-button>
                     <b-button class="btn01" @click="setCurrentTime(500)">test</b-button>
                   </div>
-                  <div>
+                  <!-- <div>
                     <img v-if="thumbnail" :src="thumbnail" alt="Thumbnail">
-                  </div>
+                  </div> -->
                 </div>
 
 
@@ -128,6 +129,15 @@
                       <strong>Linked scene, Not an XBVR Scene</strong>
                     </b-field>
                   </div>
+
+                  <div class="content" style="display: flex; flex-wrap: wrap;">
+                      <div class="" v-for="(f, idx) in filesByType" :key="idx" style="margin-right: 5px; margin-bottom: 5px;">
+                          <button rounded class="button is-success is-small" @click='playFile(f)' v-show="f.type === 'video'">
+                              {{idx+1}}
+                          </button>
+                      </div>
+                  </div>
+
                   <div class="column pt-0">
                     <div class="is-flex is-pulled-right" style="gap: 0.25rem">
                       <a class="button is-primary is-outlined is-small" @click="searchAlternateSourceScene()" title="Search for a different scene" v-if="displayingAlternateSource">
@@ -237,7 +247,7 @@
             </div>
 
 
-            <div class="block-opts block">
+            <div class="block-opts block" ref="tabbar" >
               <b-tabs v-model="activeTab" :animated="false">
 
                 <b-tab-item :label="`Files (${fileCount})`" v-if="!displayingAlternateSource">
@@ -385,7 +395,7 @@
                 </b-tab-item>
 
                 <b-tab-item label="Thumbnail">
-                  <div ref="thumbContainer" class="block-tab-content block container">
+                  <div ref="thumbContainer" id="thumbContainer" :style="{ maxHeight: computedMaxHeight() }" class="block-tab-content block container">
                     <!-- <canvas class="" v-for="(item, index) in videoThumbnails" :key="index" @click="handleThumbnailClick(index)"></canvas> -->
                   </div>
                 </b-tab-item>
@@ -442,6 +452,7 @@ import EditButton from '../../components/EditButton'
 import RefreshButton from '../../components/RefreshButton'
 import TrailerlistButton from '../../components/TrailerlistButton'
 import HiddenButton from '../../components/HiddenButton'
+import 'bootstrap-icons/font/bootstrap-icons.css';
 
 export default {
   name: 'Details',
@@ -474,14 +485,16 @@ export default {
       searchfields: [],
       alternateSources: [],
       waitingForQuickFind: false,
-      currentAspect: '4:3',
+      currentAspect: '16:9',
       currentFileNo: 0,
       currentProjection: '180',
       currentDuraiton: 0,
       thumbnail: null,
       currentFileID: null,
       currentFile: null,
-      videoThumbnails: []
+      videoThumbnails: [],
+    marginBottom: 10,
+    adjustableElementHeight: 0,
     }
   },
   computed: {
@@ -648,10 +661,12 @@ export default {
 watch:{
   activeTab(newVal, oldVal) {
     if (newVal == 4) {
-      const thumbnailUrl = '/api/dms/thumbnail/' + this.currentFile.id
-      const canvasContainer = this.$refs.thumbContainer;
-      canvasContainer.innerHTML = '';
-      this.fetchAndDisplayThumbnails(thumbnailUrl, canvasContainer);
+      // const thumbnailUrl = '/api/dms/thumbnail/' + this.currentFile.id
+      // const canvasContainer = this.$refs.thumbContainer;
+      // canvasContainer.innerHTML = '';
+      // this.fetchAndDisplayThumbnails(thumbnailUrl, canvasContainer);
+
+      this.loadVideThumbnails(this.currentFile.id)
     }
   },
 
@@ -677,6 +692,35 @@ watch:{
   },
 },
   methods: {
+    computedMaxHeight() {
+      const element = this.$refs.tabbar;
+      if (!element) return 'calc(100vh - 20px)'; // 要素がまだ存在しない場合はデフォルトの高さを返す
+      const adjustableElementTop = element.offsetTop + 200;
+      console.info(`adjust:top ${element.offsetTop} height ${element.offsetHeight} ajustTop ${adjustableElementTop}`)
+      return `calc(100vh - ${adjustableElementTop}px - ${this.marginBottom}px)`;
+    },
+
+    // adjustElementHeight() {
+    //   var element = document.getElementById('adjustableElement');
+    //   var elementRect = element.getBoundingClientRect();
+    //   // var top = element.offsetTop; // 初期表示時の要素のY座標を取得
+  
+    //   this.adjustableElementHeight = elementRect.top;
+    // },
+
+    clearVideThumbnails() {
+      const canvasContainer = this.$refs.thumbContainer;
+      canvasContainer.innerHTML = '';
+    },
+
+    loadVideThumbnails(fileid) {
+      const thumbnailUrl = '/api/dms/thumbnail/' + fileid
+      this.clearVideThumbnails()
+      const canvasContainer = this.$refs.thumbContainer;
+      this.fetchAndDisplayThumbnails(thumbnailUrl, canvasContainer);
+      // this.adjustElementHeight();
+    },
+
     fetchAndDisplayThumbnails(imageUrl, container) {
       // 画像を取得
       const img = new Image();
@@ -719,9 +763,7 @@ watch:{
             thumbnailCtx.drawImage(canvas, col * tileWidth, row * tileHeight, tileWidth, tileHeight, 0, 0, tileWidth, tileHeight);
             
             var isBlack = this.isImageBlack(thumbnailCtx)
-            if (duration > 6900) {
-console.info("")
-            }
+
             if (!isBlack) {
               thumbnailCanvas.addEventListener('click', (function(duration) {
                               return function() {
@@ -750,42 +792,20 @@ console.info("")
     isImageBlack(ctx) {
       var isBlack = true
       const imageData = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height).data;
-      for (let i = 0; i < imageData.length; i += 4) {
-        // Check if each pixel is black (R = 0, G = 0, B = 0)
+      for (let i = 0; i < imageData.length; i += 40) {
         if (imageData[i] > 10 && imageData[i + 1] > 10 && imageData[i + 2] > 10) {
           isBlack = false;
           break  
-          //return false; // Image is not all black
         }
       }
-      return isBlack; // Image is all black
+      return isBlack; 
     },
-
-    // addCanvas() {
-    //   const canvasContainer = this.$refs.thumbContainer;
-    //   const canvas = document.createElement('canvas');
-    //   const ctx = canvas.getContext('2d');
-      
-    //   // Canvasのサイズやスタイルを設定
-    //   canvas.width = 200; // Canvasの幅
-    //   canvas.height = 200; // Canvasの高さ
-    //   canvas.style.border = '1px solid black'; // Canvasの枠線
-      
-    //   // Canvasに描画する処理
-    //   ctx.fillStyle = 'blue'; // 四角形の塗りつぶし色
-    //   ctx.fillRect(50, 50, 100, 100); // 四角形の描画
-      
-    //   // CanvasをDIVに追加
-    //   canvasContainer.appendChild(canvas);
-    // },
 
     async generateSprit(file) {
       if (!file) return;
 
       const cropOptions = 'iw/2:ih:iw/2:ih'; // 例として "iw/2:ih:iw/2:ih" を指定しています
       ky.post(`/api/thumbs/generate`, {json:{file_id: file.id, crop: cropOptions}}).blob().then(data => {
-            //this.$store.commit('overlay/showDetails', { scene: data })
-            // this.$store.commit('sceneList/updateScene', data)
             this.thumbnail = data
           })
     },
@@ -822,7 +842,7 @@ console.info("")
       var screenAspectRatio = width / height;
 
       var objectAspectRatio = 0.56;
-      var objectHeightPercentage = 93;
+      var objectHeightPercentage = 91;
 
       objectAspectRatio = this.calculateAspectRatio(aspectRatio)
       var objectWidthPercentage = this.calculateObjectWidthPercentage(screenAspectRatio, objectAspectRatio, objectHeightPercentage);
@@ -892,8 +912,14 @@ console.info("")
       if (this.player.hasOwnProperty('thumbnailSprite')) {
         this.player.thumbnailSprite(false); // プラグインを解除する
       }
-      const thumbnailUrl = '/api/dms/thumbnail/' + file.id
 
+      let tileHeight = 200
+      if (this.currentFile?.projection === 'flat')
+        {
+          tileHeight = (this.currentFile.video_height / this.currentFile.video_width) * 200;
+      }
+
+      const thumbnailUrl = '/api/dms/thumbnail/' + file.id
       var videPlayer = this.player
       this.checkImageExists(thumbnailUrl, function(exists) {
         if (exists) {
@@ -905,7 +931,7 @@ console.info("")
                   start: 25,
                   interval: 30,
                   width: 200,
-                  height: 200,
+                  height: tileHeight,
                 },
               ],
             });
@@ -913,66 +939,6 @@ console.info("")
           videPlayer.thumbnailSprite(false);
         }
       });
-
-// XMLHttpRequestを使用して画像のURLに対してリクエストを送信します
-// var xhr = new XMLHttpRequest();
-// xhr.open('GET', thumbnailUrl, true);
-// xhr.send();
-// xhr.onload = function(player) {
-//     if (xhr.status === 404) {
-//         player.thumbnailSprite(false);
-
-//     } else {
-//       player.thumbnailSprite({
-//           sprites: [
-//             {
-//               url: thumbnailUrl,
-//               duration: 6000,
-//               start: 25,
-//               interval: 30,
-//               width: 200,
-//               height: 200,
-//             },
-//           ],
-//         });
-//     }
-// }(this.player)
-
-
-      // const img = new Image();
-      // img.onload = function(player) {
-      //   player.thumbnailSprite({
-      //     sprites: [
-      //       {
-      //         url: thumbnailUrl,
-      //         duration: 6000,
-      //         start: 25,
-      //         interval: 30,
-      //         width: 200,
-      //         height: 200,
-      //       },
-      //     ],
-      //   });
-      // }(this.player);
-
-      // img.onerror = function(player) {
-      //   player.thumbnailSprite(false);
-      // }(this.player)
-
-      // img.src = thumbnailUrl;
-
-      // this.player.thumbnailSprite({
-      //   sprites: [
-      //     {
-      //       url: thumbnailUrl,
-      //       duration: 6000,
-      //       start: 5,
-      //       interval: 30,
-      //       width: 200,
-      //       height: 200,
-      //     },
-      //   ],
-      // });
     },
     checkImageExists(url, callback) {
       var img = new Image();
@@ -985,8 +951,9 @@ console.info("")
       img.src = url;
     },
     setupPlayer() {
-      this.setupPlayerWithAspect('4:3')
-      this.resizeColumnForAspect('4:3') 
+      this.currentAspect = '16:10'
+      this.setupPlayerWithAspect(this.currentAspect)
+      this.resizeColumnForAspect(this.currentAspect) 
       // this.generateSprit(this.item.file[0])
     },
 
@@ -1172,8 +1139,10 @@ console.info("")
       this.updatePlayer('/api/dms/file/' + file.id + '?dnt=true', (file.projection == 'flat' ? 'NONE' : '180'))
       this.setupSprite(file)
       this.player.play()
-      // this.currentFileID = file.id
+      // this.resizeColumnForAspect(this.currentAspect)
       this.currentFile = file
+      
+      this.loadVideThumbnails(this.currentFile.id)
     },
     unmatchFile (file) {
       this.$buefy.dialog.confirm({
@@ -1339,6 +1308,7 @@ console.info("")
       this.$store.commit('sceneList/updateScene', updatedScene)
     },
     nextScene () {
+      this.clearVideThumbnails();
       const data = this.$store.getters['sceneList/nextScene'](this.item)
       if (data !== null && !this.displayingAlternateSource) {
         this.$store.commit('overlay/showDetails', { scene: data })
@@ -1348,6 +1318,7 @@ console.info("")
       }
     },
     prevScene () {
+      this.clearVideThumbnails();
       const data = this.$store.getters['sceneList/prevScene'](this.item)
       if (data !== null && !this.displayingAlternateSource) {
         this.$store.commit('overlay/showDetails', { scene: data })
@@ -1778,7 +1749,7 @@ span.is-active img {
 }
 .container {
   max-width: calc(100% - 20px); /* 余白の最大までの幅 */
-  max-height: calc(100vh - 400px);
+  /* max-height: calc(100vh - 400px); */
   margin: 0 auto; /* 中央揃え */
   background-color: #222222; /* 見やすいように背景色を指定 */
   overflow-y: auto; /* 縦方向のスクロールバーを表示する */
