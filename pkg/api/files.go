@@ -3,18 +3,20 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
+	"regexp"
 
 	restfulspec "github.com/emicklei/go-restful-openapi/v2"
 	"github.com/emicklei/go-restful/v3"
 	"github.com/markphelps/optional"
-	"github.com/xbapps/xbvr/pkg/models"
 	"github.com/xbapps/xbvr/pkg/common"
+	"github.com/xbapps/xbvr/pkg/models"
 )
 
 type RequestMatchFile struct {
@@ -27,7 +29,7 @@ type RequestUnmatchFile struct {
 }
 
 type RequestRenameFile struct {
-	FileID uint `json:"file_id"`
+	FileID      uint   `json:"file_id"`
 	NewFilename string `json:"filename"`
 }
 
@@ -250,7 +252,105 @@ func (i FilesResource) matchFile(req *restful.Request, resp *restful.Response) {
 	// Finally, update scene available/accessible status
 	scene.UpdateStatus()
 
+	//ここまで標準処理、以降追加処理（ファイル名を自動付与する）
+	RenameFile(scene, f)
+	//ここまで追加処理
+
 	resp.WriteHeaderAndEntity(http.StatusOK, nil)
+}
+
+func RenameFile(scene models.Scene, file models.File) models.Scene {
+
+	// 元のファイル名から sceneNo を取得
+	sceneNo := GetSceneNo(file)
+	// 拡張子を取得
+	extension := filepath.Ext(file.Filename)
+	// Actor.Name をカンマで結合した文字列を生成
+	var actorNames []string
+	for _, actor := range scene.Cast {
+		actorNames = append(actorNames, actor.Name)
+	}
+	var castString string
+	if len(actorNames) > 0 {
+		castString = strings.Join(actorNames, ",")
+	} else {
+		castString = "Unknown"
+	}
+	if len(sceneNo) > 0 {
+		sceneNo = "-" + sceneNo
+	}
+	title := scene.Title
+	if trimPrefix(scene.SceneID, title) == "" {
+		title = scene.Synopsis
+	}
+	newFileName := fmt.Sprintf("%s|%s%s|%s%s", castString, scene.SceneID, sceneNo, trimPrefix(scene.SceneID, title), extension)
+
+
+	db, _ := models.GetDB()
+	defer db.Close()
+
+	vol := models.Volume{}
+	err := db.First(&vol, file.VolumeID).Error
+
+	if err == nil {
+		if len(actorNames) > 1 {
+			castString = "_Group"
+		}
+		newPath := filepath.Join(vol.Path, castString)
+		if (filepath.Join(file.Path,file.Filename) != filepath.Join(newPath,newFileName)) {
+			scene = renameFileByFileId(uint(file.ID), newPath, newFileName)
+		}
+	}
+
+	return scene
+}
+
+func trimPrefix(a, b string) string {
+	// 文字列Bが文字列Aで始まる場合、文字列Bから文字列Aを取り除く
+	if strings.HasPrefix(b, a) {
+		trimmed := strings.TrimPrefix(b, a)
+		return strings.TrimSpace(trimmed)
+	}
+
+	// 文字列Bが文字列Aを含まない場合は、文字列Bをそのまま返す
+	return b
+}
+
+// func GetSceneNo(file models.File) string {
+// 	// ダミーの実装（実際のファイル名から sceneNo を適切に取得する実装が必要）
+// 	return "1"
+// }
+
+func GetSceneNo(file models.File) string {
+	// ① 正規表現パターンの定義
+	pattern := `[a-zA-Z0-9]{2,6}-\d{2,6}`
+	base := filepath.Base(file.Filename)
+	input := base[:len(base)-len(filepath.Ext(base))]
+
+	// ① 正規表現パターンに一致する部分を検索
+	re := regexp.MustCompile(pattern)
+	matches := re.FindStringSubmatch(input)
+
+	if len(matches) > 0 {
+		// ② 一致した部分があれば、それを返す
+		secondPattern := `-(R\d{1,2})`
+		re2 := regexp.MustCompile(secondPattern)
+		matches2 := re2.FindStringSubmatch(input)
+		if len(matches2) > 0 {
+			return matches2[1] // ③ R1 にマッチする部分を返す
+		}
+	}
+
+	// ④ 一致しない場合は、文字列の最後の１文字を返す（ただし数字の場合のみ）
+	if len(input) > 0 {
+		lastChar := input[len(input)-1:]
+		if _, err := strconv.Atoi(lastChar); err == nil {
+			return lastChar
+		}
+	}
+
+	// ⑤ 最後の文字が `-` または `_` の場合は空文字列を返す
+	return ""
 }
 
 func (i FilesResource) unmatchFile(req *restful.Request, resp *restful.Response) {
@@ -321,15 +421,11 @@ func (i FilesResource) renameFile(req *restful.Request, resp *restful.Response) 
 		log.Error(err)
 		return
 	}
-	// fileId, err := strconv.Atoi(req.PathParameter("file-id"))
-	// if err != nil {
-	// 	return
-	// }
-	scene := renameFileByFileId(uint(r.FileID), r.NewFilename)
+	scene := renameFileByFileId(uint(r.FileID), "", r.NewFilename)
 	resp.WriteHeaderAndEntity(http.StatusOK, scene)
 }
 
-func renameFileByFileId(fileId uint, newfilename string) models.Scene {
+func renameFileByFileId(fileId uint, newPath string, newfilename string) models.Scene {
 
 	var scene models.Scene
 	var file models.File
@@ -337,13 +433,19 @@ func renameFileByFileId(fileId uint, newfilename string) models.Scene {
 	defer db.Close()
 
 	err := db.Preload("Volume").Where(&models.File{ID: fileId}).First(&file).Error
+	var oldFilename = file.Filename
 	if err == nil {
 
+		targetFilename := filepath.Join(newPath,newfilename)
+		if newPath == "" {
+			targetFilename = filepath.Join(file.Path,newfilename)
+		}
 		log.Infof("Renaming file %s", filepath.Join(file.Path, file.Filename))
 		renamed := false
 		switch file.Volume.Type {
 		case "local":
-			err := os.Rename(filepath.Join(file.Path, file.Filename), filepath.Join(file.Path, newfilename))
+			newfilename, err = RenameFileNoDuplicate(filepath.Join(file.Path, file.Filename), targetFilename)
+			// err := os.Rename(filepath.Join(file.Path, file.Filename), filepath.Join(file.Path, newfilename))
 			if err == nil {
 				renamed = true
 			} else {
@@ -364,17 +466,89 @@ func renameFileByFileId(fileId uint, newfilename string) models.Scene {
 		}
 
 		if renamed {
-			//db.Delete(&file)
-			db.Model(&file).Where("id = ?", fileId).Update("filename", newfilename)
+			dir := filepath.Dir(newfilename)
+			base := filepath.Base(newfilename)
+			db.Model(&file).Where("id = ?", fileId).Update("filename", base).Update("path",dir)
 			if file.SceneID != 0 {
 				scene.GetIfExistByPK(file.SceneID)
+				updateFilenameAtrr(scene, oldFilename, newfilename)
 				scene.UpdateStatus()
 			}
+
 		}
 	} else {
 		log.Errorf("error renaming file %v", err)
 	}
 	return scene
+}
+
+func RenameFileNoDuplicate(filePath, newFileName string) (renamedFileName string, err error) {
+	// ファイル名のディレクトリパスと拡張子を取得
+	// dir := filepath.Dir(filePath)
+	ext := filepath.Ext(newFileName)
+	base := strings.TrimSuffix(newFileName, ext)
+
+	// リネーム後のファイル名が重複しないようにする
+	i := 1
+	for {
+		// newPath := filepath.Join(dir, newFileName)
+		newPath := newFileName
+		_, err := os.Stat(newPath)
+		if err != nil {
+			// エラーがなければ、そのファイル名を使用
+			renamedFileName = newFileName
+			break
+		}
+		// 重複する場合は、ファイル名の末尾に番号を付与してリトライ
+		i++
+		newFileName = fmt.Sprintf("%s(%d)%s", base, i, ext)
+	}
+
+	// フォルダが存在しない場合は作成する
+	if err := os.MkdirAll(filepath.Dir(renamedFileName), os.ModePerm); err != nil {
+		return "", err
+	}
+
+	// リネーム実行
+	err = os.Rename(filePath, renamedFileName)
+	if err != nil {
+		return "", err
+	}
+
+	return newFileName, nil
+}
+
+func updateFilenameAtrr(scene models.Scene, oldFilename string, newFilename string) {
+	var pfTxt []string
+	err := json.Unmarshal([]byte(scene.FilenamesArr), &pfTxt)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	replaceElement(pfTxt, oldFilename, newFilename)
+	tmp, err := json.Marshal(pfTxt)
+	if err == nil {
+		scene.FilenamesArr = string(tmp)
+	}
+
+	models.AddAction(scene.SceneID, "match", "filenames_arr", scene.FilenamesArr)
+
+	// Finally, update scene available/accessible status
+	scene.UpdateStatus()
+}
+
+// スライス内の古い要素を新しい要素で置き換える関数
+func replaceElement(slice []string, oldElement string, newElement string) {
+	// スライスをループして古い要素を探す
+	for i, element := range slice {
+		if element == oldElement {
+			// 古い要素が見つかったら、新しい要素で置き換える
+			slice[i] = newElement
+			return
+		}
+	}
+	// 古い要素が見つからない場合は何もしない
 }
 
 func (i FilesResource) removeFile(req *restful.Request, resp *restful.Response) {
@@ -421,7 +595,7 @@ func removeFileByFileId(fileId uint) models.Scene {
 
 		if deleted {
 			if file.HasThumbnail {
-				thumbFile := filepath.Join(common.VideoThumbnailDir,  strconv.FormatUint(uint64(file.ID), 10) +".jpg")
+				thumbFile := filepath.Join(common.VideoThumbnailDir, strconv.FormatUint(uint64(file.ID), 10)+".jpg")
 				err := os.Remove(thumbFile)
 				if err == nil {
 					deleted = true

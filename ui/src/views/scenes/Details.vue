@@ -28,7 +28,7 @@
 
               <b-tab-item label="Gallery">
                 <b-carousel v-model="carouselSlide" @change="scrollToActiveIndicator" :autoplay="false" :indicator-inside="false">
-                  <b-carousel-item v-for="(carousel, i) in images" :key="i">
+                  <b-carousel-item style="max-height:80vh" v-for="(carousel, i) in images" :key="i">
                     <div class="image is-1by1 is-full"
                          v-bind:style="{backgroundImage: `url(${getImageURL(carousel.url, '700,fit')})`, backgroundSize: 'contain', backgroundPosition: 'center top', backgroundRepeat: 'no-repeat'}"></div>
                   </b-carousel-item>
@@ -760,8 +760,21 @@ watch:{
             thumbnailCanvas.height = tileHeight;
             thumbnailCanvas.classList.add('thumbsImage');
             const thumbnailCtx = thumbnailCanvas.getContext('2d');
-            thumbnailCtx.drawImage(canvas, col * tileWidth, row * tileHeight, tileWidth, tileHeight, 0, 0, tileWidth, tileHeight);
-            
+            if (this.currentFile?.projection === 'flat') {
+              thumbnailCtx.drawImage(canvas, col * tileWidth, row * tileHeight, tileWidth, tileHeight, 0, 0, tileWidth, tileHeight);
+            } else {
+              thumbnailCtx.drawImage(
+                  canvas, // 元の画像
+                  col * tileWidth + 20, // 元画像の左側のマージンをカットしてから描画
+                  row * tileHeight + 20, // 元画像の上側のマージンをカットしてから描画
+                  tileWidth - 40, // 元画像から左右のマージンをカットしてから描画
+                  tileHeight - 40, // 元画像から上下のマージンをカットしてから描画
+                  0, // キャンバスの描画位置X
+                  0, // キャンバスの描画位置Y
+                  tileWidth, // キャンバスに描画する幅（キャンバス全体に拡大）
+                  tileHeight // キャンバスに描画する高さ（キャンバス全体に拡大）
+              );
+            }
             var isBlack = this.isImageBlack(thumbnailCtx)
 
             if (!isBlack) {
@@ -901,8 +914,9 @@ watch:{
       const currentDuration = this.player.currentTime();
       const currentSource = this.player.currentSource();
       this.player.aspectRatio(aspectRatio);
+      this.currentAspect = aspectRatio
       this.updatePlayer(currentSource.src, this.currentProjection)
-      this.resizeColumnForAspect(aspectRatio) 
+      this.resizeColumnForAspect(this.currentAspect) 
       this.setCurrentTime(currentDuration)
       this.player.play()
     },
