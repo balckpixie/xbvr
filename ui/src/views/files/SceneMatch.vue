@@ -182,11 +182,32 @@ export default {
     this.initView()
   },
   methods: {
+    // extractDVDID() {
+    //   const regex = /[a-zA-Z0-9]{2,6}-\d{2,6}/;
+    //   const match = this.file.filename.match(regex);
+    //   this.javrQuery = match ? match[0] : null;
+    // },
     extractDVDID() {
-      const regex = /[a-zA-Z0-9]{2,6}-\d{2,6}/;
-      const match = this.file.filename.match(regex);
-      this.javrQuery = match ? match[0] : null;
+      let regex = /[a-zA-Z0-9]{2,6}-\d{2,6}/;
+      let match = this.file.filename.match(regex);
+      if (!match) {
+        regex = /([a-zA-Z]{2,6})(\d{2,6})/;
+        match = this.file.filename.match(regex);
+        if (match) {
+          const firstPart = match[1];
+          const secondPart = match[2];
+          if (secondPart.length >= 4) {
+            secondPart = secondPart.replace(/^0+/, '');
+          }
+          this.javrQuery = `${firstPart}-${secondPart}`;
+        } else {
+          this.javrQuery = null;
+        }
+      } else {
+        this.javrQuery = match[0];
+      }
     },
+
     scrapeJAVR () {
       ky.post('/api/task/scrape-javr', { json: { s: this.javrScraper, q: this.javrQuery } })
     },
@@ -202,6 +223,7 @@ export default {
 
       this.data = []
       this.queryString = (
+        this.extractDVDID(this.file.filename) + ' ' +
         this.file.filename
           .replace(/\.|_|\+|-/g, ' ').replace(/\s+/g, ' ').trim()
           .split(' ').filter(isNotCommonWord).join(' ')
