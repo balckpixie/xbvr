@@ -283,7 +283,7 @@ func RenameFile(scene models.Scene, file models.File) models.Scene {
 	if trimPrefix(scene.SceneID, title) == "" {
 		title = scene.Synopsis
 	}
-	newFileName := fmt.Sprintf("%s|%s%s|%s%s", castString, scene.SceneID, sceneNo, trimPrefix(scene.SceneID, title), extension)
+	newFileName := fmt.Sprintf("%s｜%s%s｜%s%s", castString, scene.SceneID, sceneNo, trimPrefix(scene.SceneID, title), extension)
 
 
 	db, _ := models.GetDB()
@@ -296,13 +296,27 @@ func RenameFile(scene models.Scene, file models.File) models.Scene {
 		if len(actorNames) > 1 {
 			castString = "_Group"
 		}
-		newPath := filepath.Join(vol.Path, castString)
+		newPath := filepath.Join(vol.Path, sanitizeFilename(castString))
+		newFileName = sanitizeFilename(newFileName)
 		if (filepath.Join(file.Path,file.Filename) != filepath.Join(newPath,newFileName)) {
 			scene = renameFileByFileId(uint(file.ID), newPath, newFileName)
 		}
 	}
 
 	return scene
+}
+
+func sanitizeFilename(filename string) string {
+    // 無効な文字を取り除く正規表現
+    invalidChars := regexp.MustCompile(`[\\/:*?"<>|]`)
+
+    // 無効な文字を削除し、指定した文字列で置き換える
+    sanitizedFilename := invalidChars.ReplaceAllString(filename, "-")
+
+    // 空白をアンダースコアに置き換える
+    // sanitizedFilename = strings.ReplaceAll(sanitizedFilename, " ", "_")
+
+    return sanitizedFilename
 }
 
 func trimPrefix(a, b string) string {
