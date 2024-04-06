@@ -7,10 +7,11 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
-	"regexp"
+	"unicode/utf8"
 
 	restfulspec "github.com/emicklei/go-restful-openapi/v2"
 	"github.com/emicklei/go-restful/v3"
@@ -285,7 +286,6 @@ func RenameFile(scene models.Scene, file models.File) models.Scene {
 	}
 	newFileName := fmt.Sprintf("%s｜%s%s｜%s%s", castString, scene.SceneID, sceneNo, trimPrefix(scene.SceneID, title), extension)
 
-
 	db, _ := models.GetDB()
 	defer db.Close()
 
@@ -298,7 +298,7 @@ func RenameFile(scene models.Scene, file models.File) models.Scene {
 		}
 		newPath := filepath.Join(vol.Path, sanitizeFilename(castString))
 		newFileName = sanitizeFilename(newFileName)
-		if (filepath.Join(file.Path,file.Filename) != filepath.Join(newPath,newFileName)) {
+		if filepath.Join(file.Path, file.Filename) != filepath.Join(newPath, newFileName) {
 			scene = renameFileByFileId(uint(file.ID), newPath, newFileName)
 		}
 	}
@@ -307,16 +307,16 @@ func RenameFile(scene models.Scene, file models.File) models.Scene {
 }
 
 func sanitizeFilename(filename string) string {
-    // 無効な文字を取り除く正規表現
-    invalidChars := regexp.MustCompile(`[\\/:*?"<>|]`)
+	// 無効な文字を取り除く正規表現
+	invalidChars := regexp.MustCompile(`[\\/:*?"<>|]`)
 
-    // 無効な文字を削除し、指定した文字列で置き換える
-    sanitizedFilename := invalidChars.ReplaceAllString(filename, "-")
+	// 無効な文字を削除し、指定した文字列で置き換える
+	sanitizedFilename := invalidChars.ReplaceAllString(filename, "-")
 
-    // 空白をアンダースコアに置き換える
-    // sanitizedFilename = strings.ReplaceAll(sanitizedFilename, " ", "_")
+	// 空白をアンダースコアに置き換える
+	// sanitizedFilename = strings.ReplaceAll(sanitizedFilename, " ", "_")
 
-    return sanitizedFilename
+	return sanitizedFilename
 }
 
 func trimPrefix(a, b string) string {
@@ -356,14 +356,24 @@ func GetSceneNo(file models.File) string {
 	}
 
 	// ④ 一致しない場合は、文字列の最後の１文字を返す（ただし数字の場合のみ）
+	// if len(input) > 0 {
+	// 	lastChar := input[len(input)-1:]
+	// 	if _, err := strconv.Atoi(lastChar); err == nil {
+	// 		return lastChar
+	// 	}
+	// }
+	// ④ 一致しない場合は、文字列の最後の１文字を返す（ただし数字の場合のみ）
 	if len(input) > 0 {
 		lastChar := input[len(input)-1:]
 		if _, err := strconv.Atoi(lastChar); err == nil {
+			// 最後の文字が pattern と一致する場合は空白を返す
+			if strings.HasSuffix(input, pattern) {
+				return ""
+			}
 			return lastChar
 		}
 	}
 
-	// ⑤ 最後の文字が `-` または `_` の場合は空文字列を返す
 	return ""
 }
 
@@ -450,14 +460,20 @@ func renameFileByFileId(fileId uint, newPath string, newfilename string) models.
 	var oldFilename = file.Filename
 	if err == nil {
 
-		targetFilename := filepath.Join(newPath,newfilename)
+		targetFilename := filepath.Join(newPath, newfilename)
 		if newPath == "" {
-			targetFilename = filepath.Join(file.Path,newfilename)
+			targetFilename = filepath.Join(file.Path, newfilename)
 		}
 		log.Infof("Renaming file %s", filepath.Join(file.Path, file.Filename))
 		renamed := false
 		switch file.Volume.Type {
 		case "local":
+			// OSで許容されるファイル名の最大長さ
+			const maxFilenameLength = 118
+			// 全角文字の場合は2バイトとして長さを計算し、ファイル名がOSで許容される長さを超える場合にカットする
+			if utf8.RuneCountInString(targetFilename) > maxFilenameLength-4 {
+				targetFilename = string([]rune(targetFilename)[:maxFilenameLength-4])
+			}
 			newfilename, err = RenameFileNoDuplicate(filepath.Join(file.Path, file.Filename), targetFilename)
 			// err := os.Rename(filepath.Join(file.Path, file.Filename), filepath.Join(file.Path, newfilename))
 			if err == nil {
@@ -482,7 +498,7 @@ func renameFileByFileId(fileId uint, newPath string, newfilename string) models.
 		if renamed {
 			dir := filepath.Dir(newfilename)
 			base := filepath.Base(newfilename)
-			db.Model(&file).Where("id = ?", fileId).Update("filename", base).Update("path",dir)
+			db.Model(&file).Where("id = ?", fileId).Update("filename", base).Update("path", dir)
 			if file.SceneID != 0 {
 				scene.GetIfExistByPK(file.SceneID)
 				updateFilenameAtrr(scene, oldFilename, newfilename)
