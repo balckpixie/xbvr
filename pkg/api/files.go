@@ -336,45 +336,71 @@ func trimPrefix(a, b string) string {
 // }
 
 func GetSceneNo(file models.File) string {
-	// ① 正規表現パターンの定義
-	pattern := `[a-zA-Z0-9]{2,6}-\d{2,6}`
+
+	// pattern := `[a-zA-Z0-9]{2,6}-\d{2,6}`
+	// base := filepath.Base(file.Filename)
+	// input := base[:len(base)-len(filepath.Ext(base))]
+	// re := regexp.MustCompile(pattern)
+	// matches := re.FindStringSubmatch(input)
+
+	// if len(matches) > 0 {
+	// 	// ② 一致した部分があれば、それを返す
+	// 	secondPattern := `-(R\d{1,2})`
+	// 	re2 := regexp.MustCompile(secondPattern)
+	// 	matches2 := re2.FindStringSubmatch(input)
+	// 	if len(matches2) > 0 {
+	// 		return matches2[1] // ③ R1 にマッチする部分を返す
+	// 	}
+	// }
+
+	pattern := `([a-zA-Z0-9]{2,6}-\d{2,6})(.*)`
 	base := filepath.Base(file.Filename)
 	input := base[:len(base)-len(filepath.Ext(base))]
 
-	// ① 正規表現パターンに一致する部分を検索
+	// 正規表現パターンに一致する部分を検索
 	re := regexp.MustCompile(pattern)
 	matches := re.FindStringSubmatch(input)
 
 	if len(matches) > 0 {
-		// ② 一致した部分があれば、それを返す
-		secondPattern := `-(R\d{1,2})`
+		// matchedPart := matches[1]  // 最初のサブマッチンググループ: ([a-zA-Z0-9]{2,6}-\d{2,6})
+		nextPart := matches[2]
+		secondPattern := `-([a-zA-Z0-9]{1})`
 		re2 := regexp.MustCompile(secondPattern)
-		matches2 := re2.FindStringSubmatch(input)
+		matches2 := re2.FindStringSubmatch(nextPart)
 		if len(matches2) > 0 {
-			return matches2[1] // ③ R1 にマッチする部分を返す
+			return matches2[1]
 		}
 	}
 
 	// ④ 一致しない場合は、文字列の最後の１文字を返す（ただし数字の場合のみ）
-	// if len(input) > 0 {
-	// 	lastChar := input[len(input)-1:]
-	// 	if _, err := strconv.Atoi(lastChar); err == nil {
-	// 		return lastChar
-	// 	}
-	// }
-	// ④ 一致しない場合は、文字列の最後の１文字を返す（ただし数字の場合のみ）
 	if len(input) > 0 {
 		lastChar := input[len(input)-1:]
 		if _, err := strconv.Atoi(lastChar); err == nil {
-			// 最後の文字が pattern と一致する場合は空白を返す
-			if strings.HasSuffix(input, pattern) {
-				return ""
+			if len(matches) > 0 {
+				if areEqualBackwards(input, matches[1]) {
+					return ""
+				}
 			}
 			return lastChar
 		}
 	}
 
 	return ""
+}
+
+func areEqualBackwards(strA, strB string) bool {
+    lenA, lenB := len(strA), len(strB)
+    i, j := lenA - 1, lenB - 1
+    
+    for i >= 0 && j >= 0 {
+        if strA[i] != strB[j] {
+            return false
+        }
+        i--
+        j--
+    }
+    
+    return true
 }
 
 func (i FilesResource) unmatchFile(req *restful.Request, resp *restful.Response) {
@@ -459,6 +485,20 @@ func renameFileByFileId(fileId uint, newPath string, newfilename string) models.
 	err := db.Preload("Volume").Where(&models.File{ID: fileId}).First(&file).Error
 	var oldFilename = file.Filename
 	if err == nil {
+		// 拡張子を除いた部分を取得
+		nameOnly := newfilename[:len(newfilename)-len(filepath.Ext(newfilename))]
+		ext := filepath.Ext(newfilename)
+		const maxFilenameLength = 90
+		if utf8.RuneCountInString(nameOnly) > maxFilenameLength-4 {
+			// nameOnly = nameOnly[:len(nameOnly)-len(filepath.Ext(nameOnly))]
+			nameOnly = string([]rune(nameOnly)[:maxFilenameLength])
+		}
+		//暫定用
+		if ext == "" {
+			ext = ".mp4"
+		}
+
+		newfilename = nameOnly + ext
 
 		targetFilename := filepath.Join(newPath, newfilename)
 		if newPath == "" {
@@ -468,12 +508,6 @@ func renameFileByFileId(fileId uint, newPath string, newfilename string) models.
 		renamed := false
 		switch file.Volume.Type {
 		case "local":
-			// OSで許容されるファイル名の最大長さ
-			const maxFilenameLength = 118
-			// 全角文字の場合は2バイトとして長さを計算し、ファイル名がOSで許容される長さを超える場合にカットする
-			if utf8.RuneCountInString(targetFilename) > maxFilenameLength-4 {
-				targetFilename = string([]rune(targetFilename)[:maxFilenameLength-4])
-			}
 			newfilename, err = RenameFileNoDuplicate(filepath.Join(file.Path, file.Filename), targetFilename)
 			// err := os.Rename(filepath.Join(file.Path, file.Filename), filepath.Join(file.Path, newfilename))
 			if err == nil {
@@ -501,7 +535,7 @@ func renameFileByFileId(fileId uint, newPath string, newfilename string) models.
 			db.Model(&file).Where("id = ?", fileId).Update("filename", base).Update("path", dir)
 			if file.SceneID != 0 {
 				scene.GetIfExistByPK(file.SceneID)
-				updateFilenameAtrr(scene, oldFilename, newfilename)
+				updateFilenameAtrr(scene, oldFilename, base)
 				scene.UpdateStatus()
 			}
 

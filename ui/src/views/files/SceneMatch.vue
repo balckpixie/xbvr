@@ -162,7 +162,7 @@ export default {
       currentPage: 1,
       queryString: '',
       javrQuery: '',
-      javrScraper: '',
+      javrScraper: 'dmm',
       format,
       parseISO
     }
@@ -188,24 +188,33 @@ export default {
     //   this.javrQuery = match ? match[0] : null;
     // },
     extractDVDID() {
+        this.javrQuery = this.extractDVDIDlogic(this.file.filename)
+    },
+    extractDVDIDlogic(filename) {
+      let dvdid = ""
       let regex = /[a-zA-Z0-9]{2,6}-\d{2,6}/;
-      let match = this.file.filename.match(regex);
+      let match = filename.match(regex);
       if (!match) {
         regex = /([a-zA-Z]{2,6})(\d{2,6})/;
-        match = this.file.filename.match(regex);
+        match = filename.match(regex);
         if (match) {
-          const firstPart = match[1];
-          const secondPart = match[2];
+          let firstPart = match[1];
+          let secondPart = match[2];
           if (secondPart.length >= 4) {
             secondPart = secondPart.replace(/^0+/, '');
           }
-          this.javrQuery = `${firstPart}-${secondPart}`;
+                // 確認：secondPartが3文字未満の場合は0を補完する
+          if (secondPart.length < 3) {
+            secondPart = secondPart.padStart(3, '0');
+          }
+          dvdid = `${firstPart}-${secondPart}`;
         } else {
-          this.javrQuery = null;
+          dvdid = null;
         }
       } else {
-        this.javrQuery = match[0];
+        dvdid = match[0];
       }
+      return dvdid
     },
 
     scrapeJAVR () {
@@ -222,13 +231,18 @@ export default {
       const isNotCommonWord = word => !commonWords.includes(word.toLowerCase()) && !/^[0-9]+p$/.test(word)
 
       this.data = []
+      var dvdid = this.extractDVDIDlogic(this.file.filename)
+      // this.queryString = (
+      //   dvdid + ' ' +
+      //   this.file.filename
+      //     .replace(/\.|_|\+|-/g, ' ').replace(/\s+/g, ' ').trim()
+      //     .split(' ').filter(isNotCommonWord).join(' ')
+      //     .replace(/ s /g, '\'s '))
       this.queryString = (
-        this.extractDVDID(this.file.filename) + ' ' +
-        this.file.filename
-          .replace(/\.|_|\+|-/g, ' ').replace(/\s+/g, ' ').trim()
-          .split(' ').filter(isNotCommonWord).join(' ')
-          .replace(/ s /g, '\'s '))
+        dvdid
+      )
       this.loadData()
+      this.extractDVDID()
     },
     loadData: async function loadData () {
       const requestIndex = this.dataNumRequests
