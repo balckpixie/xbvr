@@ -51,7 +51,7 @@
         </div>
       </div>
     </div>
-        <div class="columns is-gapless is-centered" v-if="hideLetters">
+        <!-- <div class="columns is-gapless is-centered" v-if="hideLetters">
           <b-radio-button v-model="jumpTo" native-value="" size="is-small"></b-radio-button>
           <b-radio-button v-model="jumpTo" native-value="A" size="is-small">A</b-radio-button>
           <b-radio-button v-model="jumpTo" native-value="B" size="is-small">B</b-radio-button>
@@ -84,7 +84,20 @@
           <b-radio-button v-model="jumpTo" native-value="や" size="is-small">や</b-radio-button>
           <b-radio-button v-model="jumpTo" native-value="ら" size="is-small">ら</b-radio-button>          
           <b-radio-button v-model="jumpTo" native-value="わ" size="is-small">わ</b-radio-button>
+        </div> -->
 
+        <div v-if="hideLetters" style="margin-top: -0.9rem; margin-bottom: 1.0rem;">
+          <div class="columns is-gapless is-centered" style="margin-bottom: 0.2rem;">
+            <b-radio-button v-model="jumpTo" native-value="-" size="is-small"></b-radio-button>
+            <div v-for="group in groups" :key="group">
+              <b-radio-button v-model="selectedGroup" :native-value="group" size="is-small">{{ group }}</b-radio-button>
+            </div>
+          </div>
+          <div class="columns is-gapless is-centered" style="display:block" v-for="group in groups" v-if="selectedGroup === group">
+            <div class="buttons is-centered is-multiline">
+              <b-radio-button v-for="letter in hiragana[group]" :key="letter" v-model="jumpTo" :native-value="letter" size="is-small">{{ letter }}</b-radio-button>
+            </div>
+          </div>
         </div>
 
     <div class="is-clearfix"></div>
@@ -152,7 +165,32 @@ export default {
   components: { ActorCard, GlobalEvents },
   data () {
     return {      
-      current: 1,      
+      current: 1,
+      groups: ['あ', 'か', 'さ', 'た', 'な', 'は', 'ま', 'や', 'ら', 'わ'],
+      hiragana: {
+        'あ': ['あ', 'い', 'う', 'え', 'お'],
+        'か': ['か', 'き', 'く', 'け', 'こ'],
+        'さ': ['さ', 'し', 'す', 'せ', 'そ'],
+        'た': ['た', 'ち', 'つ', 'て', 'と'],
+        'な': ['な', 'に', 'ぬ', 'ね', 'の'],
+        'は': ['は', 'ひ', 'ふ', 'へ', 'ほ'],
+        'ま': ['ま', 'み', 'む', 'め', 'も'],
+        'や': ['や', 'ゆ', 'よ'],
+        'ら': ['ら', 'り', 'る', 'れ', 'ろ'],
+        'わ': ['わ', 'を', 'ん']
+      },
+      selectedGroup: 'あ',
+      selectedLetter: ''
+    }
+  },
+  watch: {
+    selectedGroup(newVal, oldVal) {
+      // selectedGroupが変更されたとき、JumpToのデフォルト値を設定する
+      if (newVal != "") {
+        this.jumpTo = this.hiragana[newVal][0];
+      } else {
+        this.jumTo = ""
+      }
     }
   },
   computed: {
@@ -197,7 +235,12 @@ export default {
         return this.$store.state.actorList.filters.jumpTo
       },
       set (value) {
-        this.$store.state.actorList.filters.jumpTo = value
+        if (value == '-')
+        {
+          this.$store.state.actorList.filters.jumpTo = ''
+        } else {
+          this.$store.state.actorList.filters.jumpTo = value
+        }
         this.reloadList()
       }
     },
