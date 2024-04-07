@@ -27,6 +27,33 @@ import (
 
 var allowedVideoExt = []string{".mp4", ".avi", ".wmv", ".mpeg4", ".mov", ".mkv"}
 
+func ExtractDVDIDLogic(filename string) string {
+	dvdid := ""
+	regex := regexp.MustCompile(`[a-zA-Z0-9]{2,6}-\d{2,6}`)
+	match := regex.FindString(filename)
+	if match == "" {
+		regex = regexp.MustCompile(`([a-zA-Z]{2,6})(\d{2,6})`)
+		match := regex.FindStringSubmatch(filename)
+		if match != nil {
+			firstPart := match[1]
+			secondPart := match[2]
+			if len(secondPart) >= 4 {
+				secondPart = strings.TrimLeft(secondPart, "0")
+			}
+			// 確認: secondPart が 3 文字未満の場合は 0 を補完する
+			if len(secondPart) < 3 {
+				secondPart = strings.Repeat("0", 3-len(secondPart)) + secondPart
+			}
+			dvdid = firstPart + "-" + secondPart
+		} else {
+			dvdid = "null"
+		}
+	} else {
+		dvdid = match
+	}
+	return dvdid
+}
+
 func ExtractFormat(input string) []string {
 	re := regexp.MustCompile(`[A-Z]{4}-\d{3,4}`)
 	return re.FindAllString(input, -1)
@@ -66,6 +93,7 @@ func RescanVolumes(id int) {
 		// Match Scene to File
 		var files []models.File
 		var scenes []models.Scene
+		var scenes2 []models.Scene
 		var extrefs []models.ExternalReference
 
 		tlog.Infof("Matching Scenes to known filenames")
@@ -89,9 +117,17 @@ func RescanVolumes(id int) {
 			}
 
 			if len(scenes) == 0 {
-				queryString := ExtractFormat(unescapedFilename)
-				if len(queryString) > 0 {
-					ScrapeJAVR(queryString[0] ,"dmm") 
+				// queryString := ExtractFormat(unescapedFilename)
+				// if len(queryString) > 0 {
+				// 	ScrapeJAVR(queryString[0] ,"dmm") 
+				// }
+
+				queryString := ExtractDVDIDLogic(unescapedFilename)
+				if queryString != "" {
+					err = db.Where("scene_id = ?", queryString).Find(&scenes2).Error
+					if len(scenes2) == 0 || err != nil {
+						ScrapeJAVR(queryString ,"dmm") 
+					}
 				}
 			}
 

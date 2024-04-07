@@ -231,7 +231,7 @@ export default {
       const isNotCommonWord = word => !commonWords.includes(word.toLowerCase()) && !/^[0-9]+p$/.test(word)
 
       this.data = []
-      var dvdid = this.extractDVDIDlogic(this.file.filename)
+      var dvdid = this.extractDVDIDlogic(this.file.filename).toUpperCase();
       // this.queryString = (
       //   dvdid + ' ' +
       //   this.file.filename
