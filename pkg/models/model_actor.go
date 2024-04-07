@@ -487,53 +487,50 @@ func QueryActors(r RequestActorList, enablePreload bool) ResponseActorList {
 		return db.Order("release_date DESC").Where("is_hidden = 0")
 	})
 
-	// log.Info("JumpTo initial:" + r.JumpTo.OrElse(""))
+	cnt := 0
 	if r.JumpTo.OrElse("") != "" {
 		// if we want to jump to actors starting with a specific letter, then we need to work out the offset to them
-		cnt := 0
+
 		txList := tx.Select(`distinct actors.name, actors.aliases`)
 		txList.Find(&out.Actors)
 
 		log.Info("count:" + strconv.Itoa(len(out.Actors)))
 		for idx, actor := range out.Actors {
-			/*
-			if strings.ToLower(actor.Name) >= strings.ToLower(r.JumpTo.OrElse("")) {
-				break
-			}
-			*/
-
-			/*
-			log.Info("JumpTo " + r.JumpTo.OrElse(""))
-			log.Info("Name:" + actor.Name)
-			log.Info("Aliases: " + actor.Aliases)
-			*/
-			firstChar, err :=  getFirstCharFromJSON(actor.Aliases)
-			if err != nil {
-
+			if actor.Aliases == "" {
+				// if strings.ToLower(actor.Name) >= strings.ToLower(r.JumpTo.OrElse("")) {
+				// 	break
+				// }
 			} else {
-				// log.Info("fistchar=" + string(firstChar) )
-
-				if actor.Aliases != "" {
-					if string(firstChar) >= r.JumpTo.OrElse("") {
-						break
+				firstChar, err :=  getFirstCharFromJSON(actor.Aliases)
+				if err != nil {
+	
+				} else {
+					if actor.Aliases != "" {
+						if string(firstChar) >= r.JumpTo.OrElse("") {
+							break
+						}
 					}
 				}
 			}
 
 			cnt = idx
 		}
-		offset = (cnt / limit) * limit
+		// offset = (cnt / limit) * limit
+		offset = cnt + 1
 	}
-	out.Offset = offset
+	// out.Offset = offset
 
 	tx = tx.Select(`distinct actors.*, 
 	(select AVG(s.star_rating) scene_avg from scene_cast sc join scenes s on s.id=sc.scene_id where sc.actor_id =actors.id and s.star_rating > 0 and is_hidden=0) as scene_rating_average	
 	`)
 
-	tx.Limit(limit).
-		Offset(offset).
-		Find(&out.Actors)
-
+	// tx.Limit(limit).
+	// 	Offset(offset).
+	// 	Find(&out.Actors)
+	tx.
+	Offset(offset).
+	Limit(limit).
+	Find(&out.Actors)
 	return out
 }
 
