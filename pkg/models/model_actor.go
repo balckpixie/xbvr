@@ -53,6 +53,8 @@ type Actor struct {
 
 	SceneRatingAverage string `json:"scene_rating_average" gorm:"-" `
 	AkaGroups          []Aka  `gorm:"many2many:actor_akas;" json:"aka_groups" xbvrbackup:"-"`
+
+	FaceImageUrl   string  `json:"face_image_url" xbvrbackup:"face_image_url"`
 }
 
 type RequestActorList struct {

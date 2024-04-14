@@ -91,6 +91,9 @@ func (i ActorResource) WebService() *restful.WebService {
 		Metadata(restfulspec.KeyOpenAPITags, tags).
 		Writes(models.Actor{}))
 
+	ws.Route(ws.POST("/setfaceimage").To(i.setActorFaceImage).
+		Metadata(restfulspec.KeyOpenAPITags, tags).
+		Writes(models.Actor{}))
 	return ws
 }
 
@@ -521,6 +524,36 @@ func (i ActorResource) setActorImage(req *restful.Request, resp *restful.Respons
 	actor.Save()
 
 	aa := models.ActionActor{ActorID: actor.ID, ActionType: "setimage", Source: "edit_actor", ChangedColumn: "image_url", NewValue: actor.ImageUrl}
+	aa.Save()
+	resp.WriteHeaderAndEntity(http.StatusOK, actor)
+}
+
+func (i ActorResource) setActorFaceImage(req *restful.Request, resp *restful.Response) {
+	var r RequestSetActorImage
+	err := req.ReadEntity(&r)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	if r.ActorID == 0 || r.Url == "" {
+		return
+	}
+
+	db, _ := models.GetDB()
+	defer db.Close()
+
+	var actor models.Actor
+	err = actor.GetIfExistByPKWithSceneAvg(r.ActorID)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	actor.FaceImageUrl = r.Url
+	actor.AddToImageArray(r.Url)
+	actor.Save()
+
+	aa := models.ActionActor{ActorID: actor.ID, ActionType: "setimage", Source: "edit_actor", ChangedColumn: "face_image_url", NewValue: actor.FaceImageUrl}
 	aa.Save()
 	resp.WriteHeaderAndEntity(http.StatusOK, actor)
 }

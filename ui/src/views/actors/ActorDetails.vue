@@ -39,6 +39,7 @@
                 </b-carousel>
                 <div class="flexcentre">
                 <b-button class="button is-primary is-small" style="display: flex; justify-content: center;" v-on:click="setActorImage()">{{$t('Set Main Image')}}</b-button>
+                <b-button class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="setActorFaceImage()">{{$t('Set Face Image')}}</b-button>
                 <b-button v-if="images.length != 0" class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="deleteActorImage()">{{$t('Delete Image')}}</b-button>
                 <b-button class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="scrapeActorImage()">{{$t('Scrape Image')}}</b-button>
                 </div>
@@ -87,6 +88,25 @@
                     </b-field>
 
                   </div>
+
+                  <div class="image-row">
+                    <div class="image-wrapper">
+                      <b-tooltip  type="is-light" :delay=100>
+                        <vue-load-image>
+                          <img slot="image" :src="getImageURL(actor.face_image_url)" alt="Image" class="thumbnail" @mouseover="showTooltip()" @mouseout="hideTooltip()"  />
+                          <img slot="preloader" :src="getImageURL('https://i.stack.imgur.com/kOnzy.gif')" style="height: 50px;display: block;margin-left:auto;margin-right: auto;" />
+                          <img slot="error" src="/ui/images/blank_female_profile.png" width="80" />
+                        </vue-load-image>
+                      </b-tooltip>
+
+                      <div v-if="casthover" class="tooltip">
+                        <img :src="getImageURL(actor.face_image_url)" alt="Tooltip Image" />
+                      </div>
+                    </div>
+                  </div>
+
+
+
                   <div class="column pt-0">
                     <div class="is-pulled-right">
                       <actor-favourite-button :actor="actor"/>&nbsp;
@@ -281,6 +301,7 @@ export default {
       akas: [],
       extrefs: [],
       colleagues: [],
+      casthover: false,
     }
   },
   computed: {
@@ -326,7 +347,13 @@ export default {
     activeTab: function (newval, oldval) {      
       }
     },  
-    methods: {
+  methods: {
+    showTooltip(idx) {
+      this.casthover = true;
+    },
+    hideTooltip(idx) {
+      this.casthover = false;
+    },
     getImageURL (u, size) {
       if (u.startsWith('http') || u.startsWith('https')) {
         return '/img/' + size + '/' + u.replace('://', ':/')
@@ -468,6 +495,17 @@ export default {
     },
     setActorImage (val) {
       ky.post('/api/actor/setimage', {
+      json: {
+        actor_id: this.actor.id,
+        url: this.images[this.carouselSlide]
+      }}).json().then(data => {        
+        this.$store.state.overlay.actordetails.actor = data
+        this.carouselSlide=0
+        this.$store.dispatch('actorList/load', { offset: this.$store.state.actorList.offset - this.$store.state.actorList.limit })
+      })    
+    },
+    setActorFaceImage (val) {
+      ky.post('/api/actor/setfaceimage', {
       json: {
         actor_id: this.actor.id,
         url: this.images[this.carouselSlide]

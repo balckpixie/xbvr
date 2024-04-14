@@ -815,6 +815,21 @@ func Migrate() {
 			},
 		},
 
+		{
+			ID: "0075-actor-faceimage-url",
+			Migrate: func(tx *gorm.DB) error {
+				type Actor struct {
+					FaceImageUrl string `json:"face_image_url" xbvrbackup:"face_image_url"`
+				}
+				// return tx.AutoMigrate(Actor{}).Error
+				err := tx.AutoMigrate(Actor{}).Error
+				if err != nil {
+					return err
+				}
+				return nil
+			},
+		},
+
 		// ===============================================================================================
 		// Put DB Schema migrations above this line and migrations that rely on the updated schema below
 		// ===============================================================================================
@@ -1933,6 +1948,32 @@ func Migrate() {
 					err = tx.Exec(sql).Error
 				}
 				return err
+			},
+		},
+
+		{
+			ID: "0076-actor-faceimage-setdefaultdata",
+			Migrate: func(tx *gorm.DB) error {
+				var actors []models.Actor
+				err := tx.Where("face_image_url is null").Find(&actors).Error
+				if err != nil {
+					return err
+				}
+
+				for _, actor := range actors {
+					changed := false
+					if actor.FaceImageUrl == "" {
+						actor.FaceImageUrl = actor.ImageUrl
+						changed = true
+					}
+					if changed {
+						err = tx.Save(&actor).Error
+						if err != nil {
+							return err
+						}
+					}
+				}
+				return nil
 			},
 		},
 	})
