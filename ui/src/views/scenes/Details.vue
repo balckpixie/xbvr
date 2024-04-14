@@ -514,7 +514,8 @@ export default {
           }
           label += `, ${age} in scene`
         }
-        let img = actor.image_url
+        //let img = actor.image_url
+        let img = actor.face_image_url
         if (img == "" ){
           img = "blank"  // forces an error image to load, blank won't display an image
         }
