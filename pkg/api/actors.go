@@ -2,7 +2,9 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -10,6 +12,7 @@ import (
 
 	restfulspec "github.com/emicklei/go-restful-openapi/v2"
 	"github.com/emicklei/go-restful/v3"
+	"github.com/gocolly/colly/v2"
 	"github.com/xbapps/xbvr/pkg/models"
 )
 
@@ -83,6 +86,11 @@ func (i ActorResource) WebService() *restful.WebService {
 	ws.Route(ws.POST("/edit_extrefs/{id}").To(i.editActorExtRefs).
 		Metadata(restfulspec.KeyOpenAPITags, tags).
 		Writes(models.ExternalReferenceLink{}))
+
+	ws.Route(ws.POST("/searchImage").To(i.searchActorImage).
+		Metadata(restfulspec.KeyOpenAPITags, tags).
+		Writes(models.Actor{}))
+
 	return ws
 }
 
@@ -515,6 +523,207 @@ func (i ActorResource) setActorImage(req *restful.Request, resp *restful.Respons
 	aa := models.ActionActor{ActorID: actor.ID, ActionType: "setimage", Source: "edit_actor", ChangedColumn: "image_url", NewValue: actor.ImageUrl}
 	aa.Save()
 	resp.WriteHeaderAndEntity(http.StatusOK, actor)
+}
+
+func (i ActorResource) searchActorImage(req *restful.Request, resp *restful.Response) {
+	var r RequestSetActorImage
+	err := req.ReadEntity(&r)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	if r.ActorID == 0 {
+		return
+	}
+
+	db, _ := models.GetDB()
+	defer db.Close()
+
+	var actor models.Actor
+	err = actor.GetIfExistByPKWithSceneAvg(r.ActorID)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	
+	imageURLs, err := getImageURLs("(\"" + actor.Name + "\") えろ")
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+
+	if len(imageURLs) == 0 || r.ActorID == 0 {
+		return
+	}
+
+	actor.ImageUrl = r.Url
+	for _, imageURL := range imageURLs {
+		actor.AddToImageArray(imageURL)
+	}
+	actor.Save()
+
+	// aa := models.ActionActor{ActorID: actor.ID, ActionType: "setimage", Source: "edit_actor", ChangedColumn: "image_url", NewValue: actor.ImageUrl}
+	aa := models.ActionActor{ActorID: actor.ID, ActionType: "setimage", Source: "edit_actor", ChangedColumn: "image_arr", NewValue: actor.ImageArr}
+	aa.Save()
+	resp.WriteHeaderAndEntity(http.StatusOK, actor)
+}
+
+// URLから指定されたクエリパラメータを削除する関数
+func removeQueryParams(u string, paramsToRemove ...string) (string, error) {
+	parsedURL, err := url.Parse(u)
+	if err != nil {
+		return "", err
+	}
+
+	query := parsedURL.Query()
+	for _, param := range paramsToRemove {
+		query.Del(param)
+	}
+
+	// クエリパラメータを削除したURLを再構築
+	parsedURL.RawQuery = query.Encode()
+	return parsedURL.String(), nil
+}
+
+// 指定された文字列とURLの先頭部分が一致するかどうかを確認する関数
+func isURLStartingWith(s, prefix string) bool {
+	// URLをパース
+	u, err := url.Parse(s)
+	if err != nil {
+		return false // URLの解析に失敗した場合は一致しないとみなす
+	}
+
+	// スキーム部分を取得し、指定された文字列と一致するかどうかを確認
+	scheme := strings.ToLower(u.Scheme)
+	return strings.HasPrefix(scheme, strings.ToLower(prefix))
+}
+
+func getImageURLs(query string) ([]string, error) {
+	var imageURLs []string
+	// var modifyImages []string
+	var cookies []*http.Cookie
+
+	c0 := colly.NewCollector()
+	c0.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99 Safari/537.36"
+	c0.OnResponse(func(r *colly.Response) {
+		// Access the cookies
+		cookies = c0.Cookies(r.Request.URL.String())
+		for _, cookie := range cookies {
+			// log.Println("Cookie:", cookie.Name, "Value:", cookie.Value)
+			if cookie.Name == "SRCHHPGUSR" {
+				cookie.Value = cookie.Value + "&ADLT=OFF"
+			}
+		}
+	})
+
+	if err := c0.Visit("https://www.bing.com/"); err != nil {
+		return nil, err
+	}
+
+	// Bing画像検索のURL
+	//searchURL := fmt.Sprintf("https://www.bing.com/images/search?q=%s&qft=+filterui%3Aaspect-tall+filterui%3Aphoto-photo&first=1", url.QueryEscape(query))
+	searchURL := fmt.Sprintf("https://www.bing.com/images/search?q=%s&qft=+filterui:aspect-tall", url.QueryEscape(query))
+
+	fmt.Println("searchURL:", searchURL)
+	// Collyのインスタンスを作成
+	c := colly.NewCollector()
+	// ユーザーエージェントを設定
+	c.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99 Safari/537.36"
+
+	c.OnRequest(func(r *colly.Request) {
+		c.SetCookies("http://www.bing.com", cookies)
+	})
+	c.OnResponse(func(r *colly.Response) {
+		// Access the cookies
+		// cookies := c.Cookies(r.Request.URL.String())
+		// for _, cookie := range cookies {
+		// 	log.Println("Cookie:", cookie.Name, "Value:", cookie.Value)
+		// }
+
+		// err := ioutil.WriteFile("output.html", r.Body, 0644)
+		// if err != nil {
+		// 	fmt.Println("ファイルに書き込めませんでした:", err)
+		// } else {
+		// 	fmt.Println("ファイルに書き込みました: output.html")
+		// }
+	})
+
+	// Bing画像検索のページをスクレイピング
+	// c.OnHTML("img[src]", func(e *colly.HTMLElement) {
+	// 	// 画像のURLを取得
+	// 	imageURL := e.Attr("src")
+	// 	imageURLs = append(imageURLs, imageURL)
+	// })
+
+	// OnHTML メソッドでセレクターを指定してハンドラーを追加
+	c.OnHTML("div.imgpt > a.iusc", func(e *colly.HTMLElement) {
+		// ページから href を取得
+		href := e.Attr("href")
+		fmt.Println("Found href:", href)
+		fmt.Println("Image src :", getCollectImageUrl(href))
+		imageURL := getCollectImageUrl(href)
+		if imageURL != "" {
+			imageURLs = append(imageURLs, imageURL)
+		}
+	})
+
+	// エラー処理
+	c.OnError(func(r *colly.Response, err error) {
+		fmt.Println("Request URL:", r.Request.URL, "failed with response:", r, "\nError:", err)
+	})
+
+	// Bing画像検索のページを訪れる
+	if err := c.Visit(searchURL); err != nil {
+		return nil, err
+	}
+
+/*
+	for _, imageURL := range imageURLs {
+		if strings.HasPrefix(imageURL, "https://th.bing.com/th") {
+			modifiedURL, err := removeQueryParams(imageURL, "w", "h")
+			if err == nil {
+				fmt.Println(modifiedURL)
+				// modifyImages = append(modifyImages, modifiedURL)
+				// すでにmodifyImagesに同じURLが含まれていないかチェック
+				alreadyExists := false
+				for _, existingURL := range modifyImages {
+					if existingURL == modifiedURL {
+						alreadyExists = true
+						break
+					}
+				}
+				if !alreadyExists {
+					fmt.Println(modifiedURL)
+					modifyImages = append(modifyImages, modifiedURL)
+				}
+			}
+		}
+	}
+*/
+
+	return imageURLs, nil
+}
+
+func getCollectImageUrl(str string) string {
+	// re := regexp.MustCompile(`/images/search\?.*?mediaurl=([^&]+)`)
+	//re := regexp.MustCompile(`/images/search\?.*?mediaurl=([^.]+\.jpg)|/images/search\?.*?mediaurl=([^&]+)(?=&)`)
+	re := regexp.MustCompile(`/images/search\?.*?mediaurl=(.*\.jpg)|/images/search\?.*?mediaurl=(.*\.png)|/images/search\?.*?mediaurl=([^&]+)`)
+    match := re.FindStringSubmatch(str)
+	if len(match) > 1 {
+		// fmt.Println("抽出された文字列:", match[1])
+		decodedURL, err := url.QueryUnescape(match[1])
+		if err != nil {
+			// fmt.Println("URLデコードに失敗しました:", err)
+			return ""
+		}
+
+		fmt.Println("decodedURL:", decodedURL)
+		return decodedURL
+	} else {
+		// fmt.Println("マッチする文字列が見つかりませんでした")
+		return ""
+	}
 }
 
 func (i ActorResource) deleteActorImage(req *restful.Request, resp *restful.Response) {
