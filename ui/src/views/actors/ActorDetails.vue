@@ -41,7 +41,8 @@
                 <b-button class="button is-primary is-small" style="display: flex; justify-content: center;" v-on:click="setActorImage()">{{$t('Set Main Image')}}</b-button>
                 <b-button class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="setActorFaceImage()">{{$t('Set Face Image')}}</b-button>
                 <b-button v-if="images.length != 0" class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="deleteActorImage()">{{$t('Delete Image')}}</b-button>
-                <b-button class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="scrapeActorImage()">{{$t('Scrape Image')}}</b-button>
+                <b-button class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="scrapeActorImage('エロ')">{{$t('Scrape Image')}}</b-button>
+                <b-button class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="scrapeActorImage('グラビア')">{{$t('Scrape Gravia')}}</b-button>
                 </div>
               </b-tab-item>
             </b-tabs>
@@ -528,7 +529,8 @@ export default {
       ky.post('/api/actor/searchImage', {
       json: {
         actor_id: this.actor.id,
-        url: this.images[this.carouselSlide]
+        url: this.images[this.carouselSlide],
+        keyword: val
       }}).json().then(data => {
         this.$store.state.overlay.actordetails.actor = data
       })    

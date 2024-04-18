@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	// "github.com/blevesearch/bleve/v2/analysis/analyzer/keyword"
 	restfulspec "github.com/emicklei/go-restful-openapi/v2"
 	"github.com/emicklei/go-restful/v3"
 	"github.com/gocolly/colly/v2"
@@ -278,6 +279,11 @@ type RequestSetActorImage struct {
 	Url     string `json:"url"`
 }
 
+type RequestSearchActorImage struct {
+	ActorID uint   `json:"actor_id"`
+	Url     string `json:"url"`
+	Keyword string `json:"keyword"`
+}
 type RequestSetActorRating struct {
 	Rating float64 `json:"rating"`
 }
@@ -559,7 +565,7 @@ func (i ActorResource) setActorFaceImage(req *restful.Request, resp *restful.Res
 }
 
 func (i ActorResource) searchActorImage(req *restful.Request, resp *restful.Response) {
-	var r RequestSetActorImage
+	var r RequestSearchActorImage
 	err := req.ReadEntity(&r)
 	if err != nil {
 		log.Error(err)
@@ -580,7 +586,7 @@ func (i ActorResource) searchActorImage(req *restful.Request, resp *restful.Resp
 		return
 	}
 	
-	imageURLs, err := getImageURLs("(\"" + actor.Name + "\") えろ")
+	imageURLs, err := getImageURLs("(\"" + actor.Name + "\") " + r.Keyword)
 	if err != nil {
 		fmt.Println("Error:", err)
 		return
