@@ -13,7 +13,7 @@
       <div class="column">
         <strong>{{total}} results</strong>
       </div>
-      <div class="column">
+      <!-- <div class="column">
         <b-tooltip :label="$t('Press o/left arrow to page back, p/right arrow to page forward')" :delay="500" position="is-top">
           <b-pagination
               :total="total"
@@ -33,7 +33,7 @@
           </b-pagination>
         </b-tooltip>
         <span v-show="show_actor_id==='never show, just need the computed show_actor_id to trigger '">{{show_actor_id}}</span>
-      </div>
+      </div> -->
       <div class="column">
         <div class="is-pulled-right">
           <b-field>
@@ -51,47 +51,15 @@
         </div>
       </div>
     </div>
-        <!-- <div class="columns is-gapless is-centered" v-if="hideLetters">
-          <b-radio-button v-model="jumpTo" native-value="" size="is-small"></b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="A" size="is-small">A</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="B" size="is-small">B</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="C" size="is-small">C</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="D" size="is-small">D</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="E" size="is-small">E</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="F" size="is-small">F</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="G" size="is-small">G</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="H" size="is-small">H</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="I" size="is-small">I</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="J" size="is-small">J</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="K" size="is-small">K</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="L" size="is-small">L</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="M" size="is-small">M</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="N" size="is-small">N</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="O" size="is-small">O</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="P" size="is-small">P</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="Q" size="is-small">Q/R</b-radio-button>          
-          <b-radio-button v-model="jumpTo" native-value="S" size="is-small">S</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="T" size="is-small">T</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="U" size="is-small">U/V</b-radio-button>          
-          <b-radio-button v-model="jumpTo" native-value="W" size="is-small">W/X/Y/Z</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="あ" size="is-small">あ</b-radio-button>          
-          <b-radio-button v-model="jumpTo" native-value="か" size="is-small">か</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="さ" size="is-small">さ</b-radio-button>          
-          <b-radio-button v-model="jumpTo" native-value="た" size="is-small">た</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="な" size="is-small">な</b-radio-button>          
-          <b-radio-button v-model="jumpTo" native-value="は" size="is-small">は</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="ま" size="is-small">ま</b-radio-button>          
-          <b-radio-button v-model="jumpTo" native-value="や" size="is-small">や</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="ら" size="is-small">ら</b-radio-button>          
-          <b-radio-button v-model="jumpTo" native-value="わ" size="is-small">わ</b-radio-button>
-        </div> -->
 
         <div v-if="hideLetters" style="margin-top: -0.9rem; margin-bottom: 1.0rem;">
           <div class="columns is-gapless is-centered" style="margin-bottom: 0.2rem;">
+            <b-button v-on:click="prevpage2()" size="is-small" style="margin-left: 0.2rem;">＜</b-button>
             <b-radio-button v-model="jumpTo" native-value="-" size="is-small"></b-radio-button>
             <div v-for="group in groups" :key="group">
               <b-radio-button v-model="selectedGroup" :native-value="group" size="is-small">{{ group }}</b-radio-button>
             </div>
+            <b-button v-on:click="nextpage2()" size="is-small" style="margin-left: 0.2rem;">＞</b-button>
           </div>
           <div class="columns is-gapless is-centered" style="display:block" v-for="group in groups" v-if="selectedGroup === group">
             <div class="buttons is-centered is-multiline">
@@ -240,6 +208,7 @@ export default {
           this.$store.state.actorList.filters.jumpTo = ''
         } else {
           this.$store.state.actorList.filters.jumpTo = value
+          this.selectedLetter = value
         }
         this.reloadList()
       }
@@ -257,7 +226,7 @@ export default {
       }
     },
     isLoading () {
-      this.current = this.$store.state.actorList.offset / this.$store.state.actorList.limit
+      //this.current = this.$store.state.actorList.offset / this.$store.state.actorList.limit
       return this.$store.state.actorList.isLoading
     },
     actors () {
@@ -303,6 +272,7 @@ export default {
       })
     },
     async pageChanged () {      
+      this.$store.state.actorList.filters.jumpTo = this.selectedLetter
       this.$store.state.actorList.offset = (this.current -1) * this.$store.state.actorList.limit
       this.$store.dispatch('actorList/load', { offset: this.$store.state.actorList.offset })
     },
@@ -331,6 +301,36 @@ export default {
         this.current -= 1
       } else {
         this.current = Math.floor(this.total / this.limit) + 1        
+      }      
+      this.pageChanged()
+    },
+    
+    nextpage2 () {
+      if (this.$store.state.overlay.actordetails.show){
+        return 
+      }
+      if (this.$store.state.overlay.details.show){
+        return 
+      }
+      if (this.current * this.limit >= this.total) {
+        this.current = 1
+      } else {
+        this.current += 1
+      }      
+      this.pageChanged()
+    },
+    prevpage2 () {      
+      if (this.$store.state.overlay.actordetails.show){
+        return 
+      }
+      if (this.$store.state.overlay.details.show){
+        return 
+      }
+      if (this.current > 1) {
+        this.current -= 1
+      } else {
+        //this.current = Math.floor(this.total / this.limit) + 1
+        this.current = 1
       }      
       this.pageChanged()
     },

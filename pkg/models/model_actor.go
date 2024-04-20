@@ -518,7 +518,7 @@ func QueryActors(r RequestActorList, enablePreload bool) ResponseActorList {
 			cnt = idx
 		}
 		// offset = (cnt / limit) * limit
-		offset = cnt + 1
+		offset = offset + cnt + 1
 	}
 	// out.Offset = offset
 

@@ -494,6 +494,25 @@ export default {
       const arr = JSON.parse(jsonArr);
       return  arr.join(", ");       
     },
+    // getFirstCharacter() {
+    //   if (this.actor.aliases && this.actor.aliases.length > 0) {
+    //     return this.actor.aliases[0][0];
+    //   } else {
+    //     return "";
+    //   }
+    // },
+    getFirstCharFromJSON(jsonStr) {
+      try {
+        const arr = JSON.parse(jsonStr);
+        if (arr.length > 0 && arr[0].length > 0) {
+          return arr[0].charAt(0);
+        } else {
+          throw new Error("empty array or empty first element");
+        }
+      } catch (error) {
+        return error;
+      }
+    },
     setActorImage (val) {
       ky.post('/api/actor/setimage', {
       json: {
@@ -502,7 +521,9 @@ export default {
       }}).json().then(data => {        
         this.$store.state.overlay.actordetails.actor = data
         this.carouselSlide=0
-        this.$store.dispatch('actorList/load', { offset: this.$store.state.actorList.offset - this.$store.state.actorList.limit })
+        var initialChar = this.getFirstCharFromJSON(this.actor.aliases)
+        this.$store.state.actorList.filters.jumpTo = initialChar
+        this.$store.dispatch('actorList/load', { jumpTo: initialChar, offset: this.$store.state.actorList.offset - this.$store.state.actorList.limit })
       })    
     },
     setActorFaceImage (val) {
@@ -513,7 +534,9 @@ export default {
       }}).json().then(data => {        
         this.$store.state.overlay.actordetails.actor = data
         this.carouselSlide=0
-        this.$store.dispatch('actorList/load', { offset: this.$store.state.actorList.offset - this.$store.state.actorList.limit })
+        var initialChar = this.getFirstCharFromJSON(this.actor.aliases)
+        this.$store.state.actorList.filters.jumpTo = initialChar
+        this.$store.dispatch('actorList/load', { jumpTo: initialChar, offset: this.$store.state.actorList.offset - this.$store.state.actorList.limit })
       })    
     },
     deleteActorImage (val) {
