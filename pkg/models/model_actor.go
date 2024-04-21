@@ -2,10 +2,11 @@ package models
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
-	"fmt"
+	"unicode/utf8"
 
 	"github.com/avast/retry-go/v4"
 	"github.com/jinzhu/gorm"
@@ -99,16 +100,43 @@ type ActorLink struct {
 	Type string `json:"type"`
 }
 
-func getFirstCharFromJSON(jsonStr string) (rune, error) {
-	var arr []string
-	err := json.Unmarshal([]byte(jsonStr), &arr)
-	if err != nil {
-		return 0, err
-	}
-	if len(arr) > 0 && len(arr[0]) > 0 {
-		return []rune(arr[0])[0], nil
-	}
-	return 0, fmt.Errorf("empty array or empty first element")
+// func getFirstCharsFromJSON(jsonStr string, count int) (string, error) {
+//     var arr []string
+//     err := json.Unmarshal([]byte(jsonStr), &arr)
+//     if err != nil {
+//         return "", err
+//     }
+//     if len(arr) > 0 && len(arr[0]) > 0 {
+//         if len(arr[0]) >= count {
+//             return arr[0][:count], nil
+//         } else {
+//             return arr[0], nil
+//         }
+//     }
+//     return "", fmt.Errorf("empty array or empty first element")
+// }
+func getFirstCharsFromJSON(jsonStr string, count int) (string, error) {
+    var arr []string
+    err := json.Unmarshal([]byte(jsonStr), &arr)
+    if err != nil {
+        return "", err
+    }
+    if len(arr) > 0 && len(arr[0]) > 0 {
+        return truncateUTF8String(arr[0], count), nil
+    }
+    return "", fmt.Errorf("empty array or empty first element")
+}
+
+// UTF-8エンコードを考慮して文字列を切り詰める
+func truncateUTF8String(s string, count int) string {
+    runeCount := 0
+    for i := range s {
+        runeCount++
+        if runeCount > count {
+            return s[:i]
+        }
+    }
+    return s
 }
 
 func (i *Actor) Save() error {
@@ -491,6 +519,7 @@ func QueryActors(r RequestActorList, enablePreload bool) ResponseActorList {
 
 	cnt := 0
 	if r.JumpTo.OrElse("") != "" {
+		
 		// if we want to jump to actors starting with a specific letter, then we need to work out the offset to them
 
 		txList := tx.Select(`distinct actors.name, actors.aliases`)
@@ -503,7 +532,10 @@ func QueryActors(r RequestActorList, enablePreload bool) ResponseActorList {
 				// 	break
 				// }
 			} else {
-				firstChar, err :=  getFirstCharFromJSON(actor.Aliases)
+				
+				count := utf8.RuneCountInString(r.JumpTo.OrElse(""))
+
+				firstChar, err :=  getFirstCharsFromJSON(actor.Aliases, count)
 				if err != nil {
 	
 				} else {

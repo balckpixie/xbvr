@@ -501,16 +501,17 @@ export default {
     //     return "";
     //   }
     // },
-    getFirstCharFromJSON(jsonStr) {
+    getFirstCharsFromJSON(jsonStr) {
       try {
         const arr = JSON.parse(jsonStr);
         if (arr.length > 0 && arr[0].length > 0) {
-          return arr[0].charAt(0);
+          //return arr[0].charAt(0);
+          return arr[0].substring(0, Math.min(arr[0].length, 3));
         } else {
           throw new Error("empty array or empty first element");
         }
       } catch (error) {
-        return error;
+        return "";
       }
     },
     setActorImage (val) {
@@ -521,7 +522,7 @@ export default {
       }}).json().then(data => {        
         this.$store.state.overlay.actordetails.actor = data
         this.carouselSlide=0
-        var initialChar = this.getFirstCharFromJSON(this.actor.aliases)
+        var initialChar = this.getFirstCharsFromJSON(this.actor.aliases)
         this.$store.state.actorList.filters.jumpTo = initialChar
         this.$store.dispatch('actorList/load', { jumpTo: initialChar, offset: this.$store.state.actorList.offset - this.$store.state.actorList.limit })
       })    
@@ -534,7 +535,7 @@ export default {
       }}).json().then(data => {        
         this.$store.state.overlay.actordetails.actor = data
         this.carouselSlide=0
-        var initialChar = this.getFirstCharFromJSON(this.actor.aliases)
+        var initialChar = this.getFirstCharsFromJSON(this.actor.aliases)
         this.$store.state.actorList.filters.jumpTo = initialChar
         this.$store.dispatch('actorList/load', { jumpTo: initialChar, offset: this.$store.state.actorList.offset - this.$store.state.actorList.limit })
       })    
