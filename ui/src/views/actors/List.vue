@@ -48,6 +48,15 @@
               L
             </b-radio-button>
           </b-field>
+
+        </div>
+        <div class="is-pulled-right">
+            <p>Show Face</p>
+            <b-field>
+              <b-switch v-model="showFace">
+                  {{ showFace }}
+              </b-switch>
+            </b-field>
         </div>
       </div>
     </div>
@@ -73,7 +82,7 @@
     <div class="columns is-multiline">
       <div :class="['column', 'is-multiline', cardSizeClass]"
            v-for="actor in actors" :key="actor.id">
-        <ActorCard :actor="actor"/>
+        <ActorCard :actor="actor" :showFace="showFace"/>
       </div>
     </div>
       <div class="columns is-gapless is-centered" v-if="hideLetters">
@@ -148,7 +157,8 @@ export default {
         'わ': ['わ', 'を', 'ん']
       },
       selectedGroup: 'あ',
-      selectedLetter: ''
+      selectedLetter: '',
+      showFace:false
     }
   },
   watch: {

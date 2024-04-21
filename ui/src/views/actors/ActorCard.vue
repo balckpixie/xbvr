@@ -2,7 +2,7 @@
   <div class="card is-shadowless">
     <div class="card-image">
       <div class="bbox"
-           v-bind:style="{backgroundImage: `url(${getImageURL(actor.image_url)})`, backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', opacity:isAvailable(actor) ? 1.0 : isAvailOpactiy}"
+           v-bind:style="{backgroundImage: `url(${getActorImageURL(actor)})`, backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', opacity:isAvailable(actor) ? 1.0 : isAvailOpactiy}"
            @click="showDetails(actor)"
            @mouseover="preview = true"
            @mouseleave="preview = false">
@@ -59,7 +59,7 @@ import { tr } from 'date-fns/locale'
 
 export default {
   name: 'ActorCard',
-  props: { actor: Object, colleague: String },
+  props: { actor: Object, colleague: String, showFace: Boolean },
    components: {ActorFavouriteButton, ActorWatchlistButton, VueLoadImage, ActorEditButton},
   data () {
     return {
@@ -77,6 +77,10 @@ export default {
     },
   },
   methods: {
+    getActorImageURL(actor) {
+        return this.showFace ? actor.face_image_url : actor.image_url;
+    },
+
     getAliases(u) {
       if (u=='' || u == undefined) {
         return ""
