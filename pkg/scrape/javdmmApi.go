@@ -142,6 +142,9 @@ func getJSONResponse(url string) (*JSONResponse, error) {
 
 func ScrapeDMMapi(out *[]models.ScrapedScene, queryString string) {
 
+	if queryString == "" || queryString == "null" {
+		return
+	}
 	sceneCollector := createCollector("api.dmm.com")
 
 	sceneCollector.OnResponse(func(r *colly.Response) {

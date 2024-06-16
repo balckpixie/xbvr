@@ -38,11 +38,15 @@
                   </template>
                 </b-carousel>
                 <div class="flexcentre">
-                <b-button class="button is-primary is-small" style="display: flex; justify-content: center;" v-on:click="setActorImage()">{{$t('Set Main Image')}}</b-button>
-                <b-button class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="setActorFaceImage()">{{$t('Set Face Image')}}</b-button>
-                <b-button v-if="images.length != 0" class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="deleteActorImage()">{{$t('Delete Image')}}</b-button>
-                <b-button class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="scrapeActorImage('エロ')">{{$t('Scrape Image')}}</b-button>
-                <b-button class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="scrapeActorImage('グラビア')">{{$t('Scrape Gravia')}}</b-button>
+                <b-button class="button is-primary is-small" style="display: flex; justify-content: center;" v-on:click="setActorImage()">{{$t('Set Main')}}</b-button>
+                <b-button class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="setActorFaceImage()">{{$t('Set Face')}}</b-button>
+                <b-button v-if="images.length != 0" class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="deleteActorImage()">{{$t('Delete')}}</b-button>
+                <span style="display: flex; justify-content: center;margin-left: 1em;" >Scrape</span>
+                <b-button class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="scrapeActorImage('b', 'エロ')">{{$t('Bing')}}</b-button>
+                <b-button class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="scrapeActorImage('g', 'エロ')">{{$t('Google')}}</b-button>
+                <b-button class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="scrapeActorImage('g', 'セクシー女優 全裸')">{{$t('Google2')}}</b-button>
+                <b-button class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="scrapeActorImage('g', 'グラビア')">{{$t('Gravia')}}</b-button>
+                <b-button class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="scrapeActorImage('g', '顔')">{{$t('Face')}}</b-button>
                 </div>
               </b-tab-item>
             </b-tabs>
@@ -549,12 +553,13 @@ export default {
         this.$store.state.overlay.actordetails.actor = data
       })    
     },
-    scrapeActorImage (val) {
+    scrapeActorImage (site,val) {
       ky.post('/api/actor/searchImage', {
       json: {
         actor_id: this.actor.id,
         url: this.images[this.carouselSlide],
-        keyword: val
+        keyword: val,
+        site: site
       }}).json().then(data => {
         this.$store.state.overlay.actordetails.actor = data
       })    

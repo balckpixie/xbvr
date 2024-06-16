@@ -929,9 +929,9 @@ watch:{
       }
 
       let tileHeight = 200
-      if (this.currentFile?.projection === 'flat')
+      if (file.projection === 'flat')
         {
-          tileHeight = (this.currentFile.video_height / this.currentFile.video_width) * 200;
+          tileHeight = (file.video_height / file.video_width) * 200;
       }
 
       const thumbnailUrl = '/api/dms/thumbnail/' + file.id
@@ -942,7 +942,7 @@ watch:{
               sprites: [
                 {
                   url: thumbnailUrl,
-                  duration: 6000,
+                  duration: file.duration,
                   start: 25,
                   interval: 30,
                   width: 200,

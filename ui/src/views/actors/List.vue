@@ -38,6 +38,9 @@
         <div class="is-pulled-right">
           <b-field>
             <span class="list-header-label">{{$t('Card size')}}</span>
+            <b-radio-button v-model="cardSize" native-value="0" size="is-small">
+              SS
+            </b-radio-button>
             <b-radio-button v-model="cardSize" native-value="1" size="is-small">
               S
             </b-radio-button>
@@ -179,6 +182,9 @@ export default {
       set (value) {
         this.$store.state.actorList.filters.cardSize = value
         switch (value){
+          case "0":
+            this.limit=24
+            break
           case "1":
             this.limit=18
             break
@@ -225,6 +231,8 @@ export default {
     },
     cardSizeClass () {
       switch (this.$store.state.actorList.filters.cardSize) {
+        case '0':
+          return 'is-custom-one-eighth'
         case '1':
           return 'is-2'
         case '2':
@@ -351,5 +359,9 @@ export default {
 <style scoped>
   .list-header-label {
     padding-right: 1em;
+  }
+  .is-custom-one-eighth {
+    flex: 0 0 12.5%;
+    max-width: 12.5%;
   }
 </style>
