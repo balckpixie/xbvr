@@ -337,23 +337,8 @@ func trimPrefix(a, b string) string {
 
 func GetSceneNo(file models.File) string {
 
-	// pattern := `[a-zA-Z0-9]{2,6}-\d{2,6}`
-	// base := filepath.Base(file.Filename)
-	// input := base[:len(base)-len(filepath.Ext(base))]
-	// re := regexp.MustCompile(pattern)
-	// matches := re.FindStringSubmatch(input)
-
-	// if len(matches) > 0 {
-	// 	// ② 一致した部分があれば、それを返す
-	// 	secondPattern := `-(R\d{1,2})`
-	// 	re2 := regexp.MustCompile(secondPattern)
-	// 	matches2 := re2.FindStringSubmatch(input)
-	// 	if len(matches2) > 0 {
-	// 		return matches2[1] // ③ R1 にマッチする部分を返す
-	// 	}
-	// }
-
-	pattern := `([a-zA-Z0-9]{2,6}-\d{2,6})(.*)`
+	//4k2.com@juvr00208_3_8k.mp4
+	pattern := `([a-zA-Z0-9]{2,9}(-|_)(\d{1,6}))`
 	base := filepath.Base(file.Filename)
 	input := base[:len(base)-len(filepath.Ext(base))]
 
@@ -363,8 +348,8 @@ func GetSceneNo(file models.File) string {
 
 	if len(matches) > 0 {
 		// matchedPart := matches[1]  // 最初のサブマッチンググループ: ([a-zA-Z0-9]{2,6}-\d{2,6})
-		nextPart := matches[2]
-		secondPattern := `-([a-zA-Z0-9]{1})`
+		nextPart := matches[3]
+		secondPattern := `([a-zA-Z0-9]{1})`
 		re2 := regexp.MustCompile(secondPattern)
 		matches2 := re2.FindStringSubmatch(nextPart)
 		if len(matches2) > 0 {
