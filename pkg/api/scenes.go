@@ -662,11 +662,15 @@ func (i SceneResource) searchSceneIndex(req *restful.Request, resp *restful.Resp
 			continue
 		}
 
+<<<<<<< HEAD
 		if v.Score < 1.0 && query.Query == v.ID {
 			scene.Score = 1.0
 		} else {
 			scene.Score = v.Score
 		}
+=======
+		scene.Score = v.Score
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
 		scenes = append(scenes, scene)
 	}
 

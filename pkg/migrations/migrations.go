@@ -806,6 +806,7 @@ func Migrate() {
 		},
 
 		{
+<<<<<<< HEAD
 			ID: "0076-file-thumbnail-flag",
 			Migrate: func(tx *gorm.DB) error {
 				type File struct {
@@ -827,6 +828,14 @@ func Migrate() {
 					return err
 				}
 				return nil
+=======
+			ID: "0076-thumbnail-flag",
+			Migrate: func(tx *gorm.DB) error {
+				type Scene struct {
+					HasThumbnail bool `json:"has_thumbnail" gorm:"default:false"`
+				}
+				return tx.AutoMigrate(Scene{}).Error
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
 			},
 		},
 
@@ -1950,6 +1959,7 @@ func Migrate() {
 				return err
 			},
 		},
+<<<<<<< HEAD
 
 		{
 			ID: "0076-actor-faceimage-setdefaultdata",
@@ -1976,6 +1986,8 @@ func Migrate() {
 				return nil
 			},
 		},
+=======
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
 	})
 
 	if err := m.Migrate(); err != nil {

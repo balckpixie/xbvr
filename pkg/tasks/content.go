@@ -359,9 +359,12 @@ func Scrape(toScrape string, singleSceneURL string, singeScrapeAdditionalInfo st
 }
 
 func ScrapeJAVR(queryString string, scraper string) {
+<<<<<<< HEAD
 	if queryString == "" {
 		return
 	}
+=======
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
 	if !models.CheckLock("scrape") {
 		models.CreateLock("scrape")
 		defer models.RemoveLock("scrape")

@@ -27,6 +27,7 @@ import (
 
 var allowedVideoExt = []string{".mp4", ".avi", ".wmv", ".mpeg4", ".mov", ".mkv"}
 
+<<<<<<< HEAD
 func ExtractDVDIDLogic(filename string) string {
 	dvdid := ""
 	regex := regexp.MustCompile(`[a-zA-Z0-9]{2,6}-\d{2,6}`)
@@ -54,6 +55,8 @@ func ExtractDVDIDLogic(filename string) string {
 	return dvdid
 }
 
+=======
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
 func ExtractFormat(input string) []string {
 	re := regexp.MustCompile(`[A-Z]{4}-\d{3,4}`)
 	return re.FindAllString(input, -1)
@@ -93,7 +96,10 @@ func RescanVolumes(id int) {
 		// Match Scene to File
 		var files []models.File
 		var scenes []models.Scene
+<<<<<<< HEAD
 		var scenes2 []models.Scene
+=======
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
 		var extrefs []models.ExternalReference
 
 		tlog.Infof("Matching Scenes to known filenames")
@@ -117,6 +123,7 @@ func RescanVolumes(id int) {
 			}
 
 			if len(scenes) == 0 {
+<<<<<<< HEAD
 				// queryString := ExtractFormat(unescapedFilename)
 				// if len(queryString) > 0 {
 				// 	ScrapeJAVR(queryString[0] ,"dmm") 
@@ -128,6 +135,11 @@ func RescanVolumes(id int) {
 					if len(scenes2) == 0 || err != nil {
 						ScrapeJAVR(queryString ,"dmm") 
 					}
+=======
+				queryString := ExtractFormat(unescapedFilename)
+				if len(queryString) > 0 {
+					ScrapeJAVR(queryString[0] ,"dmm") 
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
 				}
 			}
 

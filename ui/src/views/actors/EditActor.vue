@@ -302,18 +302,23 @@ export default {
         id: 'heh',
         onConfirm: () => {
           ky.delete(`/api/actor/delete/${this.actor.id}`).json().then(data => {
+<<<<<<< HEAD
 
             
             var initialChar = this.getFirstCharsFromJSON(this.actor.aliases)
             this.$store.state.actorList.filters.jumpTo = initialChar
             this.$store.dispatch('actorList/load', { jumpTo: initialChar, offset: this.$store.state.actorList.offset - this.$store.state.actorList.limit })
             // this.$store.dispatch('actorList/load', { offset: this.$store.state.actorList.offset - this.$store.state.actorList.limit })
+=======
+            this.$store.dispatch('actorList/load', { offset: this.$store.state.actorList.offset - this.$store.state.actorList.limit })
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
             this.$store.commit('overlay/hideActorEditDetails')
             this.$store.commit('overlay/hideActorDetails')
           })
         }
       })
     },
+<<<<<<< HEAD
     getFirstCharsFromJSON(jsonStr) {
       try {
         const arr = JSON.parse(jsonStr);
@@ -327,6 +332,8 @@ export default {
         return "";
       }
     },
+=======
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
     blur (field) {
       if (this.changesMade) return // Changes have already been made. No point to check any further   
       if (['image_arr', 'tattoos', 'piercings', 'aliases', 'urls'].includes(field)) {

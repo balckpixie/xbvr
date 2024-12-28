@@ -1,7 +1,10 @@
 package models
 
 import (
+<<<<<<< HEAD
 	"fmt"
+=======
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
 	"math"
 	"os"
 	"path/filepath"
@@ -10,7 +13,10 @@ import (
 	"time"
 
 	"github.com/avast/retry-go/v4"
+<<<<<<< HEAD
 	"github.com/xbapps/xbvr/pkg/common"
+=======
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
 )
 
 type File struct {
@@ -44,8 +50,11 @@ type File struct {
 	IsSelectedScript    bool `json:"is_selected_script" xbvrbackup:"is_selected_script"`
 	IsExported          bool `json:"is_exported" xbvrbackup:"-"`
 	RefreshHeatmapCache bool `json:"refresh_heatmap_cache" xbvrbackup:"-"`
+<<<<<<< HEAD
 
 	HasThumbnail bool `json:"has_thumbnail" gorm:"default:false" xbvrbackup:"-"`
+=======
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
 }
 
 func (f *File) GetPath() string {
@@ -91,11 +100,15 @@ func (f *File) Exists() bool {
 		// NOTE: we're assuming files weren't removed via Put.io web UI, so there's no need to check
 		return true
 	default:
+<<<<<<< HEAD
 		// return false
 		if _, err := os.Stat(f.GetPath()); os.IsNotExist(err) {
 			return false
 		}
 		return true
+=======
+		return false
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
 	}
 }
 
@@ -113,6 +126,7 @@ func (f *File) CalculateFramerate() error {
 	f.VideoAvgFrameRateVal = math.Ceil(v1 / v2)
 	return nil
 }
+<<<<<<< HEAD
 
 func (o *File) ThumbnailExists() bool {
 
@@ -121,3 +135,5 @@ func (o *File) ThumbnailExists() bool {
 	}
 	return true
 }
+=======
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1

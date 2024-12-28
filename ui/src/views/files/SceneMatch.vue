@@ -162,7 +162,11 @@ export default {
       currentPage: 1,
       queryString: '',
       javrQuery: '',
+<<<<<<< HEAD
       javrScraper: 'dmm',
+=======
+      javrScraper: '',
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
       format,
       parseISO
     }
@@ -182,6 +186,7 @@ export default {
     this.initView()
   },
   methods: {
+<<<<<<< HEAD
     // extractDVDID() {
     //   const regex = /[a-zA-Z0-9]{2,6}-\d{2,6}/;
     //   const match = this.file.filename.match(regex);
@@ -217,6 +222,13 @@ export default {
       return dvdid
     },
 
+=======
+    extractDVDID() {
+      const regex = /[a-zA-Z0-9]{2,6}-\d{2,6}/;
+      const match = this.file.filename.match(regex);
+      this.javrQuery = match ? match[0] : null;
+    },
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
     scrapeJAVR () {
       ky.post('/api/task/scrape-javr', { json: { s: this.javrScraper, q: this.javrQuery } })
     },
@@ -231,6 +243,7 @@ export default {
       const isNotCommonWord = word => !commonWords.includes(word.toLowerCase()) && !/^[0-9]+p$/.test(word)
 
       this.data = []
+<<<<<<< HEAD
       var dvdid = this.extractDVDIDlogic(this.file.filename).toUpperCase();
       // this.queryString = (
       //   dvdid + ' ' +
@@ -243,6 +256,14 @@ export default {
       )
       this.loadData()
       this.extractDVDID()
+=======
+      this.queryString = (
+        this.file.filename
+          .replace(/\.|_|\+|-/g, ' ').replace(/\s+/g, ' ').trim()
+          .split(' ').filter(isNotCommonWord).join(' ')
+          .replace(/ s /g, '\'s '))
+      this.loadData()
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
     },
     loadData: async function loadData () {
       const requestIndex = this.dataNumRequests

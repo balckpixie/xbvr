@@ -38,6 +38,7 @@
                   </template>
                 </b-carousel>
                 <div class="flexcentre">
+<<<<<<< HEAD
                 <b-button class="button is-primary is-small" style="display: flex; justify-content: center;" v-on:click="setActorImage()">{{$t('Set Main')}}</b-button>
                 <b-button class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="setActorFaceImage()">{{$t('Set Face')}}</b-button>
                 <b-button v-if="images.length != 0" class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="deleteActorImage()">{{$t('Delete')}}</b-button>
@@ -47,6 +48,10 @@
                 <b-button class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="scrapeActorImage('g', 'セクシー女優 全裸')">{{$t('Google2')}}</b-button>
                 <b-button class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="scrapeActorImage('g', 'グラビア')">{{$t('Gravia')}}</b-button>
                 <b-button class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="scrapeActorImage('g', '顔')">{{$t('Face')}}</b-button>
+=======
+                <b-button class="button is-primary is-small" style="display: flex; justify-content: center;" v-on:click="setActorImage()">{{$t('Set Main Image')}}</b-button>
+                <b-button v-if="images.length != 0" class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="deleteActorImage()">{{$t('Delete Image')}}</b-button>
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
                 </div>
               </b-tab-item>
             </b-tabs>
@@ -93,6 +98,7 @@
                     </b-field>
 
                   </div>
+<<<<<<< HEAD
 
                   <div class="image-row">
                     <div class="image-wrapper">
@@ -112,6 +118,8 @@
 
 
 
+=======
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
                   <div class="column pt-0">
                     <div class="is-pulled-right">
                       <actor-favourite-button :actor="actor"/>&nbsp;
@@ -306,7 +314,10 @@ export default {
       akas: [],
       extrefs: [],
       colleagues: [],
+<<<<<<< HEAD
       casthover: false,
+=======
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
     }
   },
   computed: {
@@ -352,6 +363,7 @@ export default {
     activeTab: function (newval, oldval) {      
       }
     },  
+<<<<<<< HEAD
   methods: {
     showTooltip(idx) {
       this.casthover = true;
@@ -359,6 +371,9 @@ export default {
     hideTooltip(idx) {
       this.casthover = false;
     },
+=======
+    methods: {
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
     getImageURL (u, size) {
       if (u.startsWith('http') || u.startsWith('https')) {
         return '/img/' + size + '/' + u.replace('://', ':/')
@@ -498,6 +513,7 @@ export default {
       const arr = JSON.parse(jsonArr);
       return  arr.join(", ");       
     },
+<<<<<<< HEAD
     // getFirstCharacter() {
     //   if (this.actor.aliases && this.actor.aliases.length > 0) {
     //     return this.actor.aliases[0][0];
@@ -518,6 +534,8 @@ export default {
         return "";
       }
     },
+=======
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
     setActorImage (val) {
       ky.post('/api/actor/setimage', {
       json: {
@@ -526,6 +544,7 @@ export default {
       }}).json().then(data => {        
         this.$store.state.overlay.actordetails.actor = data
         this.carouselSlide=0
+<<<<<<< HEAD
         var initialChar = this.getFirstCharsFromJSON(this.actor.aliases)
         this.$store.state.actorList.filters.jumpTo = initialChar
         this.$store.dispatch('actorList/load', { jumpTo: initialChar, offset: this.$store.state.actorList.offset - this.$store.state.actorList.limit })
@@ -542,6 +561,9 @@ export default {
         var initialChar = this.getFirstCharsFromJSON(this.actor.aliases)
         this.$store.state.actorList.filters.jumpTo = initialChar
         this.$store.dispatch('actorList/load', { jumpTo: initialChar, offset: this.$store.state.actorList.offset - this.$store.state.actorList.limit })
+=======
+        this.$store.dispatch('actorList/load', { offset: this.$store.state.actorList.offset - this.$store.state.actorList.limit })
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
       })    
     },
     deleteActorImage (val) {
@@ -553,6 +575,7 @@ export default {
         this.$store.state.overlay.actordetails.actor = data
       })    
     },
+<<<<<<< HEAD
     scrapeActorImage (site,val) {
       ky.post('/api/actor/searchImage', {
       json: {
@@ -564,6 +587,8 @@ export default {
         this.$store.state.overlay.actordetails.actor = data
       })    
     },
+=======
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
     getCountryName(countryCode){
       const country = this.countries.find(c => c.code === countryCode)
       if (country == undefined) {

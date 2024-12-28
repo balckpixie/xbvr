@@ -117,7 +117,11 @@ type Scene struct {
 
 	AlternateSource []ExternalReferenceLink `json:"alternate_source" xbvrbackup:"-"`
 
+<<<<<<< HEAD
 	// HasThumbnail bool `json:"has_thumbnail" gorm:"default:false" xbvrbackup:"-"`
+=======
+	HasThumbnail bool `json:"has_thumbnail" gorm:"default:false" xbvrbackup:"-"`
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
 }
 
 type Image struct {
@@ -405,6 +409,7 @@ func (o *Scene) UpdateStatus() {
 		changed = true
 	}
 
+<<<<<<< HEAD
 	// if o.HasThumbnail && !o.ThumbnailExists() {
 	// 	o.HasThumbnail = false
 	// 	changed = true
@@ -414,6 +419,17 @@ func (o *Scene) UpdateStatus() {
 	// 	o.HasThumbnail = true
 	// 	changed = true
 	// }
+=======
+	if o.HasThumbnail && !o.ThumbnailExists() {
+		o.HasThumbnail = false
+		changed = true
+	}
+
+	if !o.HasThumbnail && o.ThumbnailExists() {
+		o.HasThumbnail = true
+		changed = true
+	}
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
 
 	totalWatchTime := o.GetTotalWatchTime()
 	if o.TotalWatchTime != totalWatchTime {

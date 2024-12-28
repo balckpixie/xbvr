@@ -2,18 +2,27 @@ package api
 
 import (
 	"encoding/json"
+<<<<<<< HEAD
 	"fmt"
 	"net/http"
 	"net/url"
+=======
+	"net/http"
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
+<<<<<<< HEAD
 	// "github.com/blevesearch/bleve/v2/analysis/analyzer/keyword"
 	restfulspec "github.com/emicklei/go-restful-openapi/v2"
 	"github.com/emicklei/go-restful/v3"
 	"github.com/gocolly/colly/v2"
+=======
+	restfulspec "github.com/emicklei/go-restful-openapi/v2"
+	"github.com/emicklei/go-restful/v3"
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
 	"github.com/xbapps/xbvr/pkg/models"
 )
 
@@ -87,6 +96,7 @@ func (i ActorResource) WebService() *restful.WebService {
 	ws.Route(ws.POST("/edit_extrefs/{id}").To(i.editActorExtRefs).
 		Metadata(restfulspec.KeyOpenAPITags, tags).
 		Writes(models.ExternalReferenceLink{}))
+<<<<<<< HEAD
 
 	ws.Route(ws.POST("/searchImage").To(i.searchActorImage).
 		Metadata(restfulspec.KeyOpenAPITags, tags).
@@ -95,6 +105,8 @@ func (i ActorResource) WebService() *restful.WebService {
 	ws.Route(ws.POST("/setfaceimage").To(i.setActorFaceImage).
 		Metadata(restfulspec.KeyOpenAPITags, tags).
 		Writes(models.Actor{}))
+=======
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
 	return ws
 }
 
@@ -279,12 +291,15 @@ type RequestSetActorImage struct {
 	Url     string `json:"url"`
 }
 
+<<<<<<< HEAD
 type RequestSearchActorImage struct {
 	ActorID uint   `json:"actor_id"`
 	Url     string `json:"url"`
 	Keyword string `json:"keyword"`
 	Site string    `json:"site"`
 }
+=======
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
 type RequestSetActorRating struct {
 	Rating float64 `json:"rating"`
 }
@@ -535,6 +550,7 @@ func (i ActorResource) setActorImage(req *restful.Request, resp *restful.Respons
 	resp.WriteHeaderAndEntity(http.StatusOK, actor)
 }
 
+<<<<<<< HEAD
 func (i ActorResource) setActorFaceImage(req *restful.Request, resp *restful.Response) {
 	var r RequestSetActorImage
 	err := req.ReadEntity(&r)
@@ -776,6 +792,8 @@ func getCollectImageUrl(str string) string {
 }
 
 
+=======
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
 func (i ActorResource) deleteActorImage(req *restful.Request, resp *restful.Response) {
 	var r RequestSetActorImage
 	err := req.ReadEntity(&r)

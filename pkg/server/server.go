@@ -86,6 +86,10 @@ func StartServer(version, commit, branch, date string) {
 	restful.Add(api.AkaResource{}.WebService())
 	restful.Add(api.TagGroupResource{}.WebService())
 	restful.Add(api.ExternalReference{}.WebService())
+<<<<<<< HEAD
+=======
+	restful.Add(api.ThumbnailResource{}.WebService())
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
 
 	restConfig := restfulspec.Config{
 		WebServices: restful.RegisteredWebServices(),

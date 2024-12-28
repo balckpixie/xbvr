@@ -12,19 +12,28 @@
     "dev:ui": "cd ui && vue-cli-service build --watch --silent"
   },
   "dependencies": {
+<<<<<<< HEAD
     "@ffmpeg/ffmpeg": "^0.12.10",
     "@fortawesome/fontawesome-free": "5.15.4",
     "@fortawesome/fontawesome-svg-core": "1.2.36",
     "@mdi/font": "7.4.47",
     "bootstrap-icons": "^1.11.3",
+=======
+    "@fortawesome/fontawesome-free": "5.15.4",
+    "@fortawesome/fontawesome-svg-core": "1.2.36",
+    "@mdi/font": "7.4.47",
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
     "buefy": "0.9.28",
     "bulma-extensions": "6.2.7",
     "date-fns": "3.3.1",
     "ky": "0.30.0",
     "pretty-bytes": "6.1.1",
     "videojs-hotkeys": "0.2.28",
+<<<<<<< HEAD
     "videojs-sprite-thumbnails": "^2.2.1",
     "videojs-thumbnail-sprite": "^0.1.1",
+=======
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
     "videojs-vr": "1.8.0",
     "vue": "2.7.16",
     "vue-debounce": "4.0.1",

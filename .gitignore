@@ -15,4 +15,7 @@ yarn-error.log
 
 .release-env
 .docker-creds
+<<<<<<< HEAD
 xbvr.exe
+=======
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1

@@ -28,9 +28,15 @@
 
               <b-tab-item label="Gallery">
                 <b-carousel v-model="carouselSlide" @change="scrollToActiveIndicator" :autoplay="false" :indicator-inside="false">
+<<<<<<< HEAD
                   <b-carousel-item style="max-height:80vh" v-for="(carousel, i) in images" :key="i">
                     <div class="image is-1by1 is-full"
                          v-bind:style="{backgroundImage: `url(${getImageURL(carousel.url, '700,fit')})`, backgroundSize: 'contain', backgroundPosition: 'center top', backgroundRepeat: 'no-repeat'}"></div>
+=======
+                  <b-carousel-item v-for="(carousel, i) in images" :key="i">
+                    <div class="image is-1by1 is-full"
+                         v-bind:style="{backgroundImage: `url(${getImageURL(carousel.url, '700,fit')})`, backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat'}"></div>
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
                   </b-carousel-item>
                   <template slot="indicators" slot-scope="props">
                       <span class="al image" style="width:max-content;">
@@ -67,7 +73,10 @@
                     <!-- アスペクト比切り替えボタン -->
                   <div class="aspect-ratio-buttons">
                     <b-button class="btn01" @click="changeAspectRatio('16:9')">16:9</b-button>
+<<<<<<< HEAD
                     <b-button class="btn01" @click="changeAspectRatio('16:10')">16:10</b-button>
+=======
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
                     <b-button class="btn01" @click="changeAspectRatio('4:3')">4:3</b-button>
                     <b-button class="btn01" @click="changeAspectRatio('1:1')">1:1</b-button>
                     <b-button class="btn01" @click="changeAspectRatio('3:4')">3:4</b-button>
@@ -79,9 +88,15 @@
                     <b-button class="btn01" @click="changeProjection('360_TB')">360_TB</b-button>
                     <b-button class="btn01" @click="setCurrentTime(500)">test</b-button>
                   </div>
+<<<<<<< HEAD
                   <!-- <div>
                     <img v-if="thumbnail" :src="thumbnail" alt="Thumbnail">
                   </div> -->
+=======
+                  <div>
+                    <img v-if="thumbnail" :src="thumbnail" alt="Thumbnail">
+                  </div>
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
                 </div>
 
 
@@ -129,6 +144,7 @@
                       <strong>Linked scene, Not an XBVR Scene</strong>
                     </b-field>
                   </div>
+<<<<<<< HEAD
 
                   <div class="content" style="display: flex; flex-wrap: wrap;">
                       <div class="" v-for="(f, idx) in filesByType" :key="idx" style="margin-right: 5px; margin-bottom: 5px;">
@@ -138,6 +154,8 @@
                       </div>
                   </div>
 
+=======
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
                   <div class="column pt-0">
                     <div class="is-flex is-pulled-right" style="gap: 0.25rem">
                       <a class="button is-primary is-outlined is-small" @click="searchAlternateSourceScene()" title="Search for a different scene" v-if="displayingAlternateSource">
@@ -247,7 +265,11 @@
             </div>
 
 
+<<<<<<< HEAD
             <div class="block-opts block" ref="tabbar" >
+=======
+            <div class="block-opts block">
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
               <b-tabs v-model="activeTab" :animated="false">
 
                 <b-tab-item :label="`Files (${fileCount})`" v-if="!displayingAlternateSource">
@@ -393,6 +415,7 @@
                     </b-message>
                   </div>
                 </b-tab-item>
+<<<<<<< HEAD
 
                 <b-tab-item label="Thumbnail">
                   <div ref="thumbContainer" id="thumbContainer" :style="{ maxHeight: computedMaxHeight() }" class="block-tab-content block container">
@@ -400,6 +423,8 @@
                   </div>
                 </b-tab-item>
 
+=======
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
                 <b-tab-item v-if="this.$store.state.optionsAdvanced.advanced.showSceneSearchField && !displayingAlternateSource" label="Search fields">
                   <div class="block-tab-content block">
                     <div class="content is-small">
@@ -410,7 +435,10 @@
                   </div>
                 </b-tab-item>
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
               </b-tabs>
             </div>
 
@@ -452,7 +480,10 @@ import EditButton from '../../components/EditButton'
 import RefreshButton from '../../components/RefreshButton'
 import TrailerlistButton from '../../components/TrailerlistButton'
 import HiddenButton from '../../components/HiddenButton'
+<<<<<<< HEAD
 import 'bootstrap-icons/font/bootstrap-icons.css';
+=======
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
 
 export default {
   name: 'Details',
@@ -485,6 +516,7 @@ export default {
       searchfields: [],
       alternateSources: [],
       waitingForQuickFind: false,
+<<<<<<< HEAD
       currentAspect: '16:9',
       currentFileNo: 0,
       currentProjection: '180',
@@ -495,6 +527,13 @@ export default {
       videoThumbnails: [],
     marginBottom: 10,
     adjustableElementHeight: 0,
+=======
+      currentAspect: '4:3',
+      currentFileNo: 0,
+      currentProjection: '180',
+      currentDuraiton: 0,
+      thumbnail: null
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
     }
   },
   computed: {
@@ -514,8 +553,12 @@ export default {
           }
           label += `, ${age} in scene`
         }
+<<<<<<< HEAD
         //let img = actor.image_url
         let img = actor.face_image_url
+=======
+        let img = actor.image_url
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
         if (img == "" ){
           img = "blank"  // forces an error image to load, blank won't display an image
         }
@@ -660,6 +703,7 @@ export default {
       })    
 },
 watch:{
+<<<<<<< HEAD
   activeTab(newVal, oldVal) {
     if (newVal == 4) {
       // const thumbnailUrl = '/api/dms/thumbnail/' + this.currentFile.id
@@ -671,6 +715,8 @@ watch:{
     }
   },
 
+=======
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
   quickFindOverlayState(newVal, oldVal){
     if (newVal == true) {
       return
@@ -693,6 +739,7 @@ watch:{
   },
 },
   methods: {
+<<<<<<< HEAD
     computedMaxHeight() {
       const element = this.$refs.tabbar;
       if (!element) return 'calc(100vh - 20px)'; // 要素がまだ存在しない場合はデフォルトの高さを返す
@@ -815,11 +862,18 @@ watch:{
       return isBlack; 
     },
 
+=======
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
     async generateSprit(file) {
       if (!file) return;
 
       const cropOptions = 'iw/2:ih:iw/2:ih'; // 例として "iw/2:ih:iw/2:ih" を指定しています
       ky.post(`/api/thumbs/generate`, {json:{file_id: file.id, crop: cropOptions}}).blob().then(data => {
+<<<<<<< HEAD
+=======
+            //this.$store.commit('overlay/showDetails', { scene: data })
+            // this.$store.commit('sceneList/updateScene', data)
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
             this.thumbnail = data
           })
     },
@@ -856,11 +910,19 @@ watch:{
       var screenAspectRatio = width / height;
 
       var objectAspectRatio = 0.56;
+<<<<<<< HEAD
       var objectHeightPercentage = 91;
 
       objectAspectRatio = this.calculateAspectRatio(aspectRatio)
       var objectWidthPercentage = this.calculateObjectWidthPercentage(screenAspectRatio, objectAspectRatio, objectHeightPercentage);
       this.setLeftColumnWidth(Math.min(80,objectWidthPercentage) + "%");
+=======
+      var objectHeightPercentage = 93;
+
+      objectAspectRatio = this.calculateAspectRatio(aspectRatio)
+      var objectWidthPercentage = this.calculateObjectWidthPercentage(screenAspectRatio, objectAspectRatio, objectHeightPercentage);
+      this.setLeftColumnWidth(objectWidthPercentage + "%");
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
 
     },
 
@@ -915,14 +977,20 @@ watch:{
       const currentDuration = this.player.currentTime();
       const currentSource = this.player.currentSource();
       this.player.aspectRatio(aspectRatio);
+<<<<<<< HEAD
       this.currentAspect = aspectRatio
       this.updatePlayer(currentSource.src, this.currentProjection)
       this.resizeColumnForAspect(this.currentAspect) 
+=======
+      this.updatePlayer(currentSource.src, this.currentProjection)
+      this.resizeColumnForAspect(aspectRatio) 
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
       this.setCurrentTime(currentDuration)
       this.player.play()
     },
 
     setupSprite(file) {
+<<<<<<< HEAD
 
       if (this.player.hasOwnProperty('thumbnailSprite')) {
         this.player.thumbnailSprite(false); // プラグインを解除する
@@ -969,6 +1037,46 @@ watch:{
       this.currentAspect = '16:10'
       this.setupPlayerWithAspect(this.currentAspect)
       this.resizeColumnForAspect(this.currentAspect) 
+=======
+      if (this.player.hasOwnProperty('thumbnailSprite')) {
+        this.player.thumbnailSprite(false); // プラグインを解除する
+      }
+      const thumbnailUrl = '/api/dms/thumbnail/' + file.id
+      const img = new Image();
+      img.onload = function(player) {
+        player.thumbnailSprite({
+          sprites: [
+            {
+              url: thumbnailUrl,
+              duration: 6000,
+              start: 25,
+              interval: 30,
+              width: 200,
+              height: 200,
+            },
+          ],
+        });
+      }(this.player);
+      img.src = thumbnailUrl;
+
+      // this.player.thumbnailSprite({
+      //   sprites: [
+      //     {
+      //       url: thumbnailUrl,
+      //       duration: 6000,
+      //       start: 5,
+      //       interval: 30,
+      //       width: 200,
+      //       height: 200,
+      //     },
+      //   ],
+      // });
+    },
+
+    setupPlayer() {
+      this.setupPlayerWithAspect('4:3')
+      this.resizeColumnForAspect('4:3') 
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
       // this.generateSprit(this.item.file[0])
     },
 
@@ -1085,14 +1193,22 @@ watch:{
     },
     updatePlayer (src, projection) {
       this.player.reset()
+<<<<<<< HEAD
       const vr = this.player.vr({
+=======
+      /* const vr = */ this.player.vr({
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
           projection: projection,
           forceCardboard: false,
           autoplay: true
         })
 
       this.player.on('loadedmetadata', function () {
+<<<<<<< HEAD
         vr.camera.position.set(0, 0, 2);
+=======
+        vr.camera.position.set(-1, 0, 2);
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
       })
 
       if (src) {
@@ -1154,10 +1270,14 @@ watch:{
       this.updatePlayer('/api/dms/file/' + file.id + '?dnt=true', (file.projection == 'flat' ? 'NONE' : '180'))
       this.setupSprite(file)
       this.player.play()
+<<<<<<< HEAD
       // this.resizeColumnForAspect(this.currentAspect)
       this.currentFile = file
       
       this.loadVideThumbnails(this.currentFile.id)
+=======
+      this.curerntFileNo = file.id
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
     },
     unmatchFile (file) {
       this.$buefy.dialog.confirm({
@@ -1323,7 +1443,10 @@ watch:{
       this.$store.commit('sceneList/updateScene', updatedScene)
     },
     nextScene () {
+<<<<<<< HEAD
       this.clearVideThumbnails();
+=======
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
       const data = this.$store.getters['sceneList/nextScene'](this.item)
       if (data !== null && !this.displayingAlternateSource) {
         this.$store.commit('overlay/showDetails', { scene: data })
@@ -1333,7 +1456,10 @@ watch:{
       }
     },
     prevScene () {
+<<<<<<< HEAD
       this.clearVideThumbnails();
+=======
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
       const data = this.$store.getters['sceneList/prevScene'](this.item)
       if (data !== null && !this.displayingAlternateSource) {
         this.$store.commit('overlay/showDetails', { scene: data })
@@ -1583,7 +1709,10 @@ watch:{
 </script>
 
 <style lang="less" scoped>
+<<<<<<< HEAD
 
+=======
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
 .bbox {
   flex: 1 0 calc(25%);
   display: flex;
@@ -1762,6 +1891,7 @@ span.is-active img {
     background-color: #333;
     color: #fff;
 }
+<<<<<<< HEAD
 .container {
   max-width: calc(100% - 20px); /* 余白の最大までの幅 */
   /* max-height: calc(100vh - 400px); */
@@ -1775,4 +1905,7 @@ span.is-active img {
 .thumbsImage {
   width: 120px;
 }
+=======
+
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
 </style>

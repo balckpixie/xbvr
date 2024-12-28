@@ -412,7 +412,10 @@ func assignField(field string, value string, actor *models.Actor, overwrite bool
 		if value != "" && (actor.ImageUrl == "" || (overwrite && !actor.CheckForSetImage())) {
 			//if (overwrite || actor.ImageUrl == "" ) && value != ""  && !actor.CheckForSetImage() {
 			actor.ImageUrl = value
+<<<<<<< HEAD
 			actor.FaceImageUrl = value
+=======
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
 			changed = true
 		}
 	case "images":

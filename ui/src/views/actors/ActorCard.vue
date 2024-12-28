@@ -2,7 +2,11 @@
   <div class="card is-shadowless">
     <div class="card-image">
       <div class="bbox"
+<<<<<<< HEAD
            v-bind:style="{backgroundImage: `url(${getActorImageURL(actor)})`, backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', opacity:isAvailable(actor) ? 1.0 : isAvailOpactiy}"
+=======
+           v-bind:style="{backgroundImage: `url(${getImageURL(actor.image_url)})`, backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', opacity:isAvailable(actor) ? 1.0 : isAvailOpactiy}"
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
            @click="showDetails(actor)"
            @mouseover="preview = true"
            @mouseleave="preview = false">
@@ -59,7 +63,11 @@ import { tr } from 'date-fns/locale'
 
 export default {
   name: 'ActorCard',
+<<<<<<< HEAD
   props: { actor: Object, colleague: String, showFace: Boolean },
+=======
+  props: { actor: Object, colleague: String },
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
    components: {ActorFavouriteButton, ActorWatchlistButton, VueLoadImage, ActorEditButton},
   data () {
     return {
@@ -77,10 +85,13 @@ export default {
     },
   },
   methods: {
+<<<<<<< HEAD
     getActorImageURL(actor) {
         return this.showFace ? actor.face_image_url : actor.image_url;
     },
 
+=======
+>>>>>>> f9a5af58215e2f45b39000e9b63ae1ef22d12ac1
     getAliases(u) {
       if (u=='' || u == undefined) {
         return ""
