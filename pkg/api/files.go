@@ -34,6 +34,11 @@ type RequestRenameFile struct {
 	NewFilename string `json:"filename"`
 }
 
+type RequestResetFilename struct {
+	FileID  uint   `json:"file_id"`
+	SceneID string `json:"scene_id"`
+}
+
 type RequestFileList struct {
 	State       optional.String   `json:"state"`
 	CreatedDate []optional.String `json:"createdDate"`
@@ -68,6 +73,9 @@ func (i FilesResource) WebService() *restful.WebService {
 		Metadata(restfulspec.KeyOpenAPITags, tags))
 
 	ws.Route(ws.POST("/rename").To(i.renameFile).
+		Metadata(restfulspec.KeyOpenAPITags, tags))
+
+	ws.Route(ws.POST("/resetname").To(i.resetFilename).
 		Metadata(restfulspec.KeyOpenAPITags, tags))
 
 	return ws
@@ -271,12 +279,6 @@ func RenameFile(scene models.Scene, file models.File) models.Scene {
 	for _, actor := range scene.Cast {
 		actorNames = append(actorNames, actor.Name)
 	}
-	// var castString string
-	// if len(actorNames) > 0 {
-	// 	castString = strings.Join(actorNames, ",")
-	// } else {
-	// 	castString = "Unknown"
-	// }
 	if len(sceneNo) > 0 {
 		sceneNo = "-" + sceneNo
 	}
@@ -284,7 +286,6 @@ func RenameFile(scene models.Scene, file models.File) models.Scene {
 	if trimPrefix(scene.SceneID, title) == "" {
 		title = scene.Synopsis
 	}
-	//newFileName := fmt.Sprintf("%s｜%s%s｜%s%s", castString, scene.SceneID, sceneNo, trimPrefix(scene.SceneID, title), extension)
 	newFileName := fmt.Sprintf("%s%s%s", scene.SceneID, sceneNo, extension)
 
 	db, _ := models.GetDB()
@@ -294,10 +295,6 @@ func RenameFile(scene models.Scene, file models.File) models.Scene {
 	err := db.First(&vol, file.VolumeID).Error
 
 	if err == nil {
-		// if len(actorNames) > 1 {
-		// 	castString = "_Group"
-		// }
-		//newPath := filepath.Join(vol.Path, sanitizeFilename(castString))
 		newPath := vol.Path
 		newFileName = sanitizeFilename(newFileName)
 		if filepath.Join(file.Path, file.Filename) != filepath.Join(newPath, newFileName) {
@@ -339,14 +336,30 @@ func trimPrefix(a, b string) string {
 
 func GetSceneNo(file models.File) string {
 
-	//4k2.com@juvr00208_3_8k.mp4
-	pattern := `([a-zA-Z0-9]{2,9}(-|_)(\d{1,6}))`
+
 	base := filepath.Base(file.Filename)
 	input := base[:len(base)-len(filepath.Ext(base))]
 
 	// 正規表現パターンに一致する部分を検索
+
+	//IPVR-001-1.mp4
+	pattern := `([a-zA-Z]{2,6}-(\d{3,6})-(\d{1,2}))`
 	re := regexp.MustCompile(pattern)
 	matches := re.FindStringSubmatch(input)
+	if len(matches) > 0 {
+		// nextPart := matches[3]
+		// secondPattern := `([a-zA-Z0-9]{1})`
+		// re2 := regexp.MustCompile(secondPattern)
+		// matches2 := re2.FindStringSubmatch(nextPart)
+		if len(matches[3]) > 0 {
+			return matches[3]
+		}
+	}
+
+	//4k2.com@juvr00208_3_8k.mp4
+	pattern = `([a-zA-Z0-9]{2,9}(-|_)(\d{1,6}))`
+	re = regexp.MustCompile(pattern)
+	matches = re.FindStringSubmatch(input)
 
 	if len(matches) > 0 {
 		// matchedPart := matches[1]  // 最初のサブマッチンググループ: ([a-zA-Z0-9]{2,6}-\d{2,6})
@@ -376,18 +389,18 @@ func GetSceneNo(file models.File) string {
 }
 
 func areEqualBackwards(strA, strB string) bool {
-    lenA, lenB := len(strA), len(strB)
-    i, j := lenA - 1, lenB - 1
-    
-    for i >= 0 && j >= 0 {
-        if strA[i] != strB[j] {
-            return false
-        }
-        i--
-        j--
-    }
-    
-    return true
+	lenA, lenB := len(strA), len(strB)
+	i, j := lenA-1, lenB-1
+
+	for i >= 0 && j >= 0 {
+		if strA[i] != strB[j] {
+			return false
+		}
+		i--
+		j--
+	}
+
+	return true
 }
 
 func (i FilesResource) unmatchFile(req *restful.Request, resp *restful.Response) {
@@ -448,6 +461,37 @@ func (i FilesResource) unmatchFile(req *restful.Request, resp *restful.Response)
 		scene.UpdateStatus()
 	}
 
+	resp.WriteHeaderAndEntity(http.StatusOK, scene)
+}
+
+func (i FilesResource) resetFilename(req *restful.Request, resp *restful.Response) {
+	db, _ := models.GetDB()
+	defer db.Close()
+
+	var r RequestResetFilename
+	err := req.ReadEntity(&r)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	// Assign Scene to File
+	var scene models.Scene
+	err = scene.GetIfExist(r.SceneID)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	var f models.File
+	err = db.Preload("Volume").Where(&models.File{ID: r.FileID}).First(&f).Error
+	if err == nil {
+		f.SceneID = scene.ID
+		f.Save()
+	}
+
+	//---------------
+	scene = RenameFile(scene, f)
 	resp.WriteHeaderAndEntity(http.StatusOK, scene)
 }
 

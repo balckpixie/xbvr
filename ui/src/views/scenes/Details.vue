@@ -288,8 +288,11 @@
                         </div>
                       </div>
                       <div class="media-right">
-                        <button class="button is-dark is-small is-outlined" title="Unmatch file from scene" @click='unmatchFile(f)'>
+                        <button class="button is-small is-outlined" title="Unmatch file from scene" @click='unmatchFile(f)'>
                           <b-icon pack="fas" icon="unlink" size="is-small"></b-icon>
+                        </button>&nbsp;
+                        <button class="button is-danger is-small is-outlined" title="reset filename" @click='resetFileName(f)'>
+                          <b-icon pack="fas" icon="redo-alt" size="is-small"></b-icon>
                         </button>&nbsp;
                         <button class="button is-danger is-small is-outlined" title="rename file" @click='renameFile(f)'>
                           <b-icon pack="fas" icon="pen" size="is-small"></b-icon>
@@ -1187,6 +1190,14 @@ watch:{
           })
         }
       })
+    },
+    resetFileName (file) {
+          this.activeMedia = 0
+          this.updatePlayer(undefined, this.currentProjection)
+          ky.post(`/api/files/resetname`, {json:{file_id: file.id, scene_id: this.item.scene_id }}).json().then(data => {
+            this.$store.commit('sceneList/updateScene', data)
+            this.$store.commit('overlay/showDetails', { scene: data })
+          })
     },
     renameFile (file) {
       this.$buefy.dialog.prompt({
