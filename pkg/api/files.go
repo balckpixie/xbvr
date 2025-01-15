@@ -271,12 +271,12 @@ func RenameFile(scene models.Scene, file models.File) models.Scene {
 	for _, actor := range scene.Cast {
 		actorNames = append(actorNames, actor.Name)
 	}
-	var castString string
-	if len(actorNames) > 0 {
-		castString = strings.Join(actorNames, ",")
-	} else {
-		castString = "Unknown"
-	}
+	// var castString string
+	// if len(actorNames) > 0 {
+	// 	castString = strings.Join(actorNames, ",")
+	// } else {
+	// 	castString = "Unknown"
+	// }
 	if len(sceneNo) > 0 {
 		sceneNo = "-" + sceneNo
 	}
@@ -284,7 +284,8 @@ func RenameFile(scene models.Scene, file models.File) models.Scene {
 	if trimPrefix(scene.SceneID, title) == "" {
 		title = scene.Synopsis
 	}
-	newFileName := fmt.Sprintf("%s｜%s%s｜%s%s", castString, scene.SceneID, sceneNo, trimPrefix(scene.SceneID, title), extension)
+	//newFileName := fmt.Sprintf("%s｜%s%s｜%s%s", castString, scene.SceneID, sceneNo, trimPrefix(scene.SceneID, title), extension)
+	newFileName := fmt.Sprintf("%s%s%s", scene.SceneID, sceneNo, extension)
 
 	db, _ := models.GetDB()
 	defer db.Close()
@@ -293,10 +294,11 @@ func RenameFile(scene models.Scene, file models.File) models.Scene {
 	err := db.First(&vol, file.VolumeID).Error
 
 	if err == nil {
-		if len(actorNames) > 1 {
-			castString = "_Group"
-		}
-		newPath := filepath.Join(vol.Path, sanitizeFilename(castString))
+		// if len(actorNames) > 1 {
+		// 	castString = "_Group"
+		// }
+		//newPath := filepath.Join(vol.Path, sanitizeFilename(castString))
+		newPath := vol.Path
 		newFileName = sanitizeFilename(newFileName)
 		if filepath.Join(file.Path, file.Filename) != filepath.Join(newPath, newFileName) {
 			scene = renameFileByFileId(uint(file.ID), newPath, newFileName)
