@@ -474,9 +474,11 @@ func renameFileByFileId(fileId uint, newPath string, newfilename string) models.
 		nameOnly := newfilename[:len(newfilename)-len(filepath.Ext(newfilename))]
 		ext := filepath.Ext(newfilename)
 		const maxFilenameLength = 90
+		// UTF-8での文字数制限に合わせて処理
 		if utf8.RuneCountInString(nameOnly) > maxFilenameLength-4 {
-			// nameOnly = nameOnly[:len(nameOnly)-len(filepath.Ext(nameOnly))]
-			nameOnly = string([]rune(nameOnly)[:maxFilenameLength])
+			// スライスの範囲を文字数で調整
+			runes := []rune(nameOnly)
+			nameOnly = string(runes[:maxFilenameLength-4])
 		}
 		//暫定用
 		if ext == "" {
