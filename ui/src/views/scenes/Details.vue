@@ -1706,7 +1706,7 @@ span.is-active img {
   padding: 0;
 }
 .videosize {
-  color: rgb(60, 60, 60);
+  color: rgb(212, 61, 111);
   font-weight: 550;
 }
 

@@ -343,7 +343,7 @@ func GetSceneNo(file models.File) string {
 	// 正規表現パターンに一致する部分を検索
 
 	//IPVR-001-1.mp4
-	pattern := `([a-zA-Z]{2,6}-(\d{3,6})-(\d{1,2}))`
+	pattern := `([a-zA-Z]{2,6}-(\d{3,6})-([a-zA-Z0-9]{1}))`
 	re := regexp.MustCompile(pattern)
 	matches := re.FindStringSubmatch(input)
 	if len(matches) > 0 {
