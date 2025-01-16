@@ -1203,6 +1203,11 @@ watch:{
       this.$buefy.dialog.prompt({
         title: 'Rename file',
         message: `Please input new filename for <strong>${file.filename}</strong>`,
+
+
+  animation: 'fade', // 軽量なアニメーションを指定
+  hasAnimation: false, // アニメーションを完全に無効化（必要なら）
+
         type: 'is-danger',
         hasIcon: true,
         inputAttrs: {
@@ -1211,7 +1216,7 @@ watch:{
                     value: file.filename
                 },
         onConfirm: value => {
-          this.$buefy.toast.open(`New filename is: ${value}`)
+          //this.$buefy.toast.open(`New filename is: ${value}`)
           ky.post(`/api/files/rename`, {json:{file_id: file.id, filename: value}}).json().then(data => {
             //this.$store.commit('overlay/showDetails', { scene: data })
             this.$store.commit('sceneList/updateScene', data)
@@ -1779,6 +1784,14 @@ span.is-active img {
   margin: 0 auto; /* 中央揃え */
   background-color: #222222; /* 見やすいように背景色を指定 */
   overflow-y: auto; /* 縦方向のスクロールバーを表示する */
+}
+.b-dialog {
+  will-change: transform, opacity; /* GPU レンダリングを強制 */
+  transform: translateZ(0); /* 3D レイヤー化 */
+}
+.b-dialog-background {
+  background-color: rgba(0, 0, 0, 0); /* 背景を完全に透明に */
+  opacity: 1 !important;              /* 不透明度を100%に */
 }
 </style>
 
