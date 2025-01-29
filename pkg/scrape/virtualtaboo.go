@@ -23,6 +23,9 @@ func VirtualTaboo(wg *sync.WaitGroup, updateSite bool, knownScenes []string, out
 	sceneCollector := createCollector("virtualtaboo.com")
 	siteCollector := createCollector("virtualtaboo.com")
 
+	sceneCollector.AllowedDomains = append(sceneCollector.AllowedDomains, "jp.virtualtaboo.com")
+	siteCollector.AllowedDomains = append(siteCollector.AllowedDomains, "jp.virtualtaboo.com")
+
 	durationRegEx := regexp.MustCompile(`(?:(\d+) hour(?:s)? )?(\d+) min`)
 
 	sceneCollector.OnHTML(`html`, func(e *colly.HTMLElement) {

@@ -1723,6 +1723,7 @@ span.is-active img {
 }
 .is-divider {
   margin: .8rem 0;
+  background-color: rgb(34, 34, 34);
 }
 .image-row {
   display: flex;
