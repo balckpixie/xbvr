@@ -1177,6 +1177,7 @@ watch:{
       })
     },
     removeFile (file) {
+    /*
       this.$buefy.dialog.confirm({
         title: 'Remove file',
         message: `You're about to remove file <strong>${file.filename}</strong> from <strong>disk</strong>.`,
@@ -1190,6 +1191,15 @@ watch:{
           })
         }
       })
+    */
+    if (window.confirm(`You're about to remove file ${file.filename} from disk.`)) {
+      this.activeMedia = 0;
+      this.updatePlayer(undefined, this.currentProjection);
+      ky.delete(`/api/files/file/${file.id}`).json().then(data => {
+        this.$store.commit('overlay/showDetails', { scene: data });
+      });
+    }
+
     },
     resetFileName (file) {
           this.activeMedia = 0

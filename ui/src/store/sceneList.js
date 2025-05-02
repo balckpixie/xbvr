@@ -145,6 +145,22 @@ const mutations = {
       }
     } catch (err) {
     }
+  },
+  deletescene (state, payload) {
+    const confirmDelete = window.confirm(
+      `Do you really want to delete the scene "${payload.scene.title}" from "${payload.scene.studio}"? 
+      If this is an existing scene, it will be re-added during the next scrape.`
+    );
+  
+    if (confirmDelete) {
+      ky.post(`/api/scene/delete`, { json: { scene_id: payload.scene.id } })
+        .json()
+        .then(data => {
+          
+          mutations.updateScene(state, data)
+
+        });
+    }
   }
 }
 
