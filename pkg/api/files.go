@@ -274,32 +274,52 @@ func RenameFile(scene models.Scene, file models.File) models.Scene {
 	sceneNo := GetSceneNo(file)
 	// 拡張子を取得
 	extension := filepath.Ext(file.Filename)
-	// Actor.Name をカンマで結合した文字列を生成
-	var actorNames []string
-	for _, actor := range scene.Cast {
-		actorNames = append(actorNames, actor.Name)
+	// 許可キーワード（すべて小文字）
+	allowed := map[string]bool{
+		"sbs": true, "lr": true, "ou": true, "tb": true, "rl": true, "bt": true,
+		"lrf": true, "tbf": true, "rlf": true, "btf": true,
+		"180": true, "360": true, "180f": true, "360eac": true,
+		"fisheye": true, "fisheye190": true, "rf52": true,
+		"alpha": true,
+		"4k": true, "5k": true, "6k": true, "7k": true, "8k": true,
+		"60fps": true, "30fps": true,
 	}
-	if len(sceneNo) > 0 {
-		sceneNo = "-" + sceneNo
+
+	baseName := strings.TrimSuffix(file.Filename, extension)
+	suffix := ""
+
+	if idx := strings.Index(baseName, "_"); idx != -1 {
+		// アンダースコア以降を取り出して、アンダースコアで分割
+		suffixRaw := baseName[idx+1:]
+		parts := strings.Split(suffixRaw, "_")
+
+		var validParts []string
+		for _, part := range parts {
+			if allowed[strings.ToLower(part)] {
+				validParts = append(validParts, part)
+			}
+		}
+
+		if len(validParts) > 0 {
+			suffix = "_" + strings.Join(validParts, "_")
+		}
 	}
-	title := scene.Title
-	if trimPrefix(scene.SceneID, title) == "" {
-		title = scene.Synopsis
-	}
-	newFileName := fmt.Sprintf("%s%s%s", scene.SceneID, sceneNo, extension)
+
+	newFileName := sanitizeFilename(fmt.Sprintf("%s%s%s%s", scene.SceneID, sceneNo, suffix, extension))
 
 	db, _ := models.GetDB()
 	defer db.Close()
 
-	vol := models.Volume{}
-	err := db.First(&vol, file.VolumeID).Error
+	var volume models.Volume
+	if err := db.First(&volume, file.VolumeID).Error; err != nil {
+		return scene
+	}
 
-	if err == nil {
-		newPath := vol.Path
-		newFileName = sanitizeFilename(newFileName)
-		if filepath.Join(file.Path, file.Filename) != filepath.Join(newPath, newFileName) {
-			scene = renameFileByFileId(uint(file.ID), newPath, newFileName)
-		}
+	originalPath := filepath.Join(file.Path, file.Filename)
+	newPath := filepath.Join(volume.Path, newFileName)
+
+	if originalPath != newPath {
+		scene = renameFileByFileId(uint(file.ID), volume.Path, newFileName)
 	}
 
 	return scene
