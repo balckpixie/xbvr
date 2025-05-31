@@ -27,6 +27,38 @@ import (
 
 var allowedVideoExt = []string{".mp4", ".avi", ".wmv", ".mpeg4", ".mov", ".mkv"}
 
+func ExtractDVDIDLogic(filename string) string {
+	dvdid := ""
+	regex := regexp.MustCompile(`[a-zA-Z0-9]{2,6}-\d{2,6}`)
+	match := regex.FindString(filename)
+	if match == "" {
+		regex = regexp.MustCompile(`([a-zA-Z]{2,6})(\d{2,6})`)
+		match := regex.FindStringSubmatch(filename)
+		if match != nil {
+			firstPart := match[1]
+			secondPart := match[2]
+			if len(secondPart) >= 4 {
+				secondPart = strings.TrimLeft(secondPart, "0")
+			}
+			// 確認: secondPart が 3 文字未満の場合は 0 を補完する
+			if len(secondPart) < 3 {
+				secondPart = strings.Repeat("0", 3-len(secondPart)) + secondPart
+			}
+			dvdid = firstPart + "-" + secondPart
+		} else {
+			dvdid = "null"
+		}
+	} else {
+		dvdid = match
+	}
+	return dvdid
+}
+
+func ExtractFormat(input string) []string {
+	re := regexp.MustCompile(`[A-Z]{4}-\d{3,4}`)
+	return re.FindAllString(input, -1)
+}
+
 func RescanVolumes(id int) {
 	if !models.CheckLock("rescan") {
 		models.CreateLock("rescan")
@@ -61,6 +93,7 @@ func RescanVolumes(id int) {
 		// Match Scene to File
 		var files []models.File
 		var scenes []models.Scene
+		var scenes2 []models.Scene
 		var extrefs []models.ExternalReference
 
 		tlog.Infof("Matching Scenes to known filenames")
@@ -77,16 +110,38 @@ func RescanVolumes(id int) {
 			filename := escape(unescapedFilename)
 			filename2 := strings.Replace(filename, ".funscript", ".mp4", -1)
 			filename3 := strings.Replace(filename, ".hsp", ".mp4", -1)
+			filename3 = strings.Replace(filename3, ".srt", ".mp4", -1)
+			err := db.Where("filenames_arr LIKE ? OR filenames_arr LIKE ? OR filenames_arr LIKE ?", `%"`+filename+`"%`, `%"`+filename2+`"%`, `%"`+filename3+`"%`).Find(&scenes).Error
+			if err != nil {
+				log.Error(err, " when matching "+unescapedFilename)
+			}
+
+			if len(scenes) == 0 {
+				// queryString := ExtractFormat(unescapedFilename)
+				// if len(queryString) > 0 {
+				// 	ScrapeJAVR(queryString[0] ,"dmm")
+				// }
+
+				queryString := ExtractDVDIDLogic(unescapedFilename)
+				if queryString != "" {
+					err = db.Where("scene_id = ?", queryString).Find(&scenes2).Error
+					if len(scenes2) == 0 || err != nil {
+						ScrapeJAVR(queryString, "dmm")
+					}
+				}
+			}
+
 			filename4 := strings.Replace(filename, ".srt", ".mp4", -1)
 			filename5 := strings.Replace(filename, ".cmscript", ".mp4", -1)
 			err := db.Where("filenames_arr LIKE ? OR filenames_arr LIKE ? OR filenames_arr LIKE ? OR filenames_arr LIKE ? OR filenames_arr LIKE ?", `%"`+filename+`"%`, `%"`+filename2+`"%`, `%"`+filename3+`"%`, `%"`+filename4+`"%`, `%"`+filename5+`"%`).Find(&scenes).Error
 			if err != nil {
 				log.Error(err, " when matching "+unescapedFilename)
 			}
+
 			if len(scenes) == 0 && config.Config.Advanced.UseAltSrcInFileMatching {
 				// check if the filename matches in external_reference record
 
-				db.Preload("XbvrLinks").Where("external_source like 'alternate scene %' and external_data LIKE ? OR external_data LIKE ? OR external_data LIKE ? OR external_data LIKE ? OR external_data LIKE ?", `%"`+filename+`%`, `%"`+filename2+`%`, `%"`+filename3+`%`, `%"`+filename4+`%`, `%"`+filename5+`%`).Find(&extrefs)
+				db.Preload("XbvrLinks").Where("external_source like 'alternate scene %' and external_data LIKE ? OR external_data LIKE ? OR external_data LIKE ?", `%"`+filename+`%`, `%"`+filename2+`%`, `%"`+filename3+`%`).Find(&extrefs)
 				if len(extrefs) == 1 {
 					if len(extrefs[0].XbvrLinks) == 1 {
 						// the scene id will be the Internal DB Id from the associated link

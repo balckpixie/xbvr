@@ -300,6 +300,16 @@ func (o *Scene) PreviewExists() bool {
 	return true
 }
 
+func (o *Scene) ThumbnailExists() bool {
+	
+	// name := filepath.Base(o.Files[0].Filename)
+	// nameWithoutExt := strings.TrimSuffix(name, filepath.Ext(name))
+	if _, err := os.Stat(filepath.Join(common.VideoThumbnailDir, fmt.Sprintf("%v.jpg", strconv.FormatUint(uint64(o.Files[0].ID), 10)))); os.IsNotExist(err) {
+		return false
+	}
+	return true
+}
+
 func (o *Scene) UpdateStatus() {
 	// Check if file with scene association exists
 	files, err := o.GetFiles()
@@ -462,14 +472,20 @@ func SceneCreateUpdateFromExternal(db *gorm.DB, ext ScrapedScene) error {
 			}
 		}
 		if ext.ActorDetails[name].ProfileUrl != "" {
-			if strings.HasPrefix(ext.ActorDetails[name].ProfileUrl, "https://stashdb.org/performers/") {
-
-			} else {
-				if tmpActor.AddToActorUrlArray(ActorLink{Url: ext.ActorDetails[name].ProfileUrl, Type: ext.ActorDetails[name].Source}) {
-					saveActor = true
-				}
+			if tmpActor.AddToActorUrlArray(ActorLink{Url: ext.ActorDetails[name].ProfileUrl, Type: ext.ActorDetails[name].Source}) {
+				saveActor = true
 			}
 		}
+
+		if ext.Aliases != nil && ext.Aliases[cnt] != "" {
+			if tmpActor.Aliases == "" {
+				tmpActor.Aliases = "[\"" + ext.Aliases[cnt] + "\"]"
+				log.Infof("add aliases:" + ext.Aliases[cnt])
+				saveActor = true
+			}
+		}
+		cnt++
+
 		if saveActor {
 			tmpActor.Save()
 		}

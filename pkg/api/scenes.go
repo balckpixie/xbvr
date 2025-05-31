@@ -66,6 +66,11 @@ type RequestEditSceneDetails struct {
 	CoverURL     string   `json:"cover_url"`
 	IsMultipart  bool     `json:"is_multipart"`
 	Duration     string   `json:"duration"`
+<<<<<<< HEAD
+=======
+	AiScript	bool     `json:"ai_script"`
+	ChromaKey	string     `json:"passthrough"`
+>>>>>>> feature_02_file_rename
 }
 
 type ResponseGetScenes struct {
@@ -382,17 +387,26 @@ func (i SceneResource) getFilters(req *restful.Request, resp *restful.Response) 
 	outAttributes = append(outAttributes, "Has Image")
 	outAttributes = append(outAttributes, "VRPHub Scraper")
 	outAttributes = append(outAttributes, "VRPorn Scraper")
+<<<<<<< HEAD
 	outAttributes = append(outAttributes, "RealVR Scraper")
+=======
+>>>>>>> feature_02_file_rename
 	outAttributes = append(outAttributes, "Stashdb Linked")
 	outAttributes = append(outAttributes, "Has Script Download")
 	outAttributes = append(outAttributes, "Has AI Generated Script")
 	outAttributes = append(outAttributes, "Has Human Generated Script")
 	outAttributes = append(outAttributes, "Has Favourite Actor")
+<<<<<<< HEAD
 	outAttributes = append(outAttributes, "Has Actor in Watchlist")
 	outAttributes = append(outAttributes, "Available from Alternate Sites")
 	outAttributes = append(outAttributes, "Available from POVR")
 	outAttributes = append(outAttributes, "Available from VRPorn")
 	outAttributes = append(outAttributes, "Available from RealVR")
+=======
+	outAttributes = append(outAttributes, "Available from Alternate Sites")
+	outAttributes = append(outAttributes, "Available from POVR")
+	outAttributes = append(outAttributes, "Available from VRPorn")
+>>>>>>> feature_02_file_rename
 	outAttributes = append(outAttributes, "Available from SLR")
 	outAttributes = append(outAttributes, "Multiple Scenes Available at an Alternate Site")
 	type Results struct {
@@ -615,6 +629,7 @@ func (i SceneResource) searchSceneIndex(req *restful.Request, resp *restful.Resp
 		}
 	}
 
+<<<<<<< HEAD
 	// if searching for a path/filename
 	lastslash := strings.LastIndex(q, "\\")
 	path := ""
@@ -640,6 +655,8 @@ func (i SceneResource) searchSceneIndex(req *restful.Request, resp *restful.Resp
 	}
 
 	// search bleve search indexes
+=======
+>>>>>>> feature_02_file_rename
 	idx, err := tasks.NewIndex("scenes")
 	if err != nil {
 		log.Error(err)
@@ -690,7 +707,15 @@ func (i SceneResource) searchSceneIndex(req *restful.Request, resp *restful.Resp
 			continue
 		}
 
+<<<<<<< HEAD
 		scene.Score = v.Score
+=======
+		if v.Score < 1.0 && query.Query == v.ID {
+			scene.Score = 1.0
+		} else {
+			scene.Score = v.Score
+		}
+>>>>>>> feature_02_file_rename
 		scenes = append(scenes, scene)
 	}
 
@@ -889,6 +914,17 @@ func (i SceneResource) editScene(req *restful.Request, resp *restful.Response) {
 			scene.IsMultipart = r.IsMultipart
 			models.AddAction(scene.SceneID, "edit", "is_multipart", strconv.FormatBool(r.IsMultipart))
 		}
+<<<<<<< HEAD
+=======
+		if scene.AiScript != r.AiScript {
+			scene.AiScript = r.AiScript
+			models.AddAction(scene.SceneID, "edit", "ai_script", strconv.FormatBool(r.AiScript))
+		}
+		if scene.ChromaKey != r.ChromaKey {
+			scene.ChromaKey = r.ChromaKey
+			models.AddAction(scene.SceneID, "edit", "chroma_key", r.ChromaKey)
+		}
+>>>>>>> feature_02_file_rename
 		if strconv.Itoa(scene.Duration) != r.Duration {
 			scene.Duration, _ = strconv.Atoi(r.Duration)
 			models.AddAction(scene.SceneID, "edit", "duration", r.Duration)
@@ -1029,7 +1065,11 @@ func (i SceneResource) getSceneAlternateSources(req *restful.Request, resp *rest
 		var site models.Site
 
 		if ref.ExternalSource == "stashdb scene" {
+<<<<<<< HEAD
 			ressults = append(ressults, ResponseGetAlternateSources{Url: ref.ExternalReference.ExternalURL, Icon: "https://guidelines.stashdb.org/favicon.ico", ExternalSource: ref.ExternalReference.ExternalSource, ExternalId: ref.ExternalReference.ExternalId, ExternalData: ref.ExternalReference.ExternalData})
+=======
+			ressults = append(ressults, ResponseGetAlternateSources{Url: ref.ExternalReference.ExternalURL, Icon: "https://docs.stashapp.cc/favicon.ico", ExternalSource: ref.ExternalReference.ExternalSource, ExternalId: ref.ExternalReference.ExternalId, ExternalData: ref.ExternalReference.ExternalData})
+>>>>>>> feature_02_file_rename
 		} else {
 			json.Unmarshal([]byte(ref.ExternalReference.ExternalData), &altscene)
 			site.GetIfExist(altscene.Scene.ScraperId)

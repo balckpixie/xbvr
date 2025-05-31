@@ -100,7 +100,7 @@ export default {
   data () {
     return {
       isLoading: true,
-      javrScraper: 'javdatabase',
+      javrScraper: 'dmm',
       javrQuery: '',
       tpdbSceneUrl: '',
       customSceneTitle: '',

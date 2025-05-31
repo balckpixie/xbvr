@@ -47,8 +47,12 @@ const actions = {
         state.web.showScriptHeatmap = data.config.web.showScriptHeatmap
         state.web.showAllHeatmaps = data.config.web.showAllHeatmaps
         state.web.updateCheck = data.config.web.updateCheck
+<<<<<<< HEAD
         state.web.isAvailOpacity = data.config.web.isAvailOpacity 
         state.web.showOpenInNewWindow = data.config.web.showOpenInNewWindow
+=======
+        state.web.isAvailOpacity = data.config.web.isAvailOpacity        
+>>>>>>> feature_02_file_rename
         state.loading = false
       })
   },
@@ -73,7 +77,10 @@ const actions = {
         state.web.showAllHeatmaps = data.showAllHeatmaps
         state.web.updateCheck = data.updateCheck
         state.web.isAvailOpacity = data.isAvailOpacity        
+<<<<<<< HEAD
         state.web.showOpenInNewWindow = data.showOpenInNewWindow
+=======
+>>>>>>> feature_02_file_rename
         state.loading = false
       })
   }

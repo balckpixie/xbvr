@@ -144,11 +144,15 @@ func ScrapeJson(scrapeParams string) models.VideoSourceResponse {
 	c := colly.NewCollector(colly.UserAgent(scrape.UserAgent))
 	var params models.TrailerScrape
 	json.Unmarshal([]byte(scrapeParams), &params)
+<<<<<<< HEAD
 	if params.KVHttpConfig == "" {
 		params.KVHttpConfig = scrape.GetCoreDomain(params.SceneUrl) + "-trailers"
 	}
 	log.Debugf("Using Header/Cookies from %s", params.KVHttpConfig)
 	scrape.SetupCollector(params.KVHttpConfig, c)
+=======
+
+>>>>>>> feature_02_file_rename
 	var srcs []models.VideoSource
 	c.OnHTML(`html`, func(e *colly.HTMLElement) {
 		e.ForEach(params.HtmlElement, func(id int, e *colly.HTMLElement) {
@@ -179,6 +183,7 @@ func LoadJson(scrapeParams string) models.VideoSourceResponse {
 	var params models.TrailerScrape
 	json.Unmarshal([]byte(scrapeParams), &params)
 
+<<<<<<< HEAD
 	method := "GET"
 	client := &http.Client{}
 	req, err := http.NewRequest(method, params.SceneUrl, nil)
@@ -190,6 +195,9 @@ func LoadJson(scrapeParams string) models.VideoSourceResponse {
 	scrape.SetupHtmlRequest(params.KVHttpConfig, req)
 	response, err := client.Do(req)
 
+=======
+	response, err := http.Get(params.SceneUrl)
+>>>>>>> feature_02_file_rename
 	if err != nil {
 		return models.VideoSourceResponse{}
 	}

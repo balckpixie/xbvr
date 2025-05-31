@@ -380,28 +380,40 @@ func Scrape(toScrape string, singleSceneURL string, singeScrapeAdditionalInfo st
 }
 
 func ScrapeJAVR(queryString string, scraper string) {
+	if queryString == "" {
+		return
+	}
 	if !models.CheckLock("scrape") {
 		models.CreateLock("scrape")
 		defer models.RemoveLock("scrape")
 		t0 := time.Now()
 		tlog := log.WithField("task", "scrape")
 		tlog.Infof("Scraping started at %s", t0.Format("Mon Jan _2 15:04:05 2006"))
-
+		
 		config.Config.ScraperSettings.Javr.JavrScraper = scraper
 		config.SaveConfig()
 
 		// Start scraping
 		var collectedScenes []models.ScrapedScene
 
-		if scraper == "javlibrary" {
+		if scraper == "dmm" {
+			tlog.Info("Scraping dmm")
+			scrape.ScrapeDMMapi(&collectedScenes, queryString)
+		} else if scraper == "javlibrary" {
 			tlog.Infof("Scraping JavLibrary")
 			scrape.ScrapeJavLibrary(&collectedScenes, queryString)
+		} else if scraper == "javlibraryjp" {
+			tlog.Infof("Scraping JavLibrary(JP)")
+			scrape.ScrapeJavLibraryJP(&collectedScenes, queryString)
 		} else if scraper == "r18d" {
 			tlog.Infof("Scraping R18.dev")
 			scrape.ScrapeR18D(&collectedScenes, queryString)
 		} else if scraper == "javland" {
 			tlog.Infof("Scraping JavLand")
 			scrape.ScrapeJavLand(&collectedScenes, queryString)
+		} else if scraper == "javlandjp" {
+			tlog.Infof("Scraping JavLand(JP)")
+			scrape.ScrapeJavLandJP(&collectedScenes, queryString)
 		} else {
 			tlog.Infof("Scraping JavDB")
 			scrape.ScrapeJavDB(&collectedScenes, queryString)
@@ -815,6 +827,7 @@ func BackupBundle(inclAllSites bool, onlyIncludeOfficalSites bool, inclScenes bo
 }
 
 func RestoreBundle(request RequestRestore) {
+<<<<<<< HEAD
 	tlog := log.WithField("task", "scrape")
 	if request.BundleUrl != "" {
 		tlog.Infof("Downloading data from %s", request.BundleUrl)
@@ -822,6 +835,8 @@ func RestoreBundle(request RequestRestore) {
 		request.UploadData = data
 	}
 
+=======
+>>>>>>> feature_02_file_rename
 	if strings.Contains(request.UploadData, "\"bundleVersion\":\"1\"") {
 		ImportBundle(request.UploadData)
 		return
@@ -830,6 +845,11 @@ func RestoreBundle(request RequestRestore) {
 		models.CreateLock("scrape")
 		defer models.RemoveLock("scrape")
 
+<<<<<<< HEAD
+=======
+		tlog := log.WithField("task", "scrape")
+
+>>>>>>> feature_02_file_rename
 		var json = jsoniter.Config{
 			EscapeHTML:             true,
 			SortMapKeys:            true,
@@ -1741,6 +1761,7 @@ func UpdateSceneStatus(db *gorm.DB) {
 		}
 	}
 }
+<<<<<<< HEAD
 
 func downloadBundle(url string) (string, error) {
 	// Get the response
@@ -1763,3 +1784,5 @@ func downloadBundle(url string) (string, error) {
 
 	return string(body), nil
 }
+=======
+>>>>>>> feature_02_file_rename

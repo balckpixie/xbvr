@@ -68,6 +68,8 @@ type RequestSaveOptionsAdvanced struct {
 	ShowHSPApiLink               bool      `json:"showHSPApiLink"`
 	ShowSceneSearchField         bool      `json:"showSceneSearchField"`
 	StashApiKey                  string    `json:"stashApiKey"`
+	DmmApiId                     string    `json:"dmmApiId"`
+	DmmAffiliateId               string    `json:"dmmAffiliateId"`
 	ScrapeActorAfterScene        bool      `json:"scrapeActorAfterScene"`
 	UseImperialEntry             bool      `json:"useImperialEntry"`
 	LinkScenesAfterSceneScraping bool      `json:"linkScenesAfterSceneScraping"`
@@ -156,6 +158,14 @@ type RequestSaveOptionsTaskSchedule struct {
 	PreviewHourStart     int  `json:"previewHourStart"`
 	PreviewHourEnd       int  `json:"previewHourEnd"`
 	PreviewStartDelay    int  `json:"previewStartDelay"`
+
+	ThumbnailEnabled       bool `json:"thumbnailEnabled"`
+	ThumbnailHourInterval  int  `json:"thumbnailHourInterval"`
+	ThumbnailUseRange      bool `json:"thumbnailUseRange"`
+	ThumbnailMinuteStart   int  `json:"thumbnailMinuteStart"`
+	ThumbnailHourStart     int  `json:"thumbnailHourStart"`
+	ThumbnailHourEnd       int  `json:"thumbnailHourEnd"`
+	ThumbnailStartDelay    int  `json:"thumbnailStartDelay"`
 
 	ActorRescrapeEnabled      bool `json:"actorRescrapeEnabled"`
 	ActorRescrapeHourInterval int  `json:"actorRescrapeHourInterval"`
@@ -514,6 +524,8 @@ func (i ConfigResource) saveOptionsAdvanced(req *restful.Request, resp *restful.
 	config.Config.Advanced.ShowHSPApiLink = r.ShowHSPApiLink
 	config.Config.Advanced.ShowSceneSearchField = r.ShowSceneSearchField
 	config.Config.Advanced.StashApiKey = r.StashApiKey
+	config.Config.Advanced.DmmApiId = r.DmmApiId
+	config.Config.Advanced.DmmAffiliateId = r.DmmAffiliateId
 	config.Config.Advanced.ScrapeActorAfterScene = r.ScrapeActorAfterScene
 	config.Config.Advanced.UseImperialEntry = r.UseImperialEntry
 	config.Config.Advanced.LinkScenesAfterSceneScraping = r.LinkScenesAfterSceneScraping
@@ -952,6 +964,14 @@ func (i ConfigResource) saveOptionsTaskSchedule(req *restful.Request, resp *rest
 	config.Config.Cron.PreviewSchedule.HourStart = r.PreviewHourStart
 	config.Config.Cron.PreviewSchedule.HourEnd = r.PreviewHourEnd
 	config.Config.Cron.PreviewSchedule.RunAtStartDelay = r.PreviewStartDelay
+
+	config.Config.Cron.ThumbnailSchedule.Enabled = r.ThumbnailEnabled
+	config.Config.Cron.ThumbnailSchedule.HourInterval = r.ThumbnailHourInterval
+	config.Config.Cron.ThumbnailSchedule.UseRange = r.ThumbnailUseRange
+	config.Config.Cron.ThumbnailSchedule.MinuteStart = r.ThumbnailMinuteStart
+	config.Config.Cron.ThumbnailSchedule.HourStart = r.ThumbnailHourStart
+	config.Config.Cron.ThumbnailSchedule.HourEnd = r.ThumbnailHourEnd
+	config.Config.Cron.ThumbnailSchedule.RunAtStartDelay = r.ThumbnailStartDelay
 
 	config.Config.Cron.ActorRescrapeSchedule.Enabled = r.ActorRescrapeEnabled
 	config.Config.Cron.ActorRescrapeSchedule.HourInterval = r.ActorRescrapeHourInterval

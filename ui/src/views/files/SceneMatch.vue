@@ -25,7 +25,6 @@
             <span v-if="file.duration > 0">{{ Math.floor(file.duration / 60) }} min,</span>
             {{ format(parseISO(file.created_time), "yyyy-MM-dd") }}
           </small>
-
           <b-field grouped>
             <b-taglist>
               <b-tag class="tag is-info is-small">{{$t('Search Fields')}}</b-tag>
@@ -78,6 +77,11 @@
                 {{subtitlesFilesCount(props.row)}}
               </b-tag>
             </b-table-column>
+            
+            <b-table-column field="scene_id" :label="$t('ID')" sortable nowrap v-slot="props">
+              {{ props.row.scene_id }}
+            </b-table-column>
+
             <b-table-column field="title" :label="$t('Title')" sortable v-slot="props">
               <p v-if="props.row.title">{{ props.row.title }}</p>
               <small>
@@ -102,6 +106,39 @@
           </b-table>
         </div>
       </section>
+
+      <div  class="modal-card-body">
+        <p>{{$t('Import Japanese Adult VR (JAVR) Scene')}}</p>
+        <div class="card">
+          <div class="card-content content">
+            <b-field grouped>
+              <b-select placeholder="Select scraper" v-model="javrScraper">
+                <option value="dmm">DMM(FANZA)</option>
+                <option value="javdatabase">javdatabase.com</option>
+                <option value="r18d">r18.dev</option>
+                <option value="javlibrary">javlibrary.com</option>
+                <option value="javlibraryjp">javlibrary.com(JP)</option>
+                <option value="javland">jav.land</option>
+                <option value="javlandjp">jav.land(JP)</option>
+              </b-select>
+              <b-input v-model="javrQuery" placeholder="ID (xxxx-001)" type="search"></b-input>
+              <b-button class="button is-primary is-outlined" style="margin-left:10px" v-on:click="extractDVDID()">{{$t('Get DVDID')}}</b-button>
+              <b-button class="button is-primary" style="margin-left:10px" v-on:click="scrapeJAVR()">{{$t('Go')}}</b-button>
+              <b-button class="button is-primary is-outlined" style="margin-left:10px" v-on:click="reload()">{{$t('Reload List')}}</b-button>
+
+              <b-navbar-item>
+              <table style="font-size:0.9em">
+                <tr v-if="Object.keys(lastScrapeMessage).length !== 0">
+                  <th><span :class="[lockScrape ? 'pulsate' : '']">{{$t('Data')}} →</span></th>
+                  <td>{{lastScrapeMessage.message}}</td>
+                </tr>
+              </table>
+              </b-navbar-item>
+
+            </b-field>
+          </div>
+    </div>
+      </div>
     </div>
     <a class="prev" @click="prevFile" title="Keyboard shortcut: O">&#10094;</a>
     <a class="next" @click="nextFile" title="Keyboard shortcut: P">&#10095;</a>
@@ -125,6 +162,8 @@ export default {
       dataNumResponses: 0,
       currentPage: 1,
       queryString: '',
+      javrQuery: '',
+      javrScraper: 'dmm',
       format,
       parseISO
     }
@@ -132,12 +171,56 @@ export default {
   computed: {
     file () {
       return this.$store.state.overlay.match.file
+    },
+    lockScrape () {
+      return this.$store.state.messages.lockScrape
+    },
+    lastScrapeMessage () {
+      return this.$store.state.messages.lastScrapeMessage
     }
   },
   mounted () {
     this.initView()
   },
   methods: {
+    // extractDVDID() {
+    //   const regex = /[a-zA-Z0-9]{2,6}-\d{2,6}/;
+    //   const match = this.file.filename.match(regex);
+    //   this.javrQuery = match ? match[0] : null;
+    // },
+    extractDVDID() {
+        this.javrQuery = this.extractDVDIDlogic(this.file.filename)
+    },
+    extractDVDIDlogic(filename) {
+      let dvdid = ""
+      let regex = /[a-zA-Z0-9]{2,6}-\d{2,6}/;
+      let match = filename.match(regex);
+      if (!match) {
+        regex = /([a-zA-Z]{2,6})(\d{2,6})/;
+        match = filename.match(regex);
+        if (match) {
+          let firstPart = match[1];
+          let secondPart = match[2];
+          if (secondPart.length >= 4) {
+            secondPart = secondPart.replace(/^0+/, '');
+          }
+                // 確認：secondPartが3文字未満の場合は0を補完する
+          if (secondPart.length < 3) {
+            secondPart = secondPart.padStart(3, '0');
+          }
+          dvdid = `${firstPart}-${secondPart}`;
+        } else {
+          dvdid = null;
+        }
+      } else {
+        dvdid = match[0];
+      }
+      return dvdid
+    },
+
+    scrapeJAVR () {
+      ky.post('/api/task/scrape-javr', { json: { s: this.javrScraper, q: this.javrQuery } })
+    },
     initView () {
       const commonWords = [
         '180', '180x180', '2880x1440', '3d', '3dh', '3dv', '30fps', '30m', '360',
@@ -149,12 +232,18 @@ export default {
       const isNotCommonWord = word => !commonWords.includes(word.toLowerCase()) && !/^[0-9]+p$/.test(word)
 
       this.data = []
+      var dvdid = this.extractDVDIDlogic(this.file.filename).toUpperCase();
+      // this.queryString = (
+      //   dvdid + ' ' +
+      //   this.file.filename
+      //     .replace(/\.|_|\+|-/g, ' ').replace(/\s+/g, ' ').trim()
+      //     .split(' ').filter(isNotCommonWord).join(' ')
+      //     .replace(/ s /g, '\'s '))
       this.queryString = (
-        this.file.filename
-          .replace(/\.|_|\+|-/g, ' ').replace(/\s+/g, ' ').trim()
-          .split(' ').filter(isNotCommonWord).join(' ')
-          .replace(/ s /g, '\'s '))
+        dvdid
+      )
       this.loadData()
+      this.extractDVDID()
     },
     loadData: async function loadData () {
       const requestIndex = this.dataNumRequests
@@ -276,7 +365,10 @@ export default {
         this.queryString = textbox.value.substring(0,textbox.selectionStart) + " " + prefix + selected + " " + textbox.value.substr(textbox.selectionEnd)
         this.loadData()
       }
+<<<<<<< HEAD
       
+=======
+>>>>>>> feature_02_file_rename
     },
     searchDatePrefix(prefix) {      
         let today = new Date().toISOString().slice(0, 10)
@@ -292,6 +384,12 @@ export default {
         }
         this.loadData()
     },
+<<<<<<< HEAD
+=======
+    reload() {
+      this.loadData()
+    },
+>>>>>>> feature_02_file_rename
     prettyBytes
   }
 }

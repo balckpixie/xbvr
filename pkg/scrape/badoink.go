@@ -6,6 +6,11 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"encoding/json"
+	"net/url"
+	"os"
+	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -37,12 +42,15 @@ func BadoinkSite(wg *models.ScrapeWG, updateSite bool, knownScenes []string, out
 	sceneCollector.OnHTML(`html`, func(e *colly.HTMLElement) {
 		sc := models.ScrapedScene{}
 		sc.ScraperID = scraperID
+		sc := models.ScrapedScene{}
+		sc.ScraperID = scraperID
 		sc.SceneType = "VR"
 		sc.Studio = company
 		sc.HomepageURL = strings.Split(e.Request.URL.String(), "?")[0]
 		sc.MasterSiteId = masterSiteId
 
 		// Site ID
+		sc.Site = siteID
 		sc.Site = siteID
 
 		// Scene ID - get from URL
@@ -70,6 +78,7 @@ func BadoinkSite(wg *models.ScrapeWG, updateSite bool, knownScenes []string, out
 		// Cover URLs for free videos
 		e.ForEach(`div#videoPreviewContainer dl8-video,video`, func(id int, e *colly.HTMLElement) {
 			if id == 0 {
+				sc.Covers = append(sc.Covers, strings.Split(e.Attr("poster"), "?")[0])
 				sc.Covers = append(sc.Covers, strings.Split(e.Attr("poster"), "?")[0])
 			}
 		})
@@ -107,6 +116,7 @@ func BadoinkSite(wg *models.ScrapeWG, updateSite bool, knownScenes []string, out
 
 		// Cast
 		sc.ActorDetails = make(map[string]models.ActorDetails)
+		sc.ActorDetails = make(map[string]models.ActorDetails)
 		e.ForEach(`a.video-actor-link`, func(id int, e *colly.HTMLElement) {
 			sc.Cast = append(sc.Cast, strings.TrimSpace(e.Text))
 			sc.ActorDetails[strings.TrimSpace(e.Text)] = models.ActorDetails{Source: idPrefix + " scrape", ProfileUrl: e.Request.AbsoluteURL(e.Attr("href"))}
@@ -120,12 +130,22 @@ func BadoinkSite(wg *models.ScrapeWG, updateSite bool, knownScenes []string, out
 
 		// Duration
 		durationRegex := regexp.MustCompile(`Duration: ([0-9]+) min`)
+		durationRegex := regexp.MustCompile(`Duration: ([0-9]+) min`)
 		e.ForEach(`p.video-duration`, func(id int, e *colly.HTMLElement) {
+			m := durationRegex.FindStringSubmatch(e.Text)
+			if len(m) == 2 {
+				sc.Duration, _ = strconv.Atoi(m[1])
 			m := durationRegex.FindStringSubmatch(e.Text)
 			if len(m) == 2 {
 				sc.Duration, _ = strconv.Atoi(m[1])
 			}
 		})
+
+		if config.Config.Funscripts.ScrapeFunscripts {
+			e.ForEach(`p.video-tags a[href^="/category/funscript"]`, func(id int, e *colly.HTMLElement) {
+				sc.HasScriptDownload = true
+			})
+		}
 
 		if config.Config.Funscripts.ScrapeFunscripts {
 			e.ForEach(`p.video-tags a[href^="/category/funscript"]`, func(id int, e *colly.HTMLElement) {
@@ -141,9 +161,21 @@ func BadoinkSite(wg *models.ScrapeWG, updateSite bool, knownScenes []string, out
 
 	trailerCollector.OnHTML(`html`, func(e *colly.HTMLElement) {
 		sc := e.Request.Ctx.GetAny("scene").(models.ScrapedScene)
+		sc := e.Request.Ctx.GetAny("scene").(models.ScrapedScene)
 
 		e.ForEach(`dl8-video source`, func(id int, e *colly.HTMLElement) {
 			if id == 0 {
+
+				// This now needs to be made case insensitive (_trailer is now _Trailer)
+				origURLtmp := e.Attr("src")
+				origURL := strings.ToLower(origURLtmp)
+
+				// Some scenes had different trailer name "templates". Some videos didn't have trailers and one VRCosplayX (Death Note) was was missing "_" in the name
+
+				fpName3m := strings.Split(strings.Split(strings.Split(origURL, "_trailer")[0], "_3m")[0], "3m")[0]
+				fpName2m := strings.Split(strings.Split(fpName3m, "_trailer")[0], "_2m")[0]
+				fpName := strings.Split(strings.Split(fpName2m, "_trailer")[0], "_1m")[0]
+
 
 				// This now needs to be made case insensitive (_trailer is now _Trailer)
 				origURLtmp := e.Attr("src")
@@ -218,9 +250,49 @@ func BadoinkSite(wg *models.ScrapeWG, updateSite bool, knownScenes []string, out
 		})
 
 		out <- sc
+				sc.Filenames = append(sc.Filenames, baseName+".funscript")
+
+				// Get release date from trailer's creation date if it wasn't on the scene page (BabeVR)
+				if sc.Released == "" {
+					if trailerURL, err := url.Parse(origURLtmp); err == nil {
+						trailerPath := filepath.Join(common.CacheDir, filepath.Base(trailerURL.Path))
+						// 200kB should be enough to include the relevant metadata
+						if r, err := resty.New().R().SetOutput(trailerPath).SetHeader("Range", "bytes=0-200000").Get(trailerURL.String()); err == nil {
+							if probeData, err := ffprobe.GetProbeData(trailerPath, time.Second*10); err == nil {
+								if creationTime, err := goment.New(probeData.Format.Tags.CreationTime); err == nil {
+									sc.Released = creationTime.Format("YYYY-MM-DD")
+								}
+							}
+
+							// If we still don't have a release date, try headers sent with the trailer
+							// We check both the `date` and `last-modified` headers and take the oldest one
+							// This isn't super reliable, but it's better than no date at all
+							if sc.Released == "" {
+								date, _ := goment.New(r.Header().Get("date"), "ddd, DD MMM YYYY")
+								modified, _ := goment.New(r.Header().Get("last-modified"), "ddd, DD MMM YYYY")
+								if date == nil || (modified != nil && modified.IsBefore(date)) {
+									date = modified
+								}
+								if date != nil {
+									sc.Released = date.Format("YYYY-MM-DD")
+								}
+							}
+						}
+						os.Remove(trailerPath)
+					}
+				}
+
+			}
+		})
+
+		out <- sc
 	})
 
 	siteCollector.OnHTML(`div.pagination a`, func(e *colly.HTMLElement) {
+		if !limitScraping {
+			pageURL := e.Request.AbsoluteURL(e.Attr("href"))
+			siteCollector.Visit(pageURL)
+		}
 		if !limitScraping {
 			pageURL := e.Request.AbsoluteURL(e.Attr("href"))
 			siteCollector.Visit(pageURL)
@@ -236,6 +308,40 @@ func BadoinkSite(wg *models.ScrapeWG, updateSite bool, knownScenes []string, out
 		}
 	})
 
+	if config.Config.Funscripts.ScrapeFunscripts {
+		siteCollector.OnHTML(`div.video-card-info`, func(e *colly.HTMLElement) {
+			sceneURL := ""
+			e.ForEach(`div.video-card-info-main a`, func(id int, e *colly.HTMLElement) {
+				sceneURL = e.Request.AbsoluteURL(e.Attr("href"))
+			})
+
+			e.ForEach(`a[href^="/category/funscript"]`, func(id int, e *colly.HTMLElement) {
+				var existingScene models.Scene
+				commonDb.Where(&models.Scene{SceneURL: sceneURL}).First(&existingScene)
+				if existingScene.ID != 0 && existingScene.ScriptPublished.IsZero() {
+					var sc models.ScrapedScene
+					sc.InternalSceneId = existingScene.ID
+					sc.HasScriptDownload = true
+					sc.OnlyUpdateScriptData = true
+					sc.HumanScript = false
+					sc.AiScript = false
+					out <- sc
+				}
+			})
+		})
+	}
+
+	if singleSceneURL != "" {
+		sceneCollector.Visit(singleSceneURL)
+	} else {
+		siteCollector.Visit(URL)
+	}
+
+	if updateSite {
+		updateSiteLastUpdate(scraperID)
+	}
+
+	logScrapeFinished(scraperID, siteID)
 	if config.Config.Funscripts.ScrapeFunscripts {
 		siteCollector.OnHTML(`div.video-card-info`, func(e *colly.HTMLElement) {
 			sceneURL := ""

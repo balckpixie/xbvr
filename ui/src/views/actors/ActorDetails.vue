@@ -39,8 +39,15 @@
                   </template>
                 </b-carousel>
                 <div class="flexcentre">
-                <b-button class="button is-primary is-small" style="display: flex; justify-content: center;" v-on:click="setActorImage()">{{$t('Set Main Image')}}</b-button>
-                <b-button v-if="images.length != 0" class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="deleteActorImage()">{{$t('Delete Image')}}</b-button>
+                <b-button class="button is-primary is-small" style="display: flex; justify-content: center;" v-on:click="setActorImage()">{{$t('Set Main')}}</b-button>
+                <b-button class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="setActorFaceImage()">{{$t('Set Face')}}</b-button>
+                <b-button v-if="images.length != 0" class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="deleteActorImage()">{{$t('Delete')}}</b-button>
+                <span style="display: flex; justify-content: center;margin-left: 1em;" >Scrape</span>
+                <b-button class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="scrapeActorImage('b', 'エロ')">{{$t('Bing')}}</b-button>
+                <b-button class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="scrapeActorImage('g', 'エロ')">{{$t('Google')}}</b-button>
+                <b-button class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="scrapeActorImage('g', 'セクシー女優 全裸')">{{$t('Google2')}}</b-button>
+                <b-button class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="scrapeActorImage('g', 'グラビア')">{{$t('Gravia')}}</b-button>
+                <b-button class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="scrapeActorImage('g', '顔')">{{$t('Face')}}</b-button>
                 </div>
               </b-tab-item>
             </b-tabs>
@@ -87,6 +94,25 @@
                     </b-field>
 
                   </div>
+
+                  <div class="image-row">
+                    <div class="image-wrapper">
+                      <b-tooltip  type="is-light" :delay=100>
+                        <vue-load-image>
+                          <img slot="image" :src="getImageURL(actor.face_image_url)" alt="Image" class="thumbnail" @mouseover="showTooltip()" @mouseout="hideTooltip()"  />
+                          <img slot="preloader" :src="getImageURL('https://i.stack.imgur.com/kOnzy.gif')" style="height: 50px;display: block;margin-left:auto;margin-right: auto;" />
+                          <img slot="error" src="/ui/images/blank_female_profile.png" width="80" />
+                        </vue-load-image>
+                      </b-tooltip>
+
+                      <div v-if="casthover" class="tooltip">
+                        <img :src="getImageURL(actor.face_image_url)" alt="Tooltip Image" />
+                      </div>
+                    </div>
+                  </div>
+
+
+
                   <div class="column pt-0">
                     <div class="is-pulled-right">
                       <actor-favourite-button :actor="actor"/>&nbsp;
@@ -286,6 +312,7 @@ export default {
       akas: [],
       extrefs: [],
       colleagues: [],
+      casthover: false,
     }
   },
   computed: {
@@ -334,7 +361,13 @@ export default {
     activeTab: function (newval, oldval) {      
       }
     },  
-    methods: {
+  methods: {
+    showTooltip(idx) {
+      this.casthover = true;
+    },
+    hideTooltip(idx) {
+      this.casthover = false;
+    },
     getImageURL (u, size) {
       if (u.startsWith('http') || u.startsWith('https')) {
         return '/img/' + size + '/' + u.replace('://', ':/')
@@ -474,6 +507,26 @@ export default {
       const arr = JSON.parse(jsonArr);
       return  arr.join(", ");       
     },
+    // getFirstCharacter() {
+    //   if (this.actor.aliases && this.actor.aliases.length > 0) {
+    //     return this.actor.aliases[0][0];
+    //   } else {
+    //     return "";
+    //   }
+    // },
+    getFirstCharsFromJSON(jsonStr) {
+      try {
+        const arr = JSON.parse(jsonStr);
+        if (arr.length > 0 && arr[0].length > 0) {
+          //return arr[0].charAt(0);
+          return arr[0].substring(0, Math.min(arr[0].length, 3));
+        } else {
+          throw new Error("empty array or empty first element");
+        }
+      } catch (error) {
+        return "";
+      }
+    },
     setActorImage (val) {
       ky.post('/api/actor/setimage', {
       json: {
@@ -482,7 +535,22 @@ export default {
       }}).json().then(data => {        
         this.$store.state.overlay.actordetails.actor = data
         this.carouselSlide=0
-        this.$store.dispatch('actorList/load', { offset: this.$store.state.actorList.offset - this.$store.state.actorList.limit })
+        var initialChar = this.getFirstCharsFromJSON(this.actor.aliases)
+        this.$store.state.actorList.filters.jumpTo = initialChar
+        this.$store.dispatch('actorList/load', { jumpTo: initialChar, offset: this.$store.state.actorList.offset - this.$store.state.actorList.limit })
+      })    
+    },
+    setActorFaceImage (val) {
+      ky.post('/api/actor/setfaceimage', {
+      json: {
+        actor_id: this.actor.id,
+        url: this.images[this.carouselSlide]
+      }}).json().then(data => {        
+        this.$store.state.overlay.actordetails.actor = data
+        this.carouselSlide=0
+        var initialChar = this.getFirstCharsFromJSON(this.actor.aliases)
+        this.$store.state.actorList.filters.jumpTo = initialChar
+        this.$store.dispatch('actorList/load', { jumpTo: initialChar, offset: this.$store.state.actorList.offset - this.$store.state.actorList.limit })
       })    
     },
     deleteActorImage (val) {
@@ -490,6 +558,17 @@ export default {
       json: {
         actor_id: this.actor.id,
         url: this.images[this.carouselSlide]
+      }}).json().then(data => {
+        this.$store.state.overlay.actordetails.actor = data
+      })    
+    },
+    scrapeActorImage (site,val) {
+      ky.post('/api/actor/searchImage', {
+      json: {
+        actor_id: this.actor.id,
+        url: this.images[this.carouselSlide],
+        keyword: val,
+        site: site
       }}).json().then(data => {
         this.$store.state.overlay.actordetails.actor = data
       })    

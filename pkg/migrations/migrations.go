@@ -1963,6 +1963,7 @@ func Migrate() {
 				return err
 			},
 		},
+<<<<<<< HEAD
 		{
 			ID: "0077-Update-VirtualPorn-ids",
 			Migrate: func(tx *gorm.DB) error {
@@ -2249,10 +2250,40 @@ func Migrate() {
 				return nil
 			},
 		}})
+=======
+
+		{
+			ID: "0076-actor-faceimage-setdefaultdata",
+			Migrate: func(tx *gorm.DB) error {
+				var actors []models.Actor
+				err := tx.Where("face_image_url is null").Find(&actors).Error
+				if err != nil {
+					return err
+				}
+
+				for _, actor := range actors {
+					changed := false
+					if actor.FaceImageUrl == "" {
+						actor.FaceImageUrl = actor.ImageUrl
+						changed = true
+					}
+					if changed {
+						err = tx.Save(&actor).Error
+						if err != nil {
+							return err
+						}
+					}
+				}
+				return nil
+			},
+		},
+	})
+>>>>>>> feature_02_file_rename
 
 	if err := m.Migrate(); err != nil {
 		common.Log.Fatalf("Could not migrate: %v", err)
 	}
+<<<<<<< HEAD
 	if len(retryMigration) > 0 {
 		for _, migration := range retryMigration {
 			common.Log.Warnf("*** MIGRATION WARNING ***: Could not migrate: '%v', this migration will retry the next time XBVR is started", migration)
@@ -2262,6 +2293,8 @@ func Migrate() {
 			}
 		}
 	}
+=======
+>>>>>>> feature_02_file_rename
 	common.Log.Printf("Migration did run successfully")
 
 	db.Close()

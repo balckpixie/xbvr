@@ -2,9 +2,11 @@ package models
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/avast/retry-go/v4"
 	"github.com/jinzhu/gorm"
@@ -52,6 +54,8 @@ type Actor struct {
 
 	SceneRatingAverage string `json:"scene_rating_average" gorm:"-" `
 	AkaGroups          []Aka  `gorm:"many2many:actor_akas;" json:"aka_groups" xbvrbackup:"-"`
+
+	FaceImageUrl   string  `json:"face_image_url" xbvrbackup:"face_image_url"`
 }
 
 type RequestActorList struct {
@@ -94,6 +98,30 @@ type ResponseActorList struct {
 type ActorLink struct {
 	Url  string `json:"url"`
 	Type string `json:"type"`
+}
+
+func getFirstCharsFromJSON(jsonStr string, count int) (string, error) {
+    var arr []string
+    err := json.Unmarshal([]byte(jsonStr), &arr)
+    if err != nil {
+        return "", err
+    }
+    if len(arr) > 0 && len(arr[0]) > 0 {
+        return truncateUTF8String(arr[0], count), nil
+    }
+    return "", fmt.Errorf("empty array or empty first element")
+}
+
+// UTF-8エンコードを考慮して文字列を切り詰める
+func truncateUTF8String(s string, count int) string {
+    runeCount := 0
+    for i := range s {
+        runeCount++
+        if runeCount > count {
+            return s[:i]
+        }
+    }
+    return s
 }
 
 func (i *Actor) Save() error {
@@ -416,9 +444,12 @@ func QueryActors(r RequestActorList, enablePreload bool) ResponseActorList {
 
 	switch r.Sort.OrElse("") {
 	case "name_asc":
-		tx = tx.Order("name asc")
+	// 	tx = tx.Order("name asc")
+	// case "name_desc":
+	// 	tx = tx.Order("name desc")
+		tx = tx.Order("actors.aliases asc")
 	case "name_desc":
-		tx = tx.Order("name desc")
+		tx = tx.Order("actors.aliases desc")
 	case "rating_desc":
 		tx = tx.
 			Where("actors.star_rating > ?", 0).
@@ -474,29 +505,54 @@ func QueryActors(r RequestActorList, enablePreload bool) ResponseActorList {
 		return db.Order("release_date DESC").Where("is_hidden = 0")
 	})
 
+	cnt := 0
 	if r.JumpTo.OrElse("") != "" {
+		
 		// if we want to jump to actors starting with a specific letter, then we need to work out the offset to them
-		cnt := 0
-		txList := tx.Select(`distinct actors.name`)
+
+		txList := tx.Select(`distinct actors.name, actors.aliases`)
 		txList.Find(&out.Actors)
+
+		log.Info("count:" + strconv.Itoa(len(out.Actors)))
 		for idx, actor := range out.Actors {
-			if strings.ToLower(actor.Name) >= strings.ToLower(r.JumpTo.OrElse("")) {
-				break
+			if actor.Aliases == "" {
+				// if strings.ToLower(actor.Name) >= strings.ToLower(r.JumpTo.OrElse("")) {
+				// 	break
+				// }
+			} else {
+				
+				count := utf8.RuneCountInString(r.JumpTo.OrElse(""))
+
+				firstChar, err :=  getFirstCharsFromJSON(actor.Aliases, count)
+				if err != nil {
+	
+				} else {
+					if actor.Aliases != "" {
+						if string(firstChar) >= r.JumpTo.OrElse("") {
+							break
+						}
+					}
+				}
 			}
+
 			cnt = idx
 		}
-		offset = (cnt / limit) * limit
+		// offset = (cnt / limit) * limit
+		offset = offset + cnt + 1
 	}
-	out.Offset = offset
+	// out.Offset = offset
 
 	tx = tx.Select(`distinct actors.*, 
 	(select AVG(s.star_rating) scene_avg from scene_cast sc join scenes s on s.id=sc.scene_id where sc.actor_id =actors.id and s.star_rating > 0 and is_hidden=0) as scene_rating_average	
 	`)
 
-	tx.Limit(limit).
-		Offset(offset).
-		Find(&out.Actors)
-
+	// tx.Limit(limit).
+	// 	Offset(offset).
+	// 	Find(&out.Actors)
+	tx.
+	Offset(offset).
+	Limit(limit).
+	Find(&out.Actors)
 	return out
 }
 

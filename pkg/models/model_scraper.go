@@ -2,12 +2,20 @@ package models
 
 import (
 	"encoding/json"
+<<<<<<< HEAD
 	"sync/atomic"
+=======
+	"sync"
+>>>>>>> feature_02_file_rename
 )
 
 var scrapers []Scraper
 
+<<<<<<< HEAD
 type ScraperFunc func(*ScrapeWG, bool, []string, chan<- ScrapedScene, string, string, bool) error
+=======
+type ScraperFunc func(*sync.WaitGroup, bool, []string, chan<- ScrapedScene, string, string, bool) error
+>>>>>>> feature_02_file_rename
 
 type Scraper struct {
 	ID           string      `json:"id"`
@@ -30,6 +38,7 @@ type ScrapedScene struct {
 	Gallery           []string `json:"gallery"`
 	Tags              []string `json:"tags"`
 	Cast              []string `json:"cast"`
+	Aliases           []string `json:"aliases"`
 	Filenames         []string `json:"filename"`
 	Duration          int      `json:"duration"`
 	Synopsis          string   `json:"synopsis"`

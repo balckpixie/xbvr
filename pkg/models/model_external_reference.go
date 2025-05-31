@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/avast/retry-go/v4"
+	"github.com/gocolly/colly/v2"
 	"github.com/markphelps/optional"
 
 	"github.com/xbapps/xbvr/pkg/common"
@@ -783,6 +784,21 @@ func (scrapeRules ActorScraperConfig) buildGenericActorScraperRules() {
 		PostProcessing: []PostProcessing{{Function: "RegexString", Params: []string{`Weight:\s*(\d{2,3})\s*kg`, "1"}}},
 	})
 	scrapeRules.GenericActorScrapingConfig["darkroomvr scrape"] = siteDetails
+
+	siteDetails = GenericScraperRuleSet{}
+	siteDetails.Domain = "api.dmm.com"
+	siteDetails.IsJson = true
+
+	siteDetails.SiteRules = append(siteDetails.SiteRules, GenericActorScraperRule{XbvrField: "cup_size", Selector: `result.actress.0.cup`})
+	siteDetails.SiteRules = append(siteDetails.SiteRules, GenericActorScraperRule{XbvrField: "waist_size", Selector: `result.actress.0.waist`})
+	siteDetails.SiteRules = append(siteDetails.SiteRules, GenericActorScraperRule{XbvrField: "hip_size", Selector: `result.actress.0.hip`})
+	siteDetails.SiteRules = append(siteDetails.SiteRules, GenericActorScraperRule{XbvrField: "band_size", Selector: `result.actress.0.bust`})
+	siteDetails.SiteRules = append(siteDetails.SiteRules, GenericActorScraperRule{XbvrField: "birth_date", Selector: `result.actress.0.birthday`, PostProcessing: []PostProcessing{{Function: "Parse Date", Params: []string{"2006-01-02"}}}})
+	siteDetails.SiteRules = append(siteDetails.SiteRules, GenericActorScraperRule{XbvrField: "height", Selector: `result.actress.0.height`})
+	siteDetails.SiteRules = append(siteDetails.SiteRules, GenericActorScraperRule{XbvrField: "ethnicity", Selector: `result.actress.0.prefectures`})
+	siteDetails.SiteRules = append(siteDetails.SiteRules, GenericActorScraperRule{XbvrField: "image_url", Selector: `result.actress.0.imageURL.large`}) // image will expiry, hopefully cache will keep it
+
+	scrapeRules.GenericActorScrapingConfig["dmm scrape"] = siteDetails
 
 	siteDetails = GenericScraperRuleSet{}
 	siteDetails.Domain = "www.fuckpassvr.com"

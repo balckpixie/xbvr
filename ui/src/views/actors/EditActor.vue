@@ -302,12 +302,30 @@ export default {
         id: 'heh',
         onConfirm: () => {
           ky.delete(`/api/actor/delete/${this.actor.id}`).json().then(data => {
-            this.$store.dispatch('actorList/load', { offset: this.$store.state.actorList.offset - this.$store.state.actorList.limit })
+
+            
+            var initialChar = this.getFirstCharsFromJSON(this.actor.aliases)
+            this.$store.state.actorList.filters.jumpTo = initialChar
+            this.$store.dispatch('actorList/load', { jumpTo: initialChar, offset: this.$store.state.actorList.offset - this.$store.state.actorList.limit })
+            // this.$store.dispatch('actorList/load', { offset: this.$store.state.actorList.offset - this.$store.state.actorList.limit })
             this.$store.commit('overlay/hideActorEditDetails')
             this.$store.commit('overlay/hideActorDetails')
           })
         }
       })
+    },
+    getFirstCharsFromJSON(jsonStr) {
+      try {
+        const arr = JSON.parse(jsonStr);
+        if (arr.length > 0 && arr[0].length > 0) {
+          //return arr[0].charAt(0);
+          return arr[0].substring(0, Math.min(arr[0].length, 3));
+        } else {
+          throw new Error("empty array or empty first element");
+        }
+      } catch (error) {
+        return "";
+      }
     },
     blur (field) {
       if (this.changesMade) return // Changes have already been made. No point to check any further   

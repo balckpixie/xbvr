@@ -494,6 +494,7 @@ export default {
         this.$store.state.optionsDeoVR.players.script_sort_seq = value
       },
     },
+<<<<<<< HEAD
     subtitleSequence: {
       get () {
         return this.$store.state.optionsDeoVR.players.subtitle_sort_seq
@@ -502,6 +503,8 @@ export default {
         this.$store.state.optionsDeoVR.players.subtitle_sort_seq = value
       },
     },
+=======
+>>>>>>> feature_02_file_rename
     multiTrackCastCuepoints: {
       get () {        
         return this.$store.state.optionsDeoVR.heresphere.multitrack_cast_cuepoints

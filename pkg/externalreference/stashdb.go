@@ -52,6 +52,7 @@ func ApplySceneRules() {
 	config := models.BuildActorScraperRules()
 
 	for sitename, configSite := range config.StashSceneMatching {
+<<<<<<< HEAD
 		for _, stashRules := range configSite {
 			if len(stashRules.Rules) > 0 {
 				if stashRules.StashId == "" {
@@ -61,6 +62,15 @@ func ApplySceneRules() {
 				}
 				matchSceneOnRules(sitename, stashRules)
 			}
+=======
+		if len(configSite.Rules) > 0 {
+			if configSite.StashId == "" {
+				var ext models.ExternalReference
+				ext.FindExternalId("stashdb studio", sitename)
+				configSite.StashId = ext.ExternalId
+			}
+			matchSceneOnRules(sitename, config)
+>>>>>>> feature_02_file_rename
 		}
 	}
 
@@ -91,6 +101,7 @@ func matchOnSceneUrl() {
 		var xbvrId uint
 		var xbvrSceneId string
 
+<<<<<<< HEAD
 		for _, unmatchedXbvrScene := range unmatchedXbvrScenes {
 			stashId := strings.TrimPrefix(unmatchedXbvrScene.SceneID, "stash-")
 			if stashId == stashScene.ExternalId {
@@ -125,6 +136,25 @@ func matchOnSceneUrl() {
 						xbvrSceneId = xbvrScene.SceneID
 					}
 				}
+=======
+		// see if we can link to an xbvr scene based on the urls
+		for _, url := range scene.URLs {
+			if url.Type == "STUDIO" {
+				var xbvrScene models.Scene
+				for _, scene := range unmatchedXbvrScenes {
+					sceneurl := removeQueryFromURL(scene.SceneURL)
+					tmpurl := removeQueryFromURL(url.URL)
+					sceneurl = simplifyUrl(sceneurl)
+					tmpurl = simplifyUrl(tmpurl)
+					if strings.EqualFold(sceneurl, tmpurl) {
+						xbvrScene = scene
+					}
+				}
+				if xbvrScene.ID != 0 {
+					xbvrId = xbvrScene.ID
+					xbvrSceneId = xbvrScene.SceneID
+				}
+>>>>>>> feature_02_file_rename
 			}
 		}
 		if xbvrId != 0 {
@@ -155,11 +185,16 @@ func simplifyUrl(url string) string {
 }
 
 // if an unmatched scene has a trailing number try to match on the  xbvr scene_id for that studio
+<<<<<<< HEAD
 func matchSceneOnRules(sitename string, config models.StashSiteConfig) {
+=======
+func matchSceneOnRules(sitename string, config models.ActorScraperConfig) {
+>>>>>>> feature_02_file_rename
 
 	db, _ := models.GetDB()
 	defer db.Close()
 
+<<<<<<< HEAD
 	if config.StashId == "" {
 		var ext models.ExternalReference
 		ext.FindExternalId("stashdb studios", sitename)
@@ -171,6 +206,19 @@ func matchSceneOnRules(sitename string, config models.StashSiteConfig) {
 	log.Infof("Matching on rules for %s Stashdb Id: %s", sitename, config.StashId)
 	var stashScenes []models.ExternalReference
 	stashId := config.StashId
+=======
+	if config.StashSceneMatching[sitename].StashId == "" {
+		var ext models.ExternalReference
+		ext.FindExternalId("stashdb studios", sitename)
+		site := config.StashSceneMatching[sitename]
+		site.StashId = ext.ExternalId
+		config.StashSceneMatching[sitename] = site
+	}
+
+	log.Infof("Matching on rules for %s Stashdb Id: %s", sitename, config.StashSceneMatching[sitename].StashId)
+	var stashScenes []models.ExternalReference
+	stashId := config.StashSceneMatching[sitename].StashId
+>>>>>>> feature_02_file_rename
 	if stashId == "" {
 		return
 	}
@@ -186,6 +234,7 @@ func matchSceneOnRules(sitename string, config models.StashSiteConfig) {
 		var data models.StashScene
 		json.Unmarshal([]byte(stashScene.ExternalData), &data)
 	urlLoop:
+<<<<<<< HEAD
 		for _, rule := range config.Rules { // for each rule on this site
 			var xbvrScene models.Scene
 			switch rule.StashRule {
@@ -216,10 +265,49 @@ func matchSceneOnRules(sitename string, config models.StashSiteConfig) {
 								default:
 									log.Errorf("Unkown xbvr field %s", rule.XbvrField)
 								}
+=======
+		for _, url := range data.URLs {
+			if url.Type == "STUDIO" {
+				for _, rule := range config.StashSceneMatching[sitename].Rules { // for each rule on this site
+					re := regexp.MustCompile(rule.StashRule)
+					match := re.FindStringSubmatch(url.URL)
+					if match != nil {
+						var extrefSite models.ExternalReference
+						db.Where("external_source = ? and external_id = ?", "stashdb studio", data.Studio.ID).Find(&extrefSite)
+						if extrefSite.ID != 0 {
+							var xbvrScene models.Scene
+							switch rule.XbvrField {
+							case "scene_id":
+								for _, scene := range xbrScenes {
+									if strings.HasSuffix(scene.SceneID, match[rule.StashMatchResultPosition]) {
+										xbvrScene = scene
+										break
+									}
+								}
+							case "scene_url":
+								for _, scene := range xbrScenes {
+									if strings.Contains(strings.ReplaceAll(strings.ReplaceAll(strings.ToLower(scene.SceneURL), "-", " "), "_", " "), strings.ReplaceAll(strings.ReplaceAll(strings.ToLower(match[rule.StashMatchResultPosition]), "-", " "), "_", " ")) {
+										xbvrScene = scene
+										break
+									}
+								}
+							default:
+								log.Errorf("Unkown xbvr field %s", rule.XbvrField)
+							}
+
+							if xbvrScene.ID != 0 {
+								xbvrLink := models.ExternalReferenceLink{InternalTable: "scenes", InternalDbId: xbvrScene.ID, InternalNameId: xbvrScene.SceneID,
+									ExternalReferenceID: stashScene.ID, ExternalSource: stashScene.ExternalSource, ExternalId: stashScene.ExternalId, MatchType: 20}
+								stashScene.XbvrLinks = append(stashScene.XbvrLinks, xbvrLink)
+								stashScene.Save()
+								matchPerformerName(data, xbvrScene, 20)
+								break urlLoop
+>>>>>>> feature_02_file_rename
 							}
 						}
 					}
 				}
+<<<<<<< HEAD
 			case "title/date":
 				for _, scene := range xbrScenes {
 					if simplystring(data.Title) == simplystring(scene.Title) && data.Date == scene.ReleaseDateText {
@@ -297,6 +385,12 @@ func simplystring(str string) string {
 	str = strings.ReplaceAll(str, `""`, "")
 	str = strings.ReplaceAll(str, "`", "")
 	return strings.ToLower(str)
+=======
+			}
+		}
+	}
+
+>>>>>>> feature_02_file_rename
 }
 
 // checks if scenes that have a match, can match the scenes performers
@@ -335,8 +429,12 @@ func checkMatchedScenes() {
 
 					// if len(ref.XbvrLinks) == 0 {
 					for _, xbvrActor := range xbvrScene.Cast {
+<<<<<<< HEAD
 						if strings.EqualFold(strings.TrimSpace(simplifyName(xbvrActor.Name)), strings.TrimSpace(simplifyName(performer.Performer.Name))) ||
 							strings.EqualFold(strings.TrimSpace(simplifyName(xbvrActor.Name)), strings.TrimSpace(simplifyName(performer.As))) {
+=======
+						if strings.EqualFold(strings.TrimSpace(xbvrActor.Name), strings.TrimSpace(performer.Performer.Name)) {
+>>>>>>> feature_02_file_rename
 							// check if actor already matched
 							exists := false
 							for _, link := range ref.XbvrLinks {
@@ -451,7 +549,11 @@ func matchPerformerName(scene models.StashScene, xbvrScene models.Scene, matchLe
 
 		if ref.ID != 0 && len(ref.XbvrLinks) == 0 {
 			for _, xbvrActor := range xbvrScene.Cast {
+<<<<<<< HEAD
 				if strings.EqualFold(strings.TrimSpace(simplifyName(xbvrActor.Name)), strings.TrimSpace(simplifyName(performer.Performer.Name))) {
+=======
+				if strings.EqualFold(strings.TrimSpace(xbvrActor.Name), strings.TrimSpace(performer.Performer.Name)) {
+>>>>>>> feature_02_file_rename
 					xbvrLink := models.ExternalReferenceLink{InternalTable: "actors", InternalDbId: xbvrActor.ID, InternalNameId: xbvrActor.Name, MatchType: matchLevl,
 						ExternalReferenceID: ref.ID, ExternalSource: ref.ExternalSource, ExternalId: ref.ExternalId}
 					ref.XbvrLinks = append(ref.XbvrLinks, xbvrLink)
@@ -477,6 +579,7 @@ func matchPerformerName(scene models.StashScene, xbvrScene models.Scene, matchLe
 
 }
 
+<<<<<<< HEAD
 func simplifyName(name string) string {
 	name = strings.TrimSpace(name)
 	name = strings.ReplaceAll(name, " ", "")
@@ -484,6 +587,8 @@ func simplifyName(name string) string {
 	return strings.ReplaceAll(name, "-", "")
 }
 
+=======
+>>>>>>> feature_02_file_rename
 // tries to match from stash to xbvr using the aka or aliases from stash
 func MatchAkaPerformers() {
 	tlog := log.WithField("task", "scrape")
@@ -528,12 +633,19 @@ func MatchAkaPerformers() {
 
 	for _, aka := range akaList {
 		var scene models.Scene
+<<<<<<< HEAD
 
 		db.Preload("Cast").Where(&models.Scene{ID: uint(aka.SceneInternalDbId)}).First(&scene)
 
 		for _, actor := range scene.Cast {
 			var extref models.ExternalReference
 			if strings.EqualFold(strings.TrimSpace(simplifyName(actor.Name)), strings.TrimSpace(simplifyName(aka.AkaName))) {
+=======
+		scene.GetIfExistByPK(uint(aka.SceneInternalDbId))
+		for _, actor := range scene.Cast {
+			var extref models.ExternalReference
+			if strings.EqualFold(strings.TrimSpace(actor.Name), strings.TrimSpace(aka.AkaName)) {
+>>>>>>> feature_02_file_rename
 				extref.FindExternalId("stashdb performer", aka.ActorId)
 				if extref.ID != 0 && len(extref.XbvrLinks) == 0 {
 					xbvrLink := models.ExternalReferenceLink{InternalTable: "actors", InternalDbId: actor.ID, InternalNameId: actor.Name, MatchType: 30,
@@ -549,7 +661,11 @@ func MatchAkaPerformers() {
 				var aliases []string
 				json.Unmarshal([]byte(aka.Aliases), &aliases)
 				for _, alias := range aliases {
+<<<<<<< HEAD
 					if len(extref.XbvrLinks) == 0 && strings.EqualFold(strings.TrimSpace(simplifyName(actor.Name)), strings.TrimSpace(simplifyName(alias))) {
+=======
+					if len(extref.XbvrLinks) == 0 && strings.EqualFold(strings.TrimSpace(actor.Name), strings.TrimSpace(alias)) {
+>>>>>>> feature_02_file_rename
 						extref.FindExternalId("stashdb performer", aka.ActorId)
 						if extref.ID != 0 && len(extref.XbvrLinks) == 0 {
 							xbvrLink := models.ExternalReferenceLink{InternalTable: "actors", InternalDbId: actor.ID, InternalNameId: actor.Name, MatchType: 30,
@@ -598,7 +714,11 @@ func ReverseMatch() {
 			var stashSceneData models.StashScene
 			json.Unmarshal([]byte(stashScene.ExternalData), &stashSceneData)
 			for _, performance := range stashSceneData.Performers {
+<<<<<<< HEAD
 				if strings.EqualFold(strings.TrimSpace(simplifyName(actor.Name)), strings.TrimSpace(simplifyName(performance.As))) {
+=======
+				if strings.EqualFold(strings.TrimSpace(actor.Name), strings.TrimSpace(performance.As)) {
+>>>>>>> feature_02_file_rename
 					var extref models.ExternalReference
 					extref.FindExternalId("stashdb performer", performance.Performer.ID)
 					if extref.ID != 0 {
@@ -616,7 +736,11 @@ func ReverseMatch() {
 					break sceneLoop
 				}
 				for _, alias := range performance.Performer.Aliases {
+<<<<<<< HEAD
 					if strings.EqualFold(strings.TrimSpace(simplifyName(actor.Name)), strings.TrimSpace(simplifyName(alias))) {
+=======
+					if strings.EqualFold(strings.TrimSpace(actor.Name), strings.TrimSpace(alias)) {
+>>>>>>> feature_02_file_rename
 						var extref models.ExternalReference
 						extref.FindExternalId("stashdb performer", performance.Performer.ID)
 						if extref.ID != 0 {

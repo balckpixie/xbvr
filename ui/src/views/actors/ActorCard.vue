@@ -2,7 +2,7 @@
   <div class="card is-shadowless">
     <div class="card-image">
       <div class="bbox"
-           v-bind:style="{backgroundImage: `url(${getImageURL(actor.image_url)})`, backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', opacity:isAvailable(actor) ? 1.0 : isAvailOpactiy}"
+           v-bind:style="{backgroundImage: `url(${getActorImageURL(actor)})`, backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', opacity:isAvailable(actor) ? 1.0 : isAvailOpactiy}"
            @click="showDetails(actor)"
            @mouseover="preview = true"
            @mouseleave="preview = false">
@@ -12,7 +12,7 @@
     </div>
 
     <div style="padding-top:4px;">
-      <div class="scene_title">{{actor.name}}</div>
+      <div class="scene_title">{{actor.name}} {{getAliases(actor.aliases)}}</div>
       <a v-if="colleague!=undefined" class="button is-info is-outlined is-small"
         @click="showColleague(actor.name,colleague)"
         :title="'Show Scenes with ' + actor.name">
@@ -61,7 +61,7 @@ import { tr } from 'date-fns/locale'
 
 export default {
   name: 'ActorCard',
-  props: { actor: Object, colleague: String },
+  props: { actor: Object, colleague: String, showFace: Boolean },
    components: {ActorFavouriteButton, ActorWatchlistButton, VueLoadImage, ActorEditButton, LinkStashdbButton},
   data () {
     return {
@@ -79,6 +79,22 @@ export default {
     },
   },
   methods: {
+    getActorImageURL(actor) {
+        return this.showFace ? actor.face_image_url : actor.image_url;
+    },
+
+    getAliases(u) {
+      if (u=='' || u == undefined) {
+        return ""
+      }
+      try {
+        const array = JSON.parse(u)
+        //return "(" + array.join(',') + ")"
+        return "(" + array[0] + ")"
+      } catch (error) {
+        return u
+      }
+    },
     getImageURL (u) {
       if (u=='' || u == undefined) {
         return "/ui/images/blank_female_profile.png"

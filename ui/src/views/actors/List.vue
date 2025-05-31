@@ -13,7 +13,11 @@
       <div class="column">
         <strong>{{total}} results</strong>
       </div>
+<<<<<<< HEAD
       <div class="column">
+=======
+      <!-- <div class="column">
+>>>>>>> feature_02_file_rename
         <b-tooltip :label="$t('Press o/left arrow to page back, p/right arrow to page forward')" :delay="500" position="is-top">
           <b-pagination
               :total="total"
@@ -33,11 +37,18 @@
           </b-pagination>
         </b-tooltip>
         <span v-show="show_actor_id==='never show, just need the computed show_actor_id to trigger '">{{show_actor_id}}</span>
+<<<<<<< HEAD
       </div>
+=======
+      </div> -->
+>>>>>>> feature_02_file_rename
       <div class="column">
         <div class="is-pulled-right">
           <b-field>
             <span class="list-header-label">{{$t('Card size')}}</span>
+            <b-radio-button v-model="cardSize" native-value="0" size="is-small">
+              SS
+            </b-radio-button>
             <b-radio-button v-model="cardSize" native-value="1" size="is-small">
               S
             </b-radio-button>
@@ -48,32 +59,33 @@
               L
             </b-radio-button>
           </b-field>
+
+        </div>
+        <div class="is-pulled-right">
+            <p>Show Face</p>
+            <b-field>
+              <b-switch v-model="showFace">
+                  {{ showFace }}
+              </b-switch>
+            </b-field>
         </div>
       </div>
     </div>
-        <div class="columns is-gapless is-centered" v-if="hideLetters">
-          <b-radio-button v-model="jumpTo" native-value="" size="is-small"></b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="A" size="is-small">A</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="B" size="is-small">B</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="C" size="is-small">C</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="D" size="is-small">D</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="E" size="is-small">E</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="F" size="is-small">F</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="G" size="is-small">G</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="H" size="is-small">H</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="I" size="is-small">I</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="J" size="is-small">J</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="K" size="is-small">K</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="L" size="is-small">L</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="M" size="is-small">M</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="N" size="is-small">N</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="O" size="is-small">O</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="P" size="is-small">P</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="Q" size="is-small">Q/R</b-radio-button>          
-          <b-radio-button v-model="jumpTo" native-value="S" size="is-small">S</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="T" size="is-small">T</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="U" size="is-small">U/V</b-radio-button>          
-          <b-radio-button v-model="jumpTo" native-value="W" size="is-small">W/X/Y/Z</b-radio-button>
+
+        <div v-if="hideLetters" style="margin-top: -0.9rem; margin-bottom: 1.0rem;">
+          <div class="columns is-gapless is-centered" style="margin-bottom: 0.2rem;">
+            <b-button v-on:click="prevpage2()" size="is-small" style="margin-left: 0.2rem;">＜</b-button>
+            <b-radio-button v-model="jumpTo" native-value="-" size="is-small"></b-radio-button>
+            <div v-for="group in groups" :key="group">
+              <b-radio-button v-model="selectedGroup" :native-value="group" size="is-small">{{ group }}</b-radio-button>
+            </div>
+            <b-button v-on:click="nextpage2()" size="is-small" style="margin-left: 0.2rem;">＞</b-button>
+          </div>
+          <div class="columns is-gapless is-centered" style="display:block" v-for="group in groups" v-if="selectedGroup === group">
+            <div class="buttons is-centered is-multiline">
+              <b-radio-button v-for="letter in hiragana[group]" :key="letter" v-model="jumpTo" :native-value="letter" size="is-small">{{ letter }}</b-radio-button>
+            </div>
+          </div>
         </div>
 
     <div class="is-clearfix"></div>
@@ -81,7 +93,7 @@
     <div class="columns is-multiline">
       <div :class="['column', 'is-multiline', cardSizeClass]"
            v-for="actor in actors" :key="actor.id">
-        <ActorCard :actor="actor"/>
+        <ActorCard :actor="actor" :showFace="showFace"/>
       </div>
     </div>
       <div class="columns is-gapless is-centered" v-if="hideLetters">
@@ -141,7 +153,33 @@ export default {
   components: { ActorCard, GlobalEvents },
   data () {
     return {      
-      current: 1,      
+      current: 1,
+      groups: ['あ', 'か', 'さ', 'た', 'な', 'は', 'ま', 'や', 'ら', 'わ'],
+      hiragana: {
+        'あ': ['あ', 'い', 'う', 'え', 'お'],
+        'か': ['か', 'き', 'く', 'け', 'こ'],
+        'さ': ['さ', 'し', 'す', 'せ', 'そ'],
+        'た': ['た', 'ち', 'つ', 'て', 'と'],
+        'な': ['な', 'に', 'ぬ', 'ね', 'の'],
+        'は': ['は', 'ひ', 'ふ', 'へ', 'ほ'],
+        'ま': ['ま', 'み', 'む', 'め', 'も'],
+        'や': ['や', 'ゆ', 'よ'],
+        'ら': ['ら', 'り', 'る', 'れ', 'ろ'],
+        'わ': ['わ', 'を', 'ん']
+      },
+      selectedGroup: 'あ',
+      selectedLetter: '',
+      showFace:false
+    }
+  },
+  watch: {
+    selectedGroup(newVal, oldVal) {
+      // selectedGroupが変更されたとき、JumpToのデフォルト値を設定する
+      if (newVal != "") {
+        this.jumpTo = this.hiragana[newVal][0];
+      } else {
+        this.jumTo = ""
+      }
     }
   },
   computed: {
@@ -152,6 +190,9 @@ export default {
       set (value) {
         this.$store.state.actorList.filters.cardSize = value
         switch (value){
+          case "0":
+            this.limit=24
+            break
           case "1":
             this.limit=18
             break
@@ -186,12 +227,20 @@ export default {
         return this.$store.state.actorList.filters.jumpTo
       },
       set (value) {
-        this.$store.state.actorList.filters.jumpTo = value
+        if (value == '-')
+        {
+          this.$store.state.actorList.filters.jumpTo = ''
+        } else {
+          this.$store.state.actorList.filters.jumpTo = value
+          this.selectedLetter = value
+        }
         this.reloadList()
       }
     },
     cardSizeClass () {
       switch (this.$store.state.actorList.filters.cardSize) {
+        case '0':
+          return 'is-custom-one-eighth'
         case '1':
           return 'is-2'
         case '2':
@@ -203,7 +252,7 @@ export default {
       }
     },
     isLoading () {
-      this.current = this.$store.state.actorList.offset / this.$store.state.actorList.limit
+      //this.current = this.$store.state.actorList.offset / this.$store.state.actorList.limit
       return this.$store.state.actorList.isLoading
     },
     actors () {
@@ -249,6 +298,7 @@ export default {
       })
     },
     async pageChanged () {      
+      this.$store.state.actorList.filters.jumpTo = this.selectedLetter
       this.$store.state.actorList.offset = (this.current -1) * this.$store.state.actorList.limit
       this.$store.dispatch('actorList/load', { offset: this.$store.state.actorList.offset })
     },
@@ -280,6 +330,36 @@ export default {
       }      
       this.pageChanged()
     },
+    
+    nextpage2 () {
+      if (this.$store.state.overlay.actordetails.show){
+        return 
+      }
+      if (this.$store.state.overlay.details.show){
+        return 
+      }
+      if (this.current * this.limit >= this.total) {
+        this.current = 1
+      } else {
+        this.current += 1
+      }      
+      this.pageChanged()
+    },
+    prevpage2 () {      
+      if (this.$store.state.overlay.actordetails.show){
+        return 
+      }
+      if (this.$store.state.overlay.details.show){
+        return 
+      }
+      if (this.current > 1) {
+        this.current -= 1
+      } else {
+        //this.current = Math.floor(this.total / this.limit) + 1
+        this.current = 1
+      }      
+      this.pageChanged()
+    },
   }
 }
 </script>
@@ -287,5 +367,9 @@ export default {
 <style scoped>
   .list-header-label {
     padding-right: 1em;
+  }
+  .is-custom-one-eighth {
+    flex: 0 0 12.5%;
+    max-width: 12.5%;
   }
 </style>
