@@ -29,6 +29,10 @@
               <b-checkbox v-model="scene.ai_script"/>
             </b-field>
 
+            <b-field :label="$t('Chromakey')">
+              <b-input v-model="scene.passthrough"/>
+            </b-field>
+
             <b-field grouped group-multiline>
               <b-field :label="$t('Studio')">
                 <b-input type="text" v-model="scene.studio" @blur="blur('studio')"/>
