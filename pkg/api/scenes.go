@@ -66,6 +66,7 @@ type RequestEditSceneDetails struct {
 	CoverURL     string   `json:"cover_url"`
 	IsMultipart  bool     `json:"is_multipart"`
 	Duration     string   `json:"duration"`
+	AiScript	bool     `json:"ai_script"`
 }
 
 type ResponseGetScenes struct {
@@ -864,6 +865,10 @@ func (i SceneResource) editScene(req *restful.Request, resp *restful.Response) {
 		if scene.IsMultipart != r.IsMultipart {
 			scene.IsMultipart = r.IsMultipart
 			models.AddAction(scene.SceneID, "edit", "is_multipart", strconv.FormatBool(r.IsMultipart))
+		}
+		if scene.AiScript != r.AiScript {
+			scene.AiScript = r.AiScript
+			models.AddAction(scene.SceneID, "edit", "ai_script", strconv.FormatBool(r.AiScript))
 		}
 		if strconv.Itoa(scene.Duration) != r.Duration {
 			scene.Duration, _ = strconv.Atoi(r.Duration)

@@ -25,6 +25,10 @@
               <b-checkbox v-model="scene.is_multipart"/>
             </b-field>
 
+            <b-field :label="$t('Ai Script')">
+              <b-checkbox v-model="scene.ai_script"/>
+            </b-field>
+
             <b-field grouped group-multiline>
               <b-field :label="$t('Studio')">
                 <b-input type="text" v-model="scene.studio" @blur="blur('studio')"/>
