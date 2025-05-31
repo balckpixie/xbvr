@@ -1761,7 +1761,6 @@ func UpdateSceneStatus(db *gorm.DB) {
 		}
 	}
 }
-<<<<<<< HEAD
 
 func downloadBundle(url string) (string, error) {
 	// Get the response
@@ -1784,5 +1783,3 @@ func downloadBundle(url string) (string, error) {
 
 	return string(body), nil
 }
-=======
->>>>>>> feature_02_file_rename
