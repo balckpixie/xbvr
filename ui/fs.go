@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-//go:embed dist
+//go:embed dist/*
 var Assets embed.FS
 
 func GetFileSystem(useOS bool) http.FileSystem {
@@ -15,9 +15,9 @@ func GetFileSystem(useOS bool) http.FileSystem {
 		return http.Dir("ui/dist")
 	}
 
-	fs, err := fs.Sub(Assets, "dist")
+	subFS, err := fs.Sub(Assets, "dist")
 	if err != nil {
 		log.Panic(err)
 	}
-	return http.FS(fs)
+	return http.FS(subFS)
 }

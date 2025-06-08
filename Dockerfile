@@ -1,12 +1,9 @@
-FROM ubuntu:22.04
+FROM golang:1.23
 
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends python3 ca-certificates && \
-    rm -rf /var/lib/apt/lists/*
+LABEL dev.containers.feature="true"
 
-COPY xbvr /usr/bin/xbvr
+WORKDIR /app
 
-EXPOSE 9998-9999
-VOLUME /root/.config/
+RUN apt-get update && apt-get install -y git curl
 
-CMD ["/usr/bin/xbvr"]
+CMD [ "sleep", "infinity" ]
