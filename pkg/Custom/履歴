@@ -4,4 +4,7 @@
 faceImageのパラメータを追加（model>actor）
 独自関数用のファイルを追加（Custom_Common）
 
+Actorのソート順にAliaseを追加
+※JumpToの処理は未実装
+
 
