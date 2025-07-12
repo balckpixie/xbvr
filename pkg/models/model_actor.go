@@ -418,6 +418,13 @@ func QueryActors(r RequestActorList, enablePreload bool) ResponseActorList {
 	}
 
 	switch r.Sort.OrElse("") {
+	//custom black
+	case "aliases_asc":
+		tx = tx.Order("actors.aliases asc")
+	case "aliases_desc":
+		tx = tx.Order("actors.aliases desc")
+	//
+
 	case "name_asc":
 		tx = tx.Order("name asc")
 	case "name_desc":

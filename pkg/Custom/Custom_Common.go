@@ -136,3 +136,27 @@ func getQuotedString(input string) (string, error) {
 	// ダブルクオーテーションで囲まれた文字列が見つからない場合、エラーを返す
 	return "", errors.New("quoted string not found")
 }
+
+func getFirstCharsFromJSON(jsonStr string, count int) (string, error) {
+    var arr []string
+    err := json.Unmarshal([]byte(jsonStr), &arr)
+    if err != nil {
+        return "", err
+    }
+    if len(arr) > 0 && len(arr[0]) > 0 {
+        return truncateUTF8String(arr[0], count), nil
+    }
+    return "", fmt.Errorf("empty array or empty first element")
+}
+
+// UTF-8エンコードを考慮して文字列を切り詰める
+func truncateUTF8String(s string, count int) string {
+    runeCount := 0
+    for i := range s {
+        runeCount++
+        if runeCount > count {
+            return s[:i]
+        }
+    }
+    return s
+}
