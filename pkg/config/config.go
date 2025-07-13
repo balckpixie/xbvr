@@ -21,6 +21,20 @@ type CronSchedule struct {
 }
 
 type ObjectConfig struct {
+	Custom struct {
+		DmmApiId                     string    `json:"dmmApiId"`
+		DmmAffiliateId               string    `json:"dmmAffiliateId"`
+	} `json:"Custom"`
+	ThumbnailSchedule struct {
+			Enabled         bool `default:"false" json:"enabled"`
+			HourInterval    int  `default:"2" json:"hourInterval"`
+			UseRange        bool `default:"false" json:"useRange"`
+			MinuteStart     int  `default:"0" json:"minuteStart"`
+			HourStart       int  `default:"0" json:"hourStart"`
+			HourEnd         int  `default:"23" json:"hourEnd"`
+			RunAtStartDelay int  `default:"0" json:"runAtStartDelay"`
+	} `json:"thumbnailSchedule"`
+
 	Server struct {
 		BindAddress string `default:"0.0.0.0" json:"bindAddress"`
 		Port        int    `default:"9999" json:"port"`
