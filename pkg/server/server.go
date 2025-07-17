@@ -30,6 +30,8 @@ import (
 	"github.com/xbapps/xbvr/pkg/session"
 	"github.com/xbapps/xbvr/pkg/tasks"
 	"github.com/xbapps/xbvr/ui"
+
+	customapi "github.com/xbapps/xbvr/pkg/custom/api"
 )
 
 var (
@@ -89,6 +91,10 @@ func StartServer(version, commit, branch, date string) {
 	restful.Add(api.AkaResource{}.WebService())
 	restful.Add(api.TagGroupResource{}.WebService())
 	restful.Add(api.ExternalReference{}.WebService())
+
+	// Custom black
+	restful.Add(customapi.ConfigResource{}.WebService())
+	// Custom END
 
 	restConfig := restfulspec.Config{
 		WebServices: restful.RegisteredWebServices(),
