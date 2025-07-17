@@ -8,6 +8,8 @@ import (
 
 	"github.com/xbapps/xbvr/pkg/common"
 	"github.com/xbapps/xbvr/pkg/models"
+
+	customconfig "github.com/xbapps/xbvr/pkg/custom/config"
 )
 
 type CronSchedule struct {
@@ -21,19 +23,7 @@ type CronSchedule struct {
 }
 
 type ObjectConfig struct {
-	Custom struct {
-		DmmApiId                     string    `json:"dmmApiId"`
-		DmmAffiliateId               string    `json:"dmmAffiliateId"`
-	} `json:"Custom"`
-	ThumbnailSchedule struct {
-			Enabled         bool `default:"false" json:"enabled"`
-			HourInterval    int  `default:"2" json:"hourInterval"`
-			UseRange        bool `default:"false" json:"useRange"`
-			MinuteStart     int  `default:"0" json:"minuteStart"`
-			HourStart       int  `default:"0" json:"hourStart"`
-			HourEnd         int  `default:"23" json:"hourEnd"`
-			RunAtStartDelay int  `default:"0" json:"runAtStartDelay"`
-	} `json:"thumbnailSchedule"`
+	Custom customconfig.Custom `json:"custom"`
 
 	Server struct {
 		BindAddress string `default:"0.0.0.0" json:"bindAddress"`
@@ -128,6 +118,9 @@ type ObjectConfig struct {
 		} `json:"preview"`
 	} `json:"library"`
 	Cron struct {
+		// Custom Black
+		ThumbnailSchedule customconfig.ThumbnailSchedule `json:"thumbnailSchedule"`
+		// Custom END
 		RescrapeSchedule struct {
 			Enabled         bool `default:"true" json:"enabled"`
 			HourInterval    int  `default:"12" json:"hourInterval"`
