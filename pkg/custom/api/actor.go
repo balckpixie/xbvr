@@ -2,17 +2,21 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"net/url"
 	"regexp"
-	"strconv"
 	"strings"
-	"time"
 
 	restfulspec "github.com/emicklei/go-restful-openapi/v2"
 	"github.com/emicklei/go-restful/v3"
 	"github.com/xbapps/xbvr/pkg/models"
-	"github.com/xbapps/xbvr/pkg/scrape"
+
+	"github.com/xbapps/xbvr/pkg/common"
+	"github.com/gocolly/colly/v2"
 )
+
+var log = &common.Log
 
 type ResponseGetActors struct {
 	Results int            `json:"results"`
@@ -22,7 +26,7 @@ type ResponseGetActors struct {
 type ActorResource struct{}
 
 func (i ActorResource) WebService() *restful.WebService {
-	tags := []string{"Actor_Custom"}
+	tags := []string{"CustomActor"}
 
 	ws := new(restful.WebService)
 
@@ -40,6 +44,12 @@ func (i ActorResource) WebService() *restful.WebService {
 
 	return ws
 }
+
+type RequestSetActorImage struct {
+	ActorID uint   `json:"actor_id"`
+	Url     string `json:"url"`
+}
+
 
 type RequestSearchActorImage struct {
 	ActorID uint   `json:"actor_id"`
