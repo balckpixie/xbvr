@@ -300,6 +300,16 @@ func (o *Scene) PreviewExists() bool {
 	return true
 }
 
+// Custom Black
+func (o *Scene) ThumbnailExists() bool {
+	
+	if _, err := os.Stat(filepath.Join(common.VideoThumbnailDir, fmt.Sprintf("%v.jpg", strconv.FormatUint(uint64(o.Files[0].ID), 10)))); os.IsNotExist(err) {
+		return false
+	}
+	return true
+}
+// Custom END
+
 func (o *Scene) UpdateStatus() {
 	// Check if file with scene association exists
 	files, err := o.GetFiles()
