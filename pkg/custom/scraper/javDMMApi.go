@@ -3,7 +3,7 @@ package scrape
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -132,7 +132,7 @@ func getJSONResponse(url string) (*JSONResponse, error) {
 	defer resp.Body.Close()
 
 	// レスポンスのBodyを読み込み
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -155,7 +155,7 @@ func ScrapeDMMapi(out *[]models.ScrapedScene, queryString string) {
 
 	sceneCollector.OnResponse(func(r *colly.Response) {
 
-		body, err := ioutil.ReadAll(bytes.NewReader(r.Body))
+		body, err := io.ReadAll(bytes.NewReader(r.Body))
 		if err != nil {
 			log.Println("Error:", err)
 			return
