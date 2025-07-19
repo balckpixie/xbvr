@@ -11,12 +11,19 @@ import (
 	"github.com/gocolly/colly/v2"
 	"github.com/nleeper/goment"
 	"github.com/xbapps/xbvr/pkg/models"
+
+	"github.com/xbapps/xbvr/pkg/scrape"
+	"github.com/xbapps/xbvr/pkg/common"
+
+	customcommon "github.com/xbapps/xbvr/pkg/custom/common"
 )
 
+var log = &common.Log
+
 const (
-	PARAM_SORT      = "match"
-	count           = "2"
-	dmm_BaseAddress = "https://api.dmm.com/"
+	PARAM_SORT                    = "match"
+	count                         = "2"
+	dmm_BaseAddress               = "https://api.dmm.com/"
 	dmm_itemListSearchDigitalUrl  = dmm_BaseAddress + "affiliate/v3/ItemList?site=FANZA&output=json&sort=" + PARAM_SORT
 	dmm_actorListSearchDigitalUrl = dmm_BaseAddress + "affiliate/v3/ActressSearch"
 )
@@ -144,7 +151,7 @@ func ScrapeDMMapi(out *[]models.ScrapedScene, queryString string) {
 	if queryString == "" || queryString == "null" {
 		return
 	}
-	sceneCollector := createCollector("api.dmm.com")
+	sceneCollector := scrape.CreateCollector("api.dmm.com")
 
 	sceneCollector.OnResponse(func(r *colly.Response) {
 
@@ -164,7 +171,7 @@ func ScrapeDMMapi(out *[]models.ScrapedScene, queryString string) {
 		// Resutlが0件の時は、QueryパラメータをKeywordに変更して再実行
 		if jsonResponse.Result.ResultCount == 0 {
 			log.Info("not found")
-			newurl, err := replaceQueryParam(r.Request.URL.String(), "cid", "keyword")
+			newurl, err := customcommon.ReplaceQueryParam(r.Request.URL.String(), "cid", "keyword")
 			if err == nil {
 				sceneCollector.Visit(newurl)
 			}
@@ -184,7 +191,7 @@ func ScrapeDMMapi(out *[]models.ScrapedScene, queryString string) {
 			sc.Studio = jsonResponse.Result.Items[0].Iteminfo.Label[0].Name
 		}
 		dvdId := strings.ToUpper(jsonResponse.Result.Items[0].ProductID)
-		sc.SceneID = ConvertToDVDId(dvdId)
+		sc.SceneID = customcommon.ConvertToDVDId(dvdId)
 
 		log.Info("(dvdId)" + dvdId + "(productID)" + jsonResponse.Result.Items[0].ProductID + "(SceneID)" + sc.SceneID)
 
@@ -201,7 +208,7 @@ func ScrapeDMMapi(out *[]models.ScrapedScene, queryString string) {
 		sc.Duration, _ = strconv.Atoi(jsonResponse.Result.Items[0].Volume)
 
 		for _, item := range jsonResponse.Result.Items[0].Iteminfo.Genre {
-			tag := ProcessJavrTag(item.Name)
+			tag := scrape.ProcessJavrTag(item.Name)
 			sc.Tags = append(sc.Tags, tag)
 		}
 
@@ -209,7 +216,7 @@ func ScrapeDMMapi(out *[]models.ScrapedScene, queryString string) {
 		for _, item := range jsonResponse.Result.Items[0].Iteminfo.Actress {
 			sc.Cast = append(sc.Cast, item.Name)
 			sc.Aliases = append(sc.Aliases, item.Ruby)
-			actressurl, err := addQueryParam(dmm_actorListSearchDigitalUrl, "actress_id", strconv.FormatInt(item.ID, 10))
+			actressurl, err := customcommon.AddQueryParam(dmm_actorListSearchDigitalUrl, "actress_id", strconv.FormatInt(item.ID, 10))
 			if err == nil {
 				sc.ActorDetails[item.Name] = models.ActorDetails{Source: "dmm scrape", ProfileUrl: actressurl}
 			}
@@ -229,23 +236,23 @@ func ScrapeDMMapi(out *[]models.ScrapedScene, queryString string) {
 
 	// Allow comma-separated scene id's
 	scenes := strings.Split(queryString, ",")
-	queryurl, err := addAPIParam(dmm_itemListSearchDigitalUrl)
+	queryurl, err := customcommon.AddAPIParam(dmm_itemListSearchDigitalUrl)
 	if err != nil {
 		return
 	}
-	queryurl, err = addQueryParam(queryurl, "hits", count)
+	queryurl, err = customcommon.AddQueryParam(queryurl, "hits", count)
 	if err != nil {
 		return
 	}
 
 	for _, v := range scenes {
-		if isQuoted(v) {
-			param, err := getQuotedString(strings.ToLower(v))
+		if customcommon.IsQuoted(v) {
+			param, err := customcommon.GetQuotedString(strings.ToLower(v))
 			if err == nil {
-				queryurl, err = addQueryParam(queryurl, "keyword", param)
+				queryurl, err = customcommon.AddQueryParam(queryurl, "keyword", param)
 			}
 		} else {
-			queryurl, err = addQueryParam(queryurl, "cid", ConvertFormat(strings.ToLower(v)))
+			queryurl, err = customcommon.AddQueryParam(queryurl, "cid", customcommon.ConvertFormat(strings.ToLower(v)))
 		}
 		if err == nil {
 			sceneCollector.Visit(queryurl)
