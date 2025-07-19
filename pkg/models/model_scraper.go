@@ -19,17 +19,20 @@ type Scraper struct {
 }
 
 type ScrapedScene struct {
-	SceneID           string   `json:"_id"`
-	ScraperID         string   `json:"xbvr_site"`
-	SiteID            string   `json:"scene_id"`
-	SceneType         string   `json:"scene_type"`
-	Title             string   `json:"title"`
-	Studio            string   `json:"studio"`
-	Site              string   `json:"site"`
-	Covers            []string `json:"covers"`
-	Gallery           []string `json:"gallery"`
-	Tags              []string `json:"tags"`
-	Cast              []string `json:"cast"`
+	SceneID   string   `json:"_id"`
+	ScraperID string   `json:"xbvr_site"`
+	SiteID    string   `json:"scene_id"`
+	SceneType string   `json:"scene_type"`
+	Title     string   `json:"title"`
+	Studio    string   `json:"studio"`
+	Site      string   `json:"site"`
+	Covers    []string `json:"covers"`
+	Gallery   []string `json:"gallery"`
+	Tags      []string `json:"tags"`
+	Cast      []string `json:"cast"`
+	// Custom Black
+	Aliases []string `json:"aliases"`
+	// Custom END
 	Filenames         []string `json:"filename"`
 	Duration          int      `json:"duration"`
 	Synopsis          string   `json:"synopsis"`

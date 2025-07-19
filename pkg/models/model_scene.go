@@ -302,7 +302,7 @@ func (o *Scene) PreviewExists() bool {
 
 // Custom Black
 func (o *Scene) ThumbnailExists() bool {
-	
+
 	if _, err := os.Stat(filepath.Join(common.VideoThumbnailDir, fmt.Sprintf("%v.jpg", strconv.FormatUint(uint64(o.Files[0].ID), 10)))); os.IsNotExist(err) {
 		return false
 	}
@@ -458,6 +458,7 @@ func SceneCreateUpdateFromExternal(db *gorm.DB, ext ScrapedScene) error {
 	// Clean & Associate Actors
 	db.Model(&o).Association("Cast").Clear()
 	var tmpActor Actor
+	cnt := 0
 	for _, name := range ext.Cast {
 		tmpActor = Actor{}
 		db.Where(&Actor{Name: strings.Replace(name, ".", "", -1)}).FirstOrCreate(&tmpActor)
@@ -480,6 +481,17 @@ func SceneCreateUpdateFromExternal(db *gorm.DB, ext ScrapedScene) error {
 				}
 			}
 		}
+
+		// Custom Black add Aliases Parameter
+		if ext.Aliases != nil && ext.Aliases[cnt] != "" {
+			if tmpActor.Aliases == "" {
+				tmpActor.Aliases = "[\"" + ext.Aliases[cnt] + "\"]"
+				saveActor = true
+			}
+		}
+		cnt++
+		// Custom END
+
 		if saveActor {
 			tmpActor.Save()
 		}
