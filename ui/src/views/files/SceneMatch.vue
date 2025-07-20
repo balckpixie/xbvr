@@ -78,6 +78,9 @@
                 {{subtitlesFilesCount(props.row)}}
               </b-tag>
             </b-table-column>
+            <b-table-column field="scene_id" :label="$t('ID')" sortable nowrap v-slot="props">
+              {{ props.row.scene_id }}
+            </b-table-column>
             <b-table-column field="title" :label="$t('Title')" sortable v-slot="props">
               <p v-if="props.row.title">{{ props.row.title }}</p>
               <small>
@@ -90,9 +93,7 @@
             <b-table-column field="duration" :label="$t('Duration')" sortable nowrap v-slot="props">
               {{ props.row.duration > 0 ? props.row.duration + " min" : ""}}
             </b-table-column>
-            <b-table-column field="scene_id" :label="$t('ID')" sortable nowrap v-slot="props">
-              {{ props.row.scene_id }}
-            </b-table-column>
+
             <b-table-column field="_score" :label="$t('Score')" sortable v-slot="props">
               <b-progress show-value :value="props.row._score * 100"></b-progress>
             </b-table-column>
@@ -102,7 +103,41 @@
           </b-table>
         </div>
       </section>
-    </div>
+
+      <div class="modal-card-body">
+        <p>{{$t('Import Japanese Adult VR (JAVR) Scene')}}</p>
+        <div class="card">
+          <div class="card-content content">
+            <b-field grouped>
+              <b-select placeholder="Select scraper" v-model="javrScraper">
+                <option value="dmm">DMM(FANZA)</option>
+                <option value="javdatabase">javdatabase.com</option>
+                <option value="r18d">r18.dev</option>
+                <option value="javlibrary">javlibrary.com</option>
+                <option value="javlibraryjp">javlibrary.com(JP)</option>
+                <option value="javland">jav.land</option>
+                <option value="javlandjp">jav.land(JP)</option>
+              </b-select>
+              <b-input v-model="javrQuery" placeholder="ID (xxxx-001)" type="search"></b-input>
+              <b-button class="button is-primary is-outlined" style="margin-left:10px" v-on:click="extractDVDID()">{{$t('Get DVDID')}}</b-button>
+              <b-button class="button is-primary" style="margin-left:10px" v-on:click="scrapeJAVR()">{{$t('Go')}}</b-button>
+              <b-button class="button is-primary is-outlined" style="margin-left:10px" v-on:click="reload()">{{$t('Reload List')}}</b-button>
+              <b-navbar-item>
+                <table style="font-size:0.9em">
+                  <tr v-if="Object.keys(lastScrapeMessage).length !== 0">
+                    <th>
+                      <span :class="[lockScrape ? 'pulsate' : '']">{{$t('Data')}} →</span>
+                    </th>
+                    <td>{{lastScrapeMessage.message}}</td>
+                  </tr>
+                </table>
+              </b-navbar-item>
+            </b-field>
+          </div>
+        </div>
+      </div>
+
+      </div>
     <a class="prev" @click="prevFile" title="Keyboard shortcut: O">&#10094;</a>
     <a class="next" @click="nextFile" title="Keyboard shortcut: P">&#10095;</a>
   </div>
@@ -125,6 +160,8 @@ export default {
       dataNumResponses: 0,
       currentPage: 1,
       queryString: '',
+      javrQuery: '',
+      javrScraper: 'dmm',
       format,
       parseISO
     }
@@ -132,12 +169,54 @@ export default {
   computed: {
     file () {
       return this.$store.state.overlay.match.file
+    },
+    lockScrape () {
+      return this.$store.state.messages.lockScrape
+    },
+    lastScrapeMessage () {
+      return this.$store.state.messages.lastScrapeMessage
     }
   },
   mounted () {
     this.initView()
   },
   methods: {
+    // Custom Black
+    extractDVDID() {
+        this.javrQuery = this.extractDVDIDlogic(this.file.filename)
+    },
+    extractDVDIDlogic(filename) {
+      let dvdid = ""
+      let regex = /[a-zA-Z0-9]{2,6}-\d{2,6}/;
+      let match = filename.match(regex);
+      if (!match) {
+        regex = /([a-zA-Z]{2,6})(\d{2,6})/;
+        match = filename.match(regex);
+        if (match) {
+          let firstPart = match[1];
+          let secondPart = match[2];
+          if (secondPart.length >= 4) {
+            secondPart = secondPart.replace(/^0+/, '');
+          }
+          if (secondPart.length < 3) {
+            secondPart = secondPart.padStart(3, '0');
+          }
+          dvdid = `${firstPart}-${secondPart}`;
+        } else {
+          dvdid = null;
+        }
+      } else {
+        dvdid = match[0];
+      }
+      return dvdid
+    },
+    scrapeJAVR () {
+      ky.post('/api/task/scrape-javr', { json: { s: this.javrScraper, q: this.javrQuery } })
+    },
+    reload() {
+      this.loadData()
+    },
+    // Custom END
     initView () {
       const commonWords = [
         '180', '180x180', '2880x1440', '3d', '3dh', '3dv', '30fps', '30m', '360',
@@ -149,12 +228,29 @@ export default {
       const isNotCommonWord = word => !commonWords.includes(word.toLowerCase()) && !/^[0-9]+p$/.test(word)
 
       this.data = []
-      this.queryString = (
-        this.file.filename
-          .replace(/\.|_|\+|-/g, ' ').replace(/\s+/g, ' ').trim()
-          .split(' ').filter(isNotCommonWord).join(' ')
-          .replace(/ s /g, '\'s '))
+
+      // Custom Black
+      // dvdid を取得
+      var dvdid = this.extractDVDIDlogic(this.file.filename)
+        ? this.extractDVDIDlogic(this.file.filename).toUpperCase()
+        : null
+
+      // dvdid が取得できなかった場合の fallback queryString を定義
+      var fallbackQuery = this.file.filename
+        .replace(/\.|_|\+|-/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .split(' ')
+        .filter(isNotCommonWord)
+        .join(' ')
+        .replace(/ s /g, "'s ")
+
+      // dvdid があればそれを使い、なければ fallbackQuery を使う
+      this.queryString = dvdid || fallbackQuery
+
       this.loadData()
+      this.extractDVDID()
+      // Custom END
     },
     loadData: async function loadData () {
       const requestIndex = this.dataNumRequests
