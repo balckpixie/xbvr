@@ -1,4 +1,3 @@
-// migrations_custom.go
 package migrations
 
 import (

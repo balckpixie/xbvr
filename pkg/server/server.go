@@ -57,9 +57,6 @@ func StartServer(version, commit, branch, date string) {
 
 	// First setup
 	migrations.Migrate()
-
-	// Custom migrations
-	migrations.CustomMigrations()
 	
 	// Remove old locks
 	models.RemoveAllLocks()
