@@ -94,6 +94,7 @@ func StartServer(version, commit, branch, date string) {
 
 	// Custom black
 	restful.Add(customapi.ConfigResource{}.WebService())
+	restful.Add(customapi.FilesResource{}.WebService())
 	// Custom END
 
 	restConfig := restfulspec.Config{

@@ -12,11 +12,9 @@ import (
 	"github.com/emicklei/go-restful/v3"
 	"github.com/xbapps/xbvr/pkg/models"
 
-	"github.com/xbapps/xbvr/pkg/common"
 	"github.com/gocolly/colly/v2"
 )
 
-var log = &common.Log
 
 type ResponseGetActors struct {
 	Results int            `json:"results"`
