@@ -27,5 +27,9 @@ File APIの削除時の処理にサムネイル消去などを追加
 
 Fiile APIにリネームとファイル名のリセットを追加
 
+Actorスクレイパパの設定を追加（model_external_reference.goも忘れず）
+
+サムネイル作成のCronと必要となる関連の処理を追加
+
 
 
