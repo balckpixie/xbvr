@@ -57,7 +57,7 @@ func StartServer(version, commit, branch, date string) {
 
 	// First setup
 	migrations.Migrate()
-	
+
 	// Remove old locks
 	models.RemoveAllLocks()
 
@@ -92,6 +92,7 @@ func StartServer(version, commit, branch, date string) {
 	// Custom black
 	restful.Add(customapi.ConfigResource{}.WebService())
 	restful.Add(customapi.FilesResource{}.WebService())
+	restful.Add(customapi.TaskResource{}.WebService())
 	// Custom END
 
 	restConfig := restfulspec.Config{
