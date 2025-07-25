@@ -15,6 +15,8 @@ module.exports = {
   },
 
   configureWebpack: {
+    devtool: 'source-map',  // ← これを追加！
+    
     resolve: {
         fallback: {
             buffer: require.resolve('buffer/'),
