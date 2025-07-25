@@ -45,7 +45,7 @@
               </b-tab-item>
 
               <b-tab-item label="Player" v-if="!displayingAlternateSource">
-                <video ref="player" class="video-js vjs-default-skin" controls playsinline preload="none"/>
+                <video ref="player" class="video-js vjs-default-skin" controls playsinline  muted preload="none"/>
                 <b-field position="is-centered">
                   <b-field>
                     <b-tooltip v-for="(skipBack, i) in skipBackIntervals" class="is-size-7" :key="i" :active="skipBack == lastSkipBackInterval ? true : false" :label="$t('Keyboard shortcut: Left Arrow')"
@@ -223,7 +223,7 @@
             </div>
 
 
-            <div class="block-opts block">
+            <div class="block-opts block" ref="tabBar">
               <b-tabs v-model="activeTab" :animated="false">
 
                 <b-tab-item :label="`Files (${fileCount})`" v-if="!displayingAlternateSource">
@@ -366,6 +366,26 @@
                     </b-message>
                   </div>
                 </b-tab-item>
+
+                <!--
+                <b-tab-item label="Thumbnail">
+                  <div ref="thumbContainer" id="thumbContainer" :style="{ maxHeight: computedMaxHeight() }" class="block-tab-content block container">
+                  </div>
+                </b-tab-item>
+              -->
+
+                <b-tab-item label="Thumbnails" name="thumbnails">
+                  <div ref="thumbnailTabRef">
+                  <ThumbnailTab
+                    ref="thumbnailRef"
+                    :file=undefined
+                    @thumbnailClicked="onThumbnailClicked"
+                    class="block-tab-content block container thumbnail-tab"
+                    :style="{ maxHeight: computedMaxHeight() }" 
+                  />
+                  </div>
+                </b-tab-item>
+
                 <b-tab-item v-if="this.$store.state.optionsAdvanced.advanced.showSceneSearchField && !displayingAlternateSource" label="Search fields">
                   <div class="block-tab-content block">
                     <div class="content is-small">
@@ -418,9 +438,13 @@ import RescrapeButton from '../../components/RescrapeButton'
 import TrailerlistButton from '../../components/TrailerlistButton'
 import HiddenButton from '../../components/HiddenButton'
 
+import ThumbnailTab from '../../components/ThumbnailTab.vue'
+
 export default {
   name: 'Details',
-  components: { VueLoadImage, GlobalEvents, StarRating, WatchlistButton, FavouriteButton, LinkStashdbButton, WishlistButton, WatchedButton, EditButton, RefreshButton, RescrapeButton, TrailerlistButton, HiddenButton },
+  components: { VueLoadImage, GlobalEvents, StarRating, WatchlistButton, FavouriteButton, LinkStashdbButton, WishlistButton, WatchedButton, EditButton, RefreshButton, RescrapeButton, TrailerlistButton, HiddenButton
+    , ThumbnailTab
+   },
   data () {
     return {
       index: 1,
@@ -449,6 +473,11 @@ export default {
       searchfields: [],
       alternateSources: [],
       waitingForQuickFind: false,
+      // Custom Black
+      marginBottom: 10,  //サムネイルコンポーネント高さ調整用
+      currentFile: null,
+      currentDuraiton: 0
+      // Custom END
     }
   },
   computed: {
@@ -618,6 +647,21 @@ export default {
       })    
 },
 watch:{
+    // Custom Black
+    activeTab(newIndex) {
+      if (newIndex === 4) {
+        this.$nextTick(() => {
+          // if (this.$refs.thumbnailRef) {
+          //   this.$refs.thumbnailRef.fileId = this.currentFile.id
+          //   this.$refs.thumbnailRef.file = this.currentFile
+          //   this.$refs.thumbnailRef.loadThumbnails()
+          // }
+          this.loadVideThumbnails()
+        });
+      }
+   },
+   // Custom END
+
   quickFindOverlayState(newVal, oldVal){
     if (newVal == true) {
       return
@@ -647,6 +691,51 @@ watch:{
   }
 },
   methods: {
+    // Custom Black
+    // onThumbnailsTabSelected() {
+    //   this.$nextTick(() => {
+    //     if (this.$refs.thumbnailRef) {
+    //       this.$refs.thumbnailRef.fileId = this.currentFile.id
+    //       this.$refs.thumbnailRef.file = this.currentFile
+    //       this.$refs.thumbnailRef.loadThumbnails()
+    //     }
+    //   });
+    // },
+    loadVideThumbnails() {
+      if (this.$refs.thumbnailRef) {
+        // this.$refs.thumbnailRef.fileId = this.currentFile.id
+        this.$refs.thumbnailRef.file = this.currentFile
+        this.$refs.thumbnailRef.loadThumbnails()
+      }
+    },
+    onThumbnailClicked(duration) {
+          this.setCurrentTime(duration)
+    },
+    setCurrentTime(seconds) {
+      if (!this.player.paused()) {
+        this.player.pause();
+      }
+      setTimeout(() => {
+        this.player.currentTime(Math.floor(seconds));
+        this.player.play();
+        this.currentDuraiton = seconds
+      }, 0);
+    },
+    computedMaxHeight() {
+      const element = this.$refs.tabBar;
+      if (element) {
+        const rect = this.$refs.tabBar.getBoundingClientRect()
+        const y = rect.top
+        const adjustedTop = element.offsetTop + 200;
+        return `calc(100vh - ${adjustedTop}px - ${this.marginBottom}px)`;
+      }
+      else
+      {
+        return 'calc(100vh - 20px)';
+      }
+    },
+    // Custom END
+
     setupPlayer () {
       this.player = videojs(this.$refs.player, {
         aspectRatio: '1:1',
@@ -808,6 +897,9 @@ watch:{
       this.activeMedia = 1
       this.updatePlayer('/api/dms/file/' + file.id + '?dnt=true', (file.projection == 'flat' ? 'NONE' : '180'))
       this.player.play()
+
+      this.currentFile = file
+      // this.loadVideThumbnails(file.id)
     },
     unmatchFile (file) {
       this.$buefy.dialog.confirm({
@@ -1364,4 +1456,9 @@ span.is-active img {
 .altsrc-image-wrapper {
   display: inline-block;
   margin-left: 5px;  
-}</style>
+}
+
+.thumbnail-tab {
+  overflow: auto;
+}
+</style>

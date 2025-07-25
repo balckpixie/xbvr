@@ -84,6 +84,7 @@ func RenderThumnbnails(inputFile string, destFile string, videoProjection string
 	}
 	// Mono 360 crop args: (no way of accurately determining)
 	// "iw/2:ih:iw/4:ih"
+	// 動画ファイルから30秒ごとに1フレームを切り出し、それを横20枚・縦<row>枚のグリッド画像にして保存する
 	vfArgs := fmt.Sprintf("crop=%v,scale=%v:-1:flags=lanczos,fps=fps=1/%v:round=down,tile=20x%v", crop, 200, 30, row)
 
 	args := []string{}

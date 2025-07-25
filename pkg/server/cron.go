@@ -71,6 +71,9 @@ func SetupCron() {
 	if config.Config.Cron.PreviewSchedule.RunAtStartDelay > 0 {
 		time.AfterFunc(time.Duration(config.Config.Cron.PreviewSchedule.RunAtStartDelay)*time.Minute, generatePreviewCron)
 	}
+	if config.Config.Cron.ThumbnailSchedule.RunAtStartDelay > 0 {
+		time.AfterFunc(time.Duration(config.Config.Cron.ThumbnailSchedule.RunAtStartDelay)*time.Minute, generateThumbnailCron)
+	}
 	if config.Config.Cron.ActorRescrapeSchedule.RunAtStartDelay > 0 {
 		time.AfterFunc(time.Duration(config.Config.Cron.ActorRescrapeSchedule.RunAtStartDelay)*time.Minute, actorRescrapeCron)
 	}
