@@ -104,6 +104,18 @@
                       <strong>Linked scene, Not an XBVR Scene</strong>
                     </b-field>
                   </div>
+
+                  <div class="column pt-0">
+                    <div class="is-flex is-pulled-left" style="gap: 0.25rem">
+                    <!--<div class="content" style="display: flex; flex-wrap: wrap;">-->
+                      <div class="" v-for="(f, idx) in filesByType" :key="idx" style="margin-top: 3px;">
+                        <button rounded class="button is-success is-small" @click='playFile(f)' v-show="f.type === 'video'">
+                        {{idx+1}}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
                   <div class="column pt-0">
                     <div class="is-flex is-pulled-right" style="gap: 0.25rem">
                       <a class="button is-primary is-outlined is-small" @click="searchAlternateSourceScene()" title="Search for a different scene" v-if="displayingAlternateSource">
@@ -555,7 +567,18 @@ export default {
     },
     filesByType () {
       if (this.item.file !== null) {
-        return this.item.file.slice().sort((a, b) => (a.type === 'video') ? -1 : 1)
+        // Custom Black
+        //return this.item.file.slice().sort((a, b) => (a.type === 'video') ? -1 : 1)
+                return this.item.file.slice().sort((a, b) => {
+          if (a.Type === "video" && b.Type !== "video") {
+              return -1;
+          }
+          if (a.Type !== "video" && b.Type === "video") {
+              return 1;
+          }
+          return a.filename.localeCompare(b.filename);
+        });
+        // Custom END
       }
       return []
     },
@@ -898,8 +921,12 @@ watch:{
       this.updatePlayer('/api/dms/file/' + file.id + '?dnt=true', (file.projection == 'flat' ? 'NONE' : '180'))
       this.player.play()
 
-      this.currentFile = file
-      // this.loadVideThumbnails(file.id)
+      // Custom Black
+      if (this.currentFile != file) {
+        this.currentFile = file
+        this.loadVideThumbnails()
+      }
+      // Custom END
     },
     unmatchFile (file) {
       this.$buefy.dialog.confirm({
