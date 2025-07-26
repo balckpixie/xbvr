@@ -1,0 +1,39 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Start Go Server",
+      "type": "shell",
+      "command": "go run main.go",  // 必要に応じてパス修正（例: ./cmd/server/main.go）
+      "options": {
+        "cwd": "${workspaceFolder}"  // Goサーバーのルートディレクトリ
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": [
+          {
+            "regexp": ".",
+            "file": 1,
+            "location": 2,
+            "message": 3 
+          }
+        ],
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "Web UI available at",
+          "endsPattern": "Web UI available at"
+        }
+      }
+    },
+    {
+      "label": "Kill Go Server",
+      "type": "shell",
+      "command": "${workspaceFolder}/kill-go-server.sh", 
+      "isBackground": false,
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "silent"
+      }
+    }
+  ]
+}
