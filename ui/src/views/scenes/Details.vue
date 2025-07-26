@@ -137,6 +137,7 @@
                       <wishlist-button :item="item" v-if="!displayingAlternateSource"/>
                       <watched-button :item="item" v-if="!displayingAlternateSource"/>
                       <edit-button :item="item"/>
+                      <delete-button :item="item"/>
                       <refresh-button :item="item" v-if="!displayingAlternateSource"/>
                       <rescrape-button :item="item" v-if="!displayingAlternateSource"/>
                       <link-stashdb-button :item="item" objectType="scene" />
@@ -174,17 +175,17 @@
 
             <div class="block-tags block" v-if="activeTab != 1">
               <b-taglist>
-                <span v-for="(c, idx) in item.cast" :key="'cast' + idx" >
-                  <a class="tag is-warning is-small" @click='showCastScenes([c.name])' :style="showOpenInNewWindow ? 'margin-right: 0;': 'margin-right: .5em;'" >{{ c.name }} ({{ c.avail_count }}/{{ c.count }})</a>
-                  <a v-if="showOpenInNewWindow" class="tag is-warning is-small" :href='getCastScenesUrl([c.name])' target="_blank" style="margin-right: 0.5em;"><b-icon pack="mdi" icon="open-in-new" size="is-small"></b-icon></a>
+                <span v-for="(c, idx) in item.cast" :key="'cast' + idx">
+                  <a class="tagbutton tag is-warning is-small" @click='showCastScenes([c.name])' :style="showOpenInNewWindow ? 'margin-right: 0;': 'margin-right: .5em;'" >{{ c.name }} ({{ c.avail_count }}/{{ c.count }})</a>
+                  <a v-if="showOpenInNewWindow" class="tagbutton tag is-warning is-small" :href='getCastScenesUrl([c.name])' target="_blank" style="margin-right: 0.5em;"><b-icon pack="mdi" icon="open-in-new" size="is-small"></b-icon></a>
                 </span>
                 <span>
-                  <a @click='showSiteScenes([item.site])' class="tag is-primary is-small" :style="showOpenInNewWindow ? 'margin-right: 0;': 'margin-right: .5em;'">{{ item.site }}</a>
-                  <a v-if="showOpenInNewWindow" class="tag is-primary is-small" :href='getSiteScenesUrl([item.site])' target="_blank" style="margin-right: 0.5em;"><b-icon pack="mdi" icon="open-in-new" size="is-small"></b-icon></a>
+                  <a @click='showSiteScenes([item.site])' class="tagbutton tag is-primary is-small" :style="showOpenInNewWindow ? 'margin-right: 0;': 'margin-right: .5em;'">{{ item.site }}</a>
+                  <a v-if="showOpenInNewWindow" class="tagbutton tag is-primary is-small" :href='getSiteScenesUrl([item.site])' target="_blank" style="margin-right: 0.5em;"><b-icon pack="mdi" icon="open-in-new" size="is-small"></b-icon></a>
                 </span>
                 <span v-for="(tag, idx) in item.tags" :key="'tag' + idx">
-                  <a  @click='showTagScenes([tag.name])' class="tag is-info is-small" :style="showOpenInNewWindow ? 'margin-right: 0;': 'margin-right: .5em;'">{{ tag.name }} ({{ tag.count }})</a>
-                  <a v-if="showOpenInNewWindow" class="tag is-info is-small" :href='getTagScenesUrl([tag.name])' target="_blank" style="margin-right: 0.5em;"><b-icon pack="mdi" icon="open-in-new" size="is-small"></b-icon></a>
+                  <a  @click='showTagScenes([tag.name])' class="tagbutton tag is-info is-small" :style="showOpenInNewWindow ? 'margin-right: 0;': 'margin-right: .5em;'">{{ tag.name }} ({{ tag.count }})</a>
+                  <a v-if="showOpenInNewWindow" class="tagbutton tag is-info is-small" :href='getTagScenesUrl([tag.name])' target="_blank" style="margin-right: 0.5em;"><b-icon pack="mdi" icon="open-in-new" size="is-small"></b-icon></a>
                 </span>
               </b-taglist>              
             </div>
@@ -451,11 +452,12 @@ import TrailerlistButton from '../../components/TrailerlistButton'
 import HiddenButton from '../../components/HiddenButton'
 
 import ThumbnailTab from '../../components/ThumbnailTab.vue'
+import DeleteButton from '../../components/DeleteButton.vue'
 
 export default {
   name: 'Details',
   components: { VueLoadImage, GlobalEvents, StarRating, WatchlistButton, FavouriteButton, LinkStashdbButton, WishlistButton, WatchedButton, EditButton, RefreshButton, RescrapeButton, TrailerlistButton, HiddenButton
-    , ThumbnailTab
+    , ThumbnailTab, DeleteButton
    },
   data () {
     return {
@@ -1487,5 +1489,9 @@ span.is-active img {
 
 .thumbnail-tab {
   overflow: auto;
+}
+
+.tagbutton {
+  vertical-align: top;
 }
 </style>

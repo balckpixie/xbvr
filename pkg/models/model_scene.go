@@ -96,7 +96,7 @@ type Scene struct {
 	TotalWatchTime int             `json:"total_watch_time" gorm:"default:0" xbvrbackup:"total_watch_time"`
 
 	HasVideoPreview bool `json:"has_preview" gorm:"default:false" xbvrbackup:"-"`
-	// HasVideoThumbnail bool `json:"has_video_thumbnail" gorm:"default:false"`
+
 
 	NeedsUpdate   bool   `json:"needs_update" xbvrbackup:"-"`
 	EditsApplied  bool   `json:"edits_applied" gorm:"default:false" xbvrbackup:"-"`
@@ -116,6 +116,10 @@ type Scene struct {
 	Score       float64 `gorm:"-" json:"_score" xbvrbackup:"-"`
 
 	AlternateSource []ExternalReferenceLink `json:"alternate_source" xbvrbackup:"-"`
+
+	// Custom black
+    IsDeleted bool `gorm:"-" json:"is_deleted" xbvrbackup:"-"` // DBに保存しないフラグ
+	// Custom END
 }
 
 type Image struct {

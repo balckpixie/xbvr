@@ -145,6 +145,9 @@ const mutations = {
       }
     } catch (err) {
     }
+  },
+  removeScene(state, sceneId) {
+    state.items = state.items.filter(scene => scene.scene_id !== sceneId);
   }
 }
 
@@ -187,6 +190,27 @@ const actions = {
     state.counts.downloaded = data.count_downloaded
     state.counts.not_downloaded = data.count_not_downloaded
     state.counts.hidden = data.count_hidden
+  },
+
+  async deleteScene ({ commit }, payload) {
+    const confirmDelete = window.confirm(
+      `Do you really want to delete the scene "${payload.scene.title}" from "${payload.scene.studio}"?\n` +
+      `If this is an existing scene, it will be re-added during the next scrape.`
+    );
+
+    if (!confirmDelete) return false;
+
+    try {
+      await ky.post(`/api/scene/delete`, {
+        json: { scene_id: payload.scene.id }
+      }).json();
+
+      commit('removeScene', payload.scene.id);
+      return true;
+    } catch (error) {
+      console.error('Error deleting scene:', error);
+      return false;
+    }
   }
 }
 

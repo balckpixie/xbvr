@@ -60,6 +60,7 @@
       <wishlist-button v-if="this.$store.state.optionsWeb.web.sceneWishlist && !item.is_available" :item="item"/>
       <watched-button :item="item" v-if="this.$store.state.optionsWeb.web.sceneWatched"/>
       <edit-button :item="item" v-if="this.$store.state.optionsWeb.web.sceneEdit" />
+      <delete-button :item="item" v-if="this.$store.state.optionsWeb.web.sceneEdit" />
       <link-stashdb-button :item="item" v-if="!this.stashLinkExists" objectType="scene"/>
 
       <span class="is-pulled-right" style="font-size:11px;text-align:right;">
@@ -92,6 +93,7 @@ import FavouriteButton from '../../components/FavouriteButton'
 import WishlistButton from '../../components/WishlistButton'
 import WatchedButton from '../../components/WatchedButton'
 import EditButton from '../../components/EditButton'
+import DeleteButton from '../../components/DeleteButton'
 import LinkStashdbButton from '../../components/LinkStashdbButton'
 import TrailerlistButton from '../../components/TrailerlistButton'
 import HiddenButton from '../../components/HiddenButton'
@@ -101,7 +103,7 @@ import VueLoadImage from 'vue-load-image'
 export default {
   name: 'SceneCard',
   props: { item: Object, reRead: Boolean },
-  components: { WatchlistButton, FavouriteButton, WishlistButton, WatchedButton, EditButton, LinkStashdbButton, TrailerlistButton, HiddenButton, VueLoadImage },
+  components: { WatchlistButton, FavouriteButton, WishlistButton, WatchedButton, EditButton, DeleteButton, LinkStashdbButton, TrailerlistButton, HiddenButton, VueLoadImage },
   data () {
     return {
       preview: false,
