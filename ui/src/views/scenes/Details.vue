@@ -46,7 +46,7 @@
 
               <b-tab-item label="Player" v-if="!displayingAlternateSource">
                 <div :class="['video-player-wrapper', aspectClass]" ref="videoContainer">
-                  <video ref="player" class="video-js vjs-default-skin video-custom" controls playsinline preload="none"
+                  <video  v-if="showPlayer" ref="player" class="video-js vjs-default-skin video-custom" controls playsinline preload="none"
                     muted />
                 </div>
 
@@ -520,6 +520,8 @@ export default {
       currentFile: null,
       currentDuraiton: 0,
       aspectRatio: '1:1',
+      projectionMode: '180',
+      showPlayer: true,
       // Custom END
     }
   },
@@ -709,6 +711,12 @@ export default {
 },
 watch:{
     // Custom Black
+    projectionMode(newVal) {
+      this.$nextTick(() => {
+        // this.reinitializePlayerWithProjection(newVal);
+        this.restartPlayer()
+      });
+    },
     aspectRatio() {
       this.$nextTick(() => {
         if (this.player && typeof this.player.aspectRatio === 'function') {
@@ -756,6 +764,32 @@ watch:{
 },
   methods: {
     // Custom Black
+    async restartPlayer()
+    {
+      if (!this.player || !this.$refs.player) return;
+      const currentTime = this.player.currentTime();
+      const isPaused = this.player.paused();
+      const wasMuted = this.player.muted();
+      const volume = this.player.volume();
+      const currentSrc = this.player.currentSrc();
+
+      this.player.dispose();
+      this.player = null;
+      const videoEl = document.createElement('video');
+      videoEl.className = 'video-js vjs-default-skin video-custom';
+      videoEl.controls = true;
+      videoEl.playsInline = true;
+      videoEl.preload = 'none';
+      this.$refs.videoContainer.appendChild(videoEl);
+      this.setupPlayerDetail(videoEl);
+      
+      this.updatePlayer(currentSrc, this.projectionMode)
+      this.player.volume(volume);
+      this.player.muted(wasMuted);
+      this.setCurrentTime(currentTime)
+      this.player.play()
+    },
+
     setupSprite(file) {
       if (this.player.hasOwnProperty('thumbnailSprite')) {
         this.player.thumbnailSprite(false);
@@ -830,14 +864,23 @@ watch:{
       }
     },
     // Custom END
+    setupPlayer()
+    {
+      //再作成時にrefsで参照できなくなるため初期化処理は別関数化
+     this.setupPlayerDetail(this.$refs.player) 
+    },
 
-    setupPlayer () {
-      this.player = videojs(this.$refs.player, {
+    setupPlayerDetail(videoelement)
+    {
+      if (!videoelement) {
+        console.error('Video element is not defined');
+        return;
+      }
+      this.player = videojs(videoelement, {
         aspectRatio: this.aspectRatio,
         fluid: true,
         loop: true
       })
-
       this.player.hotkeys({
         alwaysCaptureHotkeys: true,
         volumeStep: 0.1,
