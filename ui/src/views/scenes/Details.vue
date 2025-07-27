@@ -45,24 +45,51 @@
               </b-tab-item>
 
               <b-tab-item label="Player" v-if="!displayingAlternateSource">
-                <video ref="player" class="video-js vjs-default-skin" controls playsinline  muted preload="none"/>
-                <b-field position="is-centered">
-                  <b-field>
-                    <b-tooltip v-for="(skipBack, i) in skipBackIntervals" class="is-size-7" :key="i" :active="skipBack == lastSkipBackInterval ? true : false" :label="$t('Keyboard shortcut: Left Arrow')"
-                        position="is-top" type="is-primary is-light" >
-                    <b-button class="tag is-small is-outlined is-info is-light"  @click="playerStepBack(skipBack)">
-                      <b-icon v-if="skipBack == lastSkipBackInterval" pack="mdi" icon="arrow-left-thin" size="is-small"></b-icon> {{ skipBack }}</b-button>
-                    </b-tooltip>
-                  </b-field>
-                  <b-field style="margin-left:1em">
-                    <b-tooltip v-for="(skipForward, i) in skipForwardIntervals" :key="i" :active="skipForward == lastSkipFowardInterval ? true : false" :label="$t('Keyboard shortcut: Right Arrow')"
-                        position="is-top" type="is-primary is-light" >
-                    <b-button class="tag is-small is-outlined is-info is-light" @click="playerStepForward(skipForward)">
-                      <b-icon v-if="skipForward == lastSkipFowardInterval" pack="mdi" icon="arrow-right-thin" size="is-small"></b-icon> +{{ skipForward }}</b-button>
-                    </b-tooltip>
-                  </b-field>
-                </b-field>
-             </b-tab-item>
+                <div :class="['video-player-wrapper', aspectClass]" ref="videoContainer">
+                  <video ref="player" class="video-js vjs-default-skin video-custom" controls playsinline preload="none"
+                    muted />
+                </div>
+
+                <div class="columns is-vcentered">
+                  <div class="column pb-0 is-small">
+                    <!-- アスペクト比選択プルダウン -->
+                    <b-select v-model="aspectRatio" placeholder="Select Aspect Ratio">
+                      <option value="16:10">16:10</option>
+                      <option value="16:9">16:9</option>
+                      <option value="4:3">4:3</option>
+                      <option value="1:1">1:1</option>
+                      <option value="9:16">9:16</option>
+                    </b-select>
+                  </div>
+                  <div class="column pb-0 is-small">
+                    <!-- プロジェクション比選択プルダウン -->
+                    <b-select v-model="projectionMode" placeholder="Select Projection Mode">
+                      <option value="NONE">Flat</option>
+                      <option value="180">180</option>
+                      <option value="360_TB">360</option>
+                    </b-select>
+                  </div>
+                  <div class="column pb-0">
+                      <!-- スキップ操作ボタン群 -->
+                      <b-field position="is-centered">
+                        <b-field>
+                          <b-tooltip v-for="(skipBack, i) in skipBackIntervals" class="is-size-7" :key="i" :active="skipBack == lastSkipBackInterval ? true : false" :label="$t('Keyboard shortcut: Left Arrow')"
+                              position="is-top" type="is-primary is-light" >
+                          <b-button class="tag is-small is-outlined is-info is-light"  @click="playerStepBack(skipBack)">
+                            <b-icon v-if="skipBack == lastSkipBackInterval" pack="mdi" icon="arrow-left-thin" size="is-small"></b-icon> {{ skipBack }}</b-button>
+                          </b-tooltip>
+                        </b-field>
+                        <b-field style="margin-left:1em">
+                          <b-tooltip v-for="(skipForward, i) in skipForwardIntervals" :key="i" :active="skipForward == lastSkipFowardInterval ? true : false" :label="$t('Keyboard shortcut: Right Arrow')"
+                              position="is-top" type="is-primary is-light" >
+                          <b-button class="tag is-small is-outlined is-info is-light" @click="playerStepForward(skipForward)">
+                            <b-icon v-if="skipForward == lastSkipFowardInterval" pack="mdi" icon="arrow-right-thin" size="is-small"></b-icon> +{{ skipForward }}</b-button>
+                          </b-tooltip>
+                        </b-field>
+                      </b-field>
+                  </div>
+                </div>
+              </b-tab-item>
 
             </b-tabs>
 
@@ -82,7 +109,7 @@
                 <div class="columns">
                   <div class="column pb-0">
                     <small>
-                      <a :href="item.scene_url" target="_blank" rel="noreferrer">{{ item.site }}</a>
+                      <a :href="item.scene_url" target="_blank" rel="noreferrer">{{ item.site }} [ {{ item.scene_id }} ]</a>
                       <br v-if="item.members_url != ''"/>
                       <a v-if="item.members_url != ''" :href="item.members_url" target="_blank" rel="noreferrer"><b-icon pack="mdi" icon="link-lock" custom-size="mdi-18px"/>Members Link</a>
                     </small>
@@ -435,6 +462,7 @@
 import ky from 'ky'
 import videojs from 'video.js'
 import 'videojs-vr/dist/videojs-vr.min.js'
+import 'videojs-thumbnail-sprite';
 import { format, formatDistance, parseISO } from 'date-fns'
 import prettyBytes from 'pretty-bytes'
 import VueLoadImage from 'vue-load-image'
@@ -490,11 +518,19 @@ export default {
       // Custom Black
       marginBottom: 10,  //サムネイルコンポーネント高さ調整用
       currentFile: null,
-      currentDuraiton: 0
+      currentDuraiton: 0,
+      aspectRatio: '1:1',
       // Custom END
     }
   },
   computed: {
+    // Custom Black
+    aspectClass() {
+      if (this.aspectRatio === 'original') return '';
+      const value = this.aspectRatio.replace(':', '_');
+      return `aspect-${value}`;
+    },
+    // Custom END
     item () {
       const item = this.$store.state.overlay.details.scene
       if (this.$store.state.optionsWeb.web.tagSort === 'alphabetically') {
@@ -673,15 +709,18 @@ export default {
 },
 watch:{
     // Custom Black
+    aspectRatio() {
+      this.$nextTick(() => {
+        if (this.player && typeof this.player.aspectRatio === 'function') {
+          this.player.aspectRatio(this.aspectRatio);
+        }        
+        window.dispatchEvent(new Event('resize'));
+      });
+    },
     activeTab(newIndex) {
       if (newIndex === 4) {
         this.$nextTick(() => {
-          // if (this.$refs.thumbnailRef) {
-          //   this.$refs.thumbnailRef.fileId = this.currentFile.id
-          //   this.$refs.thumbnailRef.file = this.currentFile
-          //   this.$refs.thumbnailRef.loadThumbnails()
-          // }
-          this.loadVideThumbnails()
+           this.loadVideThumbnails()
         });
       }
    },
@@ -717,15 +756,46 @@ watch:{
 },
   methods: {
     // Custom Black
-    // onThumbnailsTabSelected() {
-    //   this.$nextTick(() => {
-    //     if (this.$refs.thumbnailRef) {
-    //       this.$refs.thumbnailRef.fileId = this.currentFile.id
-    //       this.$refs.thumbnailRef.file = this.currentFile
-    //       this.$refs.thumbnailRef.loadThumbnails()
-    //     }
-    //   });
-    // },
+    setupSprite(file) {
+      if (this.player.hasOwnProperty('thumbnailSprite')) {
+        this.player.thumbnailSprite(false);
+      }
+      let tileHeight = 200
+      if (file.projection === 'flat')
+        {
+          tileHeight = (file.video_height / file.video_width) * 200;
+      }
+      const thumbnailUrl = '/api_custom/thumbnail/image/' + file.id
+      var videPlayer = this.player
+      this.checkImageExists(thumbnailUrl, function(exists) {
+        if (exists) {
+          videPlayer.thumbnailSprite({
+              sprites: [
+                {
+                  url: thumbnailUrl,
+                  duration: file.duration,
+                  start: 25,
+                  interval: 30,
+                  width: 200,
+                  height: tileHeight,
+                },
+              ],
+            });
+        } else {
+          videPlayer.thumbnailSprite(false);
+        }
+      });
+    },
+    checkImageExists(url, callback) {
+      var img = new Image();
+      img.onload = function() {
+          callback(true);
+      };
+      img.onerror = function() {
+          callback(false);
+      };
+      img.src = url;
+    },
     loadVideThumbnails() {
       if (this.$refs.thumbnailRef) {
         // this.$refs.thumbnailRef.fileId = this.currentFile.id
@@ -763,7 +833,7 @@ watch:{
 
     setupPlayer () {
       this.player = videojs(this.$refs.player, {
-        aspectRatio: '1:1',
+        aspectRatio: this.aspectRatio,
         fluid: true,
         loop: true
       })
@@ -921,6 +991,9 @@ watch:{
     playFile (file) {
       this.activeMedia = 1
       this.updatePlayer('/api/dms/file/' + file.id + '?dnt=true', (file.projection == 'flat' ? 'NONE' : '180'))
+      // Custom Black
+      this.setupSprite(file)
+      // Custom END
       this.player.play()
 
       // Custom Black
@@ -1493,5 +1566,41 @@ span.is-active img {
 
 .tagbutton {
   vertical-align: top;
+}
+
+.video-player-wrapper {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.aspect-16_10 {
+  aspect-ratio: 16 / 10;
+  max-height: 75vh;
+}
+
+.aspect-16_9 {
+  aspect-ratio: 16 / 9;
+  max-height: 75vh;
+}
+
+.aspect-4_3 {
+  aspect-ratio: 4 / 3;
+  max-height: 75vh;
+}
+
+.aspect-1_1 {
+  aspect-ratio: 1 / 1;
+  max-height: 75vh;
+}
+
+.aspect-9_16 {
+  aspect-ratio: 9 / 16;
+  max-height: 75vh;
+}
+
+.video-custom {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 </style>
