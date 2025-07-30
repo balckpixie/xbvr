@@ -46,7 +46,7 @@
 
               <b-tab-item label="Player" v-if="!displayingAlternateSource">
                 <div :class="['video-player-wrapper', aspectClass]" ref="videoContainer">
-                  <video id="videoPlayer" ref="player" class="video-js vjs-default-skin video-custom" controls playsinline preload="none"
+                  <video ref="player" class="video-js vjs-default-skin video-custom" controls playsinline preload="none"
                     muted />
                 </div>
 
@@ -89,7 +89,9 @@
                       </b-field>
                   </div>
                 </div>
-              </b-tab-item>
+
+
+             </b-tab-item>
 
             </b-tabs>
 
@@ -462,8 +464,7 @@
 import ky from 'ky'
 import videojs from 'video.js'
 import 'videojs-vr/dist/videojs-vr.min.js'
-import 'videojs-thumbnail-sprite-custom';
-// import 'videojs-sprite-thumbnails'
+import 'videojs-thumbnail-sprite';
 import { format, formatDistance, parseISO } from 'date-fns'
 import prettyBytes from 'pretty-bytes'
 import VueLoadImage from 'vue-load-image'
@@ -482,7 +483,6 @@ import HiddenButton from '../../components/HiddenButton'
 
 import ThumbnailTab from '../../components/ThumbnailTab.vue'
 import DeleteButton from '../../components/DeleteButton.vue'
-import { vi } from 'date-fns/locale';
 
 export default {
   name: 'Details',
@@ -522,7 +522,8 @@ export default {
       currentFile: null,
       currentDuraiton: 0,
       aspectRatio: '1:1',
-      projectionMode: '180',
+      // projectionMode: '180',
+      // selectedAspect: '1:1',
       // Custom END
     }
   },
@@ -712,11 +713,11 @@ export default {
 },
 watch:{
     // Custom Black
-    projectionMode(newVal) {
-      this.$nextTick(() => {
-        this.restartPlayer()
-      });
-    },
+  // projectionMode(newVal) {
+  //   this.$nextTick(() => {
+  //     this.reinitializePlayerWithProjection(newVal);
+  //   });
+  // },
     aspectRatio() {
       this.$nextTick(() => {
         if (this.player && typeof this.player.aspectRatio === 'function') {
@@ -728,7 +729,7 @@ watch:{
     activeTab(newIndex) {
       if (newIndex === 4) {
         this.$nextTick(() => {
-           this.loadVideThumbnails()
+          this.loadVideThumbnails()
         });
       }
    },
@@ -763,62 +764,102 @@ watch:{
   }
 },
   methods: {
+
     // Custom Black
-    
-    // Playerを再起動する（projection mode変更時に使用）
-    async restartPlayer()
-    {
-      const currentTime = this.player.currentTime();
-      // const isPaused = this.player.paused();
-      // const wasMuted = this.player.muted();
-      // const volume = this.player.volume();
-      const currentSrc = this.player.currentSrc();
-      // const duration = this.player.duration()
-      const wasPlaying = !this.player.paused()
+    // restartPlayer(projection)
+    // {
+    //     this.player.dispose()
+    //     const videoEl = document.createElement('video');
+    //     videoEl.className = 'video-js vjs-default-skin video-custom';
+    //     videoEl.controls = true;
+    //     videoEl.playsInline = true;
+    //     videoEl.preload = 'none';
+    //     videoEl.muted = true;
+    //     videoEl.setAttribute('ref', 'player');
+    //     this.$refs.videoContainer.appendChild(videoEl);
+    //     this.setupPlayer();
+    // },
 
-      this.recreateVideoPlayer()
-      //this.playFile (this.currentFile)
-      // this.updatePlayerWithCheckPaused(this.currentFile, this.projectionMode, !wasPlaying)
-      this.updatePlayer(currentSrc, this.projectionMode)
-      this.player.ready(() => {
-        //this.setupSprite(this.currentFile)
-        //this.loadVideThumbnails()
-        this.player.play();
-        this.setCurrentTime(currentTime);
-      })  
+    // reinitializePlayerWithProjection(newProjection) {
+    //   if (!this.player || !this.$refs.player) return;
 
-      //this.player.volume(volume);
-      //this.player.muted(wasMuted);
+    //   const currentTime = this.player.currentTime();
+    //   const isPaused = this.player.paused();
+    //   const wasMuted = this.player.muted();
+    //   const volume = this.player.volume();
+    //   const currentSrc = this.player.currentSrc();
 
-    },
+    //   this.restartPlayer(newProjection);
+    //   this.playFile(this.currentFile);
+    //   this.setCurrentTime(currentTime)
+    // },
 
-    // Create New Video Player（for Change projection mode）
-    // videojsのパラメータ( restoreEl: true )を設定しているのでdispose()時にvideoタグは維持される前提
-    recreateVideoPlayer() {
-      if (this.player) {
-        this.player.dispose();
-        this.player = null;
+    changeAspectRatio(aspect) {
+      if (this.player && typeof this.player.aspectRatio === 'function') {
+        this.player.aspectRatio(aspect)
       }
-      this.setupPlayerDetail("videoPlayer");
-      return;
+    },
+    setupSprite(file) {
+      if (this.player.hasOwnProperty('thumbnailSprite')) {
+        this.player.thumbnailSprite(false);
+      }
+      let tileHeight = 200
+      if (file.projection === 'flat')
+        {
+          tileHeight = (file.video_height / file.video_width) * 200;
+      }
+      const thumbnailUrl = '/api_custom/thumbnail/image/' + file.id
+      var videPlayer = this.player
+      this.checkImageExists(thumbnailUrl, function(exists) {
+        if (exists) {
+          videPlayer.thumbnailSprite({
+              sprites: [
+                {
+                  url: thumbnailUrl,
+                  duration: file.duration,
+                  start: 25,
+                  interval: 30,
+                  width: 200,
+                  height: tileHeight,
+                },
+              ],
+            });
+        } else {
+          videPlayer.thumbnailSprite(false);
+        }
+      });
+    },
+    checkImageExists(url, callback) {
+      var img = new Image();
+      img.onload = function() {
+          callback(true);
+      };
+      img.onerror = function() {
+          callback(false);
+      };
+      img.src = url;
     },
 
-    // Playerの再生位置指定
+    loadVideThumbnails() {
+      if (this.$refs.thumbnailRef) {
+        // this.$refs.thumbnailRef.fileId = this.currentFile.id
+        this.$refs.thumbnailRef.file = this.currentFile
+        this.$refs.thumbnailRef.loadThumbnails()
+      }
+    },
+    onThumbnailClicked(duration) {
+          this.setCurrentTime(duration)
+    },
     setCurrentTime(seconds) {
-      const wasPlaying = !this.player.paused()
-      if (!wasPlaying) {
+      if (!this.player.paused()) {
         this.player.pause();
       }
       setTimeout(() => {
         this.player.currentTime(Math.floor(seconds));
-        if (wasPlaying) {
-          this.player.play();
-        }
+        this.player.play();
         this.currentDuraiton = seconds
       }, 0);
     },
-
-    // Player表示のMax高さ設定値を取得
     computedMaxHeight() {
       const element = this.$refs.tabBar;
       if (element) {
@@ -832,98 +873,13 @@ watch:{
         return 'calc(100vh - 20px)';
       }
     },
-
-    // サムネイルスプライト読み込み
-    setupSprite(file) {
-      let tileHeight = 200
-      if (file.projection === 'flat')
-      {
-          tileHeight = (file.video_height / file.video_width) * 200;
-      }
-      const thumbnailUrl = '/api_custom/thumbnail/image/' + file.id
-      const videPlayer = this.player
-      this.checkImageExists(thumbnailUrl, (exists) =>{
-        if (exists) {
-
-          this.setThumbnails(videPlayer, {
-            sprites: [
-              {
-                url: thumbnailUrl,
-                duration: file.duration,
-                start: 25,
-                interval: 30,
-                width: 200,
-                height: tileHeight,
-              },
-            ],
-          });
-        // } else {
-        //   videPlayer.resetThumbnailSprite();
-        }
-      });
-    },
-
-    // サムネイルスプライトの設定＆再設定用メソッド
-    setThumbnails(player, options) {
-        // ThumbnailSprite クラスのコンストラクタを Video.js レジストリから取得
-        const ThumbnailSpriteClass = videojs.getPlugin('thumbnailSprite');
-        if (!ThumbnailSpriteClass) {
-            console.error("ThumbnailSprite plugin is not registered with Video.js. Cannot set thumbnails.");
-            return;
-        }
-        const pluginInstance = player.thumbnailSprite();
-        if (pluginInstance instanceof ThumbnailSpriteClass) {
-            console.log("Plugin already initialized. Calling updateSprites.");
-            pluginInstance.updateSprites(options);
-        } else {
-            console.log("Plugin not yet initialized or instance type mismatch. Initializing with options.");
-            player.thumbnailSprite(options);
-        }
-    },
-
-    // サーバー上に画像データが存在するか確認する
-    checkImageExists(url, callback) {
-      fetch(url, { method: 'HEAD' })
-        .then(response => {
-          callback(response.ok); // true if status is 200–299
-        })
-        .catch(() => {
-          callback(false);
-        });
-    },
-
-    // サムネイルパネルを表示する
-    loadVideThumbnails() {
-      if (this.$refs.thumbnailRef) {
-        this.$refs.thumbnailRef.file = this.currentFile
-        this.$refs.thumbnailRef.loadThumbnails()
-      }
-    },
-
-    // サムネイルのクリックイベント
-    onThumbnailClicked(duration) {
-          this.setCurrentTime(duration)
-    },
-
     // Custom END
 
-    setupPlayer()
-    {
-      //再作成時にrefsで参照できなくなるため初期化処理は別関数化
-     this.setupPlayerDetail(this.$refs.player) 
-    },
-
-    setupPlayerDetail(videoelement)
-    {
-      if (!videoelement) {
-        console.error('Video element is not defined');
-        return;
-      }
-      this.player = videojs(videoelement, {
+    setupPlayer () {
+      this.player = videojs(this.$refs.player, {
         aspectRatio: this.aspectRatio,
         fluid: true,
-        loop: true,
-        restoreEl: true
+        loop: true
       })
 
       this.player.hotkeys({
@@ -995,19 +951,8 @@ watch:{
       if (src) {
         this.player.src({ src: src, type: 'video/mp4' })
       }
-      // this.player.poster(this.getImageURL(this.item.cover_url, ''))
-      // Custom Black
-      // poster 設定を2秒後に実行
-      setTimeout(() => {
-        this.player.poster(this.getImageURL(this.item.cover_url, ''));
-      }, 1000);
-      // Custom END
+      this.player.poster(this.getImageURL(this.item.cover_url, ''))
     },
-
-
-
-
-
     showCastScenes (actor) {
       this.$store.state.sceneList.filters.cast = actor
       this.$store.state.sceneList.filters.sites = []
@@ -1090,11 +1035,9 @@ watch:{
     playFile (file) {
       this.activeMedia = 1
       this.updatePlayer('/api/dms/file/' + file.id + '?dnt=true', (file.projection == 'flat' ? 'NONE' : '180'))
-      
       // Custom Black
       this.setupSprite(file)
       // Custom END
-
       this.player.play()
 
       // Custom Black
@@ -1104,7 +1047,6 @@ watch:{
       }
       // Custom END
     },
-
     unmatchFile (file) {
       this.$buefy.dialog.confirm({
         title: 'Unmatch file',
@@ -1705,4 +1647,5 @@ span.is-active img {
   height: 100%;
   object-fit: contain;
 }
+
 </style>
