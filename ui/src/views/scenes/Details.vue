@@ -50,7 +50,7 @@
                     muted />
                 </div>
 
-                <div class="columns is-vcentered">
+                <div class="columns is-vcentered" style="max-width: 120px;">
                   <div class="column pb-0 is-small">
                     <!-- アスペクト比選択プルダウン -->
                     <b-select v-model="aspectRatio" placeholder="Select Aspect Ratio">
@@ -61,7 +61,7 @@
                       <option value="9:16">9:16</option>
                     </b-select>
                   </div>
-                  <div class="column pb-0 is-small">
+                  <div class="column pb-0 is-small" style="max-width: 120px;">
                     <!-- プロジェクション比選択プルダウン -->
                     <b-select v-model="projectionMode" placeholder="Select Projection Mode">
                       <option value="NONE">Flat</option>
@@ -780,12 +780,28 @@ watch:{
       //this.playFile (this.currentFile)
       // this.updatePlayerWithCheckPaused(this.currentFile, this.projectionMode, !wasPlaying)
       this.updatePlayer(currentSrc, this.projectionMode)
-      this.player.ready(() => {
-        //this.setupSprite(this.currentFile)
-        //this.loadVideThumbnails()
-        this.player.play();
-        this.setCurrentTime(currentTime);
-      })  
+
+      // if (wasPlaying) {
+        this.player.ready(() => {
+          if (wasPlaying) {
+              //this.loadVideThumbnails()
+              this.player.load();     // 動画を読み込む（バッファ開始）
+              this.player.play();
+              this.setCurrentTime(currentTime);
+              this.setupSprite(this.currentFile)
+          } else {
+              this.player.load();     // 動画を読み込む（バッファ開始）
+              // 一時的に再生し、描画されたらすぐに停止する
+              this.player.one('playing', () => {
+                this.player.pause();
+                this.setCurrentTime(currentTime); // 必要ならここで現在時刻も設定
+                this.setupSprite(this.currentFile)
+              });
+              this.player.play(); // `playing` イベントを発火させる
+          }
+        })  
+      // } 
+
 
       //this.player.volume(volume);
       //this.player.muted(wasMuted);
@@ -799,7 +815,8 @@ watch:{
         this.player.dispose();
         this.player = null;
       }
-      this.setupPlayerDetail("videoPlayer");
+      this.setupPlayer();
+
       return;
     },
 
@@ -857,8 +874,6 @@ watch:{
               },
             ],
           });
-        // } else {
-        //   videPlayer.resetThumbnailSprite();
         }
       });
     },
@@ -868,15 +883,15 @@ watch:{
         // ThumbnailSprite クラスのコンストラクタを Video.js レジストリから取得
         const ThumbnailSpriteClass = videojs.getPlugin('thumbnailSprite');
         if (!ThumbnailSpriteClass) {
-            console.error("ThumbnailSprite plugin is not registered with Video.js. Cannot set thumbnails.");
+            //console.error("ThumbnailSprite plugin is not registered with Video.js. Cannot set thumbnails.");
             return;
         }
         const pluginInstance = player.thumbnailSprite();
         if (pluginInstance instanceof ThumbnailSpriteClass) {
-            console.log("Plugin already initialized. Calling updateSprites.");
+            //console.log("Plugin already initialized. Calling updateSprites.");
             pluginInstance.updateSprites(options);
         } else {
-            console.log("Plugin not yet initialized or instance type mismatch. Initializing with options.");
+            //console.log("Plugin not yet initialized or instance type mismatch. Initializing with options.");
             player.thumbnailSprite(options);
         }
     },
@@ -909,17 +924,8 @@ watch:{
 
     setupPlayer()
     {
-      //再作成時にrefsで参照できなくなるため初期化処理は別関数化
-     this.setupPlayerDetail(this.$refs.player) 
-    },
-
-    setupPlayerDetail(videoelement)
-    {
-      if (!videoelement) {
-        console.error('Video element is not defined');
-        return;
-      }
-      this.player = videojs(videoelement, {
+      // Custom Black 再作成時にref参照できなるなるため、id参照に変更
+      this.player = videojs('videoPlayer', {
         aspectRatio: this.aspectRatio,
         fluid: true,
         loop: true,
@@ -1003,10 +1009,6 @@ watch:{
       }, 1000);
       // Custom END
     },
-
-
-
-
 
     showCastScenes (actor) {
       this.$store.state.sceneList.filters.cast = actor
