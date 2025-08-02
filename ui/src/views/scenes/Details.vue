@@ -21,9 +21,17 @@
 
     <div class="modal-card">
       <section class="modal-card-body">
-        <div class="columns">
 
-          <div class="column is-half">
+        <!-- <div class="columns"> -->
+        <div style="display:flex">
+          <button rounded 
+            class="button is-outlined is-small" 
+            style="margin-left:auto"
+            @click="hidePane2 = !hidePane2" >{{ hidePane2 ? 'Show' : 'Hide' }} Pane 2</button>
+        </div>
+        <splitpanes class="default-theme">
+        <pane min-size="27" max-size="100">
+          <div class="">
             <b-tabs v-model="activeMedia" position="is-centered" :animated="false">
 
               <b-tab-item label="Gallery">
@@ -94,9 +102,9 @@
             </b-tabs>
 
           </div>
-
-          <div class="column is-half">
-
+        </pane>
+        <Pane v-if="!hidePane2" min-size="27" max-size="100">
+          <div class="">
             <div class="block-info block">
               <div class="content">
                 <h3>
@@ -440,7 +448,9 @@
             </div>
 
           </div>
-        </div>
+        </pane>
+        </splitpanes>
+        <!-- </div> -->
       </section>
       <div class="scene-id">
         {{ item.scene_id }}
@@ -462,8 +472,6 @@
 import ky from 'ky'
 import videojs from 'video.js'
 import 'videojs-vr/dist/videojs-vr.min.js'
-import 'videojs-thumbnail-sprite-custom';
-// import 'videojs-sprite-thumbnails'
 import { format, formatDistance, parseISO } from 'date-fns'
 import prettyBytes from 'pretty-bytes'
 import VueLoadImage from 'vue-load-image'
@@ -480,6 +488,10 @@ import RescrapeButton from '../../components/RescrapeButton'
 import TrailerlistButton from '../../components/TrailerlistButton'
 import HiddenButton from '../../components/HiddenButton'
 
+import 'videojs-thumbnail-sprite-custom';
+// import 'videojs-sprite-thumbnails'
+import { Splitpanes, Pane } from 'splitpanes'
+import 'splitpanes/dist/splitpanes.css'
 import ThumbnailTab from '../../components/ThumbnailTab.vue'
 import DeleteButton from '../../components/DeleteButton.vue'
 import { vi } from 'date-fns/locale';
@@ -487,7 +499,7 @@ import { vi } from 'date-fns/locale';
 export default {
   name: 'Details',
   components: { VueLoadImage, GlobalEvents, StarRating, WatchlistButton, FavouriteButton, LinkStashdbButton, WishlistButton, WatchedButton, EditButton, RefreshButton, RescrapeButton, TrailerlistButton, HiddenButton
-    , ThumbnailTab, DeleteButton
+    , ThumbnailTab, DeleteButton, Splitpanes, Pane 
    },
   data () {
     return {
@@ -523,6 +535,7 @@ export default {
       currentDuraiton: 0,
       aspectRatio: '1:1',
       projectionMode: '180',
+      hidePane2:false,
       // Custom END
     }
   },
@@ -1525,7 +1538,7 @@ watch:{
 }
 
 .modal-card {
-  width: 85%;
+  width: 90%;
 }
 
 .missing {
@@ -1706,5 +1719,24 @@ span.is-active img {
   width: 100%;
   height: 100%;
   object-fit: contain;
+}
+
+// .splitpanes {
+//   background-color: #ffffff00;
+//   border: none;
+// }
+
+.splitpanes {
+  background: #ffffff00 !important;
+}
+.splitpanes__pane {
+  background: #ffffff00 !important;
+}
+
+.carousel {
+  aspect-ratio: 1 / 1;
+  max-height: 82vh;
+  margin-left: auto;
+  margin-right: auto;
 }
 </style>

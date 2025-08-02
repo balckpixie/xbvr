@@ -20,6 +20,7 @@
     "date-fns": "4.1.0",
     "ky": "0.30.0",
     "pretty-bytes": "6.1.1",
+    "splitpanes": "^2.4.1",
     "videojs-hotkeys": "0.2.30",
     "videojs-thumbnail-sprite-custom": "file:../libs/videojs-thumbnail-sprite-custom",
     "videojs-vr": "1.8.0",
