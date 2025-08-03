@@ -16,7 +16,7 @@
       <section class="modal-card-body">
         <b-tabs position="is-centered" :animated="false">
 
-          <b-tab-item :label="$t('Search Images')">
+          <b-tab-item :label="$t('Actor Images')">
                 <b-carousel v-model="carouselSlide" @change="scrollToActiveIndicator" :autoplay="false" :indicator-inside="false">
                   <b-carousel-item v-for="(carousel, i) in images" :key="i">
                     <div class="image is-1by1 is-full"
@@ -36,14 +36,48 @@
                 <b-button class="button is-primary is-small" style="display: flex; justify-content: center;" v-on:click="setActorImage()">{{$t('Set Main')}}</b-button>
                 <b-button class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="setActorFaceImage()">{{$t('Set Face')}}</b-button>
                 <b-button v-if="images.length != 0" class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="deleteActorImage()">{{$t('Delete')}}</b-button>
-                <span style="display: flex; justify-content: center;margin-left: 1em;" >Scrape</span>
-                <b-button class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="scrapeActorImage('b', 'エロ')">{{$t('Bing')}}</b-button>
-                <b-button class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="scrapeActorImage('g', 'エロ')">{{$t('Google')}}</b-button>
-                <b-button class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="scrapeActorImage('g', 'セクシー女優 全裸')">{{$t('Google2')}}</b-button>
-                <b-button class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="scrapeActorImage('g', 'グラビア')">{{$t('Gravia')}}</b-button>
-                <b-button class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="scrapeActorImage('g', '顔')">{{$t('Face')}}</b-button>
-                </div>
+</div>
           </b-tab-item>
+
+<b-tab-item :label="$t('Search')">
+  <div class="columns is-gapless" style="height: 66vh;overflow: hidden;">
+
+    <!-- 左カラム：サイドバー（固定） -->
+    <div class="column is-2" style="background-color: #f5f5f5;">
+      <div class="p-4">
+        <b-button 
+          @click="scrapeActorImage" 
+          class="is-primary is-fullwidth"
+        >
+          {{ $t('Search') }}
+        </b-button>
+                        <span style="display: flex; justify-content: center;margin-left: 1em;" >Scrape</span>
+                <b-button class="button is-fullwidth" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="scrapeActorImage('b', 'エロ')">{{$t('Bing')}}</b-button>
+                <b-button class="button is-fullwidth" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="scrapeActorImage('g', 'エロ')">{{$t('Google')}}</b-button>
+                <b-button class="button is-fullwidth" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="scrapeActorImage('g', 'セクシー女優 全裸')">{{$t('Google2')}}</b-button>
+                <b-button class="button is-fullwidth" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="scrapeActorImage('g', 'グラビア')">{{$t('Gravia')}}</b-button>
+                <b-button class="button is-fullwidth" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="scrapeActorImage('g', '顔')">{{$t('Face')}}</b-button>
+                
+      </div>
+    </div>
+
+    <!-- 右カラム：スクロール可能 -->
+    <div class="column" style="overflow-y: auto; padding: 1rem;">
+        <div>
+          <vue-select-image
+            :data-images="getImages"
+            :is-multiple="true"
+            :selected-images="initialSelected"
+            @onselectmultipleimage="onSelectMultipleImage"
+          />
+          <p>初期値: {{ initialSelected }}</p>
+          <p>選択中: {{ selectMultipleImage }}</p>
+        </div>
+    </div>
+
+  </div>
+</b-tab-item>
+
 
           <b-tab-item :label="$t('Images')">
             <ListEditor :list="this.actor.imageArray" type="image_arr" :blurFn="() => blur('image_arr')" :showUrl="true"/>
@@ -55,7 +89,6 @@
       <footer class="modal-card-foot">
         <b-field>
           <b-button type="is-primary" @click="save">{{ $t('Save Details') }}</b-button>
-          <b-button v-if="actor.scenes.length == 0 && !actor.name.startsWith('aka:')" type="is-danger" outlined @click="deleteactor">{{ $t('Delete Actor') }}</b-button>
         </b-field>
       </footer>
     </div>
@@ -66,53 +99,29 @@
 import ky from 'ky'
 import GlobalEvents from 'vue-global-events'
 import ListEditor from '../../components/ListEditor'
-
 import VueLoadImage from 'vue-load-image'
+
+import VueSelectImage from 'vue-select-image'
+// require('vue-select-image/dist/vue-select-image.css')
 
 export default {
   name: 'EditActorImage',
-  components: { VueLoadImage, ListEditor, GlobalEvents },
+  components: { VueLoadImage, ListEditor, GlobalEvents, VueSelectImage },
   data () {
     const actor = Object.assign({}, this.$store.state.overlay.actoreditimage.actor)
-    let images;
+
+    let tmp_images;
     try {
-      images = JSON.parse(actor.image_arr)
+      tmp_images = JSON.parse(actor.image_arr)
     } catch {
-      images = []
+      tmp_images = []
     }    
-    actor.imageArray = images.map(i => i)    
+    actor.imageArray = tmp_images.map(i => i)    
     try {
       actor.aliasArray = JSON.parse(actor.aliases)
     } catch {
       actor.aliasArray = []
     }
-    // try {
-    //   actor.tattooArray = JSON.parse(actor.tattoos)
-    // } catch {
-    //   actor.tattooArray = []
-    // }
-    // try {
-    //   actor.piercingArray = JSON.parse(actor.piercings)
-    // } catch {
-    //   actor.piercingArray = []
-    // }
-    // actor.measurements = Math.round(actor.band_size / 2.54) + actor.cup_size + '-' + Math.round(actor.waist_size / 2.54) + '-' + Math.round(actor.hip_size / 2.54)
-    // this.convertCountryCodeToName()
-    // let urls;
-    // try {
-    //   urls = JSON.parse(actor.urls)
-    // } catch {
-    //   urls = []
-    // }    
-    // actor.urlArray = urls.map(i => i.url)    
-
-    // const totalInches = Math.round(actor.height / 2.54)
-    // const  feet = Math.floor(totalInches / 12)
-    // const inches =  Math.round(totalInches - (feet*12))      
-    // const lbs = Math.round(actor.weight * 220462 / 100000);
-    // actor.feet = feet
-    // actor.inches = inches
-    // actor.lbs = lbs
 
     return {
       actor,
@@ -126,7 +135,33 @@ export default {
       filteredCountries: [],
       extrefsArray: [],
       extrefsSource: '',
-      getimages: [],
+    getImages: [{
+      id: '1',
+      src: 'https://unsplash.it/200?random',
+      alt: 'Alt Image 1'
+    }, {
+      id: '2',
+      src: 'https://unsplash.it/200?random',
+      alt: 'Alt Image 2'
+    }, {
+      id: '3',
+      src: 'https://unsplash.it/200?random',
+      alt: 'Alt Image 3',
+      disabled: true
+    }, {
+      id: '4',
+      src: 'https://unsplash.it/200?random',
+      alt: 'Alt Image 4',
+    }, {
+      id: '5',
+      src: 'https://unsplash.it/200?random',
+      alt: 'Alt Image 5',
+    }],
+    initialSelected:[{
+      id: '5'
+    }],
+    SelectImage: '',
+    SelectMultipleImage:['id:5']
     }
   },
   computed: {
@@ -136,49 +171,33 @@ export default {
       }      
       return JSON.parse(this.actor.image_arr).filter(im => im != "")      
     },
-    birthdate: {
-      get () {        
-        if (this.actor.birth_date=='0001-01-01T00:00:00Z') {
-          return new Date()
-        }
-        return new Date(this.actor.birth_date)
-      },
-      set (value) {        
-        if (value==null){
-          this.actor.birth_date=null
-        }else{
-        // remove the time offset, or toISOString may result in a different date
-        let adjustedDate = new Date(value.getTime() - (value.getTimezoneOffset() * 60000))
-        this.actor.birth_date = adjustedDate.toISOString().split('.')[0] + 'Z'        
-        }
-      }
-    },
-    useImperialEntry () {
-      return this.$store.state.optionsAdvanced.advanced.useImperialEntry
-    },
+
   },
   mounted () {
-    ky.get('/api/actor/countrylist')
-    .json()
-    .then(list => {
-      this.countryList = list
-      this.convertCountryCodeToName()
-    })  
-
-  ky.get(`/api/actor/extrefs/${this.actor.id}`)
-    .json()
-    .then(list => {
-      this.extrefsArray = []
-      list.forEach(extref => {
-        this.extrefsArray.push(extref.external_reference.external_url)
-      }      
-      )
-      this.extrefsSource = JSON.parse(JSON.stringify(this.extrefsArray))
-      this.extrefsChangesMade=false
-    })
+  // ky.get(`/api/actor/extrefs/${this.actor.id}`)
+  //   .json()
+  //   .then(list => {
+  //     this.extrefsArray = []
+  //     list.forEach(extref => {
+  //       this.extrefsArray.push(extref.external_reference.external_url)
+  //     }      
+  //     )
+  //     this.extrefsSource = JSON.parse(JSON.stringify(this.extrefsArray))
+  //     this.extrefsChangesMade=false
+  //   })
   },
   methods: {
     // Custom Black
+    onSelectImage(selected){
+      this.SelectImage = "id:" + selected.id
+    },
+    onSelectMultipleImage(selected){
+      let arr = [];
+      for(let i=0; i<selected.length; i++){
+        arr.push("id:" + selected[i].id);
+      }
+      this.SelectMultipleImage = arr;
+    },
     getImageURL (u, size) {
       if (u.startsWith('http') || u.startsWith('https')) {
         return '/img/' + size + '/' + u.replace('://', ':/')
@@ -193,6 +212,18 @@ export default {
         return '/ui/images/blank_female_profile.png'
       }
     },
+    scrapeActorImage (site,val) {
+      ky.post('/api_custom/images/searchImage', {
+      json: {
+        actor_id: this.actor.id,
+        url: "",
+        keyword: val,
+        site: site
+      }}).json().then(data => {
+        // this.$store.state.overlay.actordetails.actor = data
+        this.getImages =data.images      })    
+    },
+
     // Custom End
     close () {
       if (this.changesMade || this.extrefsChangesMade) {
@@ -210,46 +241,10 @@ export default {
     },
     async save () {
       this.$store.state.actorList.isLoading = true
-      if (this.useImperialEntry) {
-        this.actor.height = Math.round(((this.actor.feet * 12) + this.actor.inches) * 2.54)
-        this.actor.weight = Math.round(this.actor.lbs * 453592 / 1000000);
-      }
-      this.actor.aliases = JSON.stringify(this.actor.aliasArray)      
-      this.actor.tattoos = JSON.stringify(this.actor.tattooArray)         
-      this.actor.piercings = JSON.stringify(this.actor.piercingArray)
-      if (this.countries.length==0){
-        this.actor.nationality=""
-      } else {
-        this.actor.nationality=this.countries[0]
-      }
-
-      let  dataArray = []
-      if (this.actor.urls != "") {
-        const existingurls = JSON.parse(this.actor.urls)      
-        this.actor.urlArray.forEach(url => {        
-          let t = ''
-          existingurls.forEach(u => {
-            if (u.url==url) {
-              t=u.type
-            }
-          })
-          dataArray.push({
-            url,
-            type: t
-          })
-        })
-      }
-      this.actor.height = parseInt(this.actor.height)
-      this.actor.weight = parseInt(this.actor.weight)
-      this.actor.start_year = parseInt(this.actor.start_year)
-      this.actor.end_year = parseInt(this.actor.end_year)
-
-      this.actor.urls = JSON.stringify(dataArray)
-
       this.actor.image_arr = JSON.stringify(this.actor.imageArray)  
 
       await ky.post(`/api/actor/edit/${this.actor.id}`, { json: { ...this.actor } })
-      await ky.post(`/api/actor/edit_extrefs/${this.actor.id}`, { json: this.extrefsArray  })
+      // await ky.post(`/api/actor/edit_extrefs/${this.actor.id}`, { json: this.extrefsArray  })
       await ky.get('/api/actor/'+this.actor.id).json().then(data => {
         if (data.id != 0){
           this.$store.state.overlay.actordetails.actor = data          
@@ -262,22 +257,7 @@ export default {
       this.$store.state.actorList.isLoading = false
       this.close()
     },
-    deleteactor () {
-      this.$buefy.dialog.confirm({
-        title: 'Delete actor',
-        message: `Do you really want to delete <strong>${this.actor.name}</strong>`,
-        type: 'is-info is-wide',
-        hasIcon: true,
-        id: 'heh',
-        onConfirm: () => {
-          ky.delete(`/api/actor/delete/${this.actor.id}`).json().then(data => {
-            this.$store.dispatch('actorList/load', { offset: this.$store.state.actorList.offset - this.$store.state.actorList.limit })
-            this.$store.commit('overlay/hideActorEditImage')
-            this.$store.commit('overlay/hideActorDetails')
-          })
-        }
-      })
-    },
+
     blur (field) {
       if (this.changesMade) return // Changes have already been made. No point to check any further   
       if (['image_arr', 'tattoos', 'piercings', 'aliases', 'urls'].includes(field)) {
@@ -310,43 +290,25 @@ export default {
         }
       }      
     },
-    getFilteredCountries (text) {
-      const filtered = this.countryList.filter(option => (
-        option.name.toString().toLowerCase().indexOf(text.toLowerCase()) >= 0        
-      ))
-      this.filteredCountries=[]
-      filtered.forEach(item => this.filteredCountries.push(item.name))      
-    },
-    getYear (text) {
-      if (text==0) {
-        return ""
-      }
-      return year
-    },
-    convertCountryCodeToName() {      
-      if (this.countryList != undefined && this.actor != undefined && this.actor.nationality.length == 2) {
-        this.countryList.forEach(country => {
-          if (country.code == this.actor.nationality) {
-            this.actor.nationality=country.name
-          }
-        })
-      }
 
-      if (this.actor != undefined){      
-        this.countries = [this.actor.nationality]
-      }      
-    },
   },
 }
 </script>
 
-<style scoped>
+<style>
 .modal-card {
-  width: 65%;
+    width: 90%;
+    height: 90%;
 }
 
 .tab-item {
   height: 40vh;
+}
+
+.carousel-item {
+    width: 30% !important;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 :deep(.carousel .carousel-indicator) {
@@ -359,5 +321,67 @@ export default {
 }
 :deep(.carousel .carousel-indicator .indicator-item:not(.is-active)) {
   opacity: 0.5;
+}
+</style>
+
+<style>
+.vue-select-image__wrapper {
+  overflow: auto;
+  list-style-image: none;
+  list-style-position: outside;
+  list-style-type: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); /* 自動で列数調整 */
+  gap: 10px; /* 画像の間隔 */
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.vue-select-image__item {
+  margin: 0 0 10px 0;
+  float: left;
+}
+
+.vue-select-image__thumbnail {
+  cursor: pointer;
+  display: block;
+  padding: 4px;
+  line-height: 20px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.055);
+  transition: all 0.2s ease-in-out;
+}
+
+.vue-select-image__thumbnail--selected {
+  background: #08c;
+}
+
+.vue-select-image__thumbnail--disabled {
+  background: #b9b9b9;
+  cursor: not-allowed;
+}
+
+.vue-select-image__thumbnail--disabled > .vue-select-image__img {
+  opacity: 0.5;
+}
+
+.vue-select-image__img {
+  -webkit-user-drag: none;
+  display: block;
+  max-width: 100%;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.vue-select-image__lbl {
+  line-height: 3;
+}
+
+@media only screen and (min-width: 1200px) {
+  .vue-select-image__item {
+    margin-left: 0px;
+  }
 }
 </style>
