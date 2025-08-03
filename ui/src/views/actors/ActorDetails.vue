@@ -92,6 +92,7 @@
                       <actor-favourite-button :actor="actor"/>&nbsp;
                       <actor-watchlist-button :actor="actor"/>&nbsp;
                       <actor-edit-button :actor="actor"/>&nbsp;
+                      <actor-edit-image-button :actor="actor"/>&nbsp;
                       <link-stashdb-button :item="actor" objectType="actor" />
                     </div>
                   </div>
@@ -272,9 +273,13 @@ import LinkStashdbButton from '../../components/LinkStashdbButton'
 import SceneCard from '../scenes/SceneCard'
 import ActorCard from './ActorCard'
 
+import ActorEditImageButton from '../../components/ActorEditImageButton.vue'
+
 export default {
   name: 'ActorDetails',
-  components: { VueLoadImage, GlobalEvents, StarRating, ActorWatchlistButton, ActorFavouriteButton, SceneCard, ActorEditButton,  ActorCard, LinkStashdbButton },
+  components: { VueLoadImage, GlobalEvents, StarRating, ActorWatchlistButton, ActorFavouriteButton, SceneCard, ActorEditButton,  ActorCard, LinkStashdbButton,
+    ActorEditImageButton,
+   },
   data () {
     return {
       index: 1,
@@ -317,6 +322,9 @@ export default {
     },
     showEdit () {
       return this.$store.state.overlay.actoredit.show
+    },
+    showActorEditImage () {
+      return this.$store.state.overlay.actoreditimage.show
     },
     showOpenInNewWindow () {
       return this.$store.state.optionsWeb.web.showOpenInNewWindow

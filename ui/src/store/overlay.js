@@ -30,6 +30,10 @@ const state = {
     show: false,
     actor: null
   },  
+  actoreditimage: {
+    show: false,
+    actor: null
+  },
   quickFind: {
     show:false,
     searchString: null,  // use to preppoulate the search box
@@ -97,6 +101,16 @@ const mutations = {
     state.actoredit.scene = null
     state.actoredit.show = false
   },
+  // Custom Black
+  editActorImage (state, payload) {
+    state.actoreditimage.actor = payload.actor
+    state.actoreditimage.show = true
+  },
+  hideActorEditImage (state) {
+    state.actoreditimage.scene = null
+    state.actoreditimage.show = false
+  },
+  // Custom End
   showPlayer (state, payload) {
     state.player.file = payload.file
     state.player.show = true
