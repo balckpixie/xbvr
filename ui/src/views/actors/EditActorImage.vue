@@ -16,93 +16,37 @@
       <section class="modal-card-body">
         <b-tabs position="is-centered" :animated="false">
 
-          <b-tab-item :label="$t('Information')">
-            <b-field grouped group-multiline style="margin-bottom: 2em;">
-              <b-field :label="$t('Nationality')" label-position="on-border" class="field-extra">
-                <b-taginput v-model="countries" autocomplete :data="filteredCountries" @typing="getFilteredCountries" maxtags="1" :open-on-focus=true :has-counter="false">
-                  <template slot-scope="props">{{ props.option }}</template>
-                  <template slot="empty">{{ $t('No matching country') }}</template>
-                  <template #selected="props">
-                      <b-tag v-for="(tag, index) in props.tags"                
-                        :key="tag+index" :tabstop="false" closable @close="countries=countries.filter(e => e !== tag)" >
-                          {{tag}}
-                      </b-tag>
+          <b-tab-item :label="$t('Search Images')">
+                <b-carousel v-model="carouselSlide" @change="scrollToActiveIndicator" :autoplay="false" :indicator-inside="false">
+                  <b-carousel-item v-for="(carousel, i) in images" :key="i">
+                    <div class="image is-1by1 is-full"
+                         v-bind:style="{backgroundImage: `url(${getImageURL(carousel, '700,fit')})`, backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat'}"></div>
+                  </b-carousel-item>
+                  <template slot="indicators" slot-scope="props">
+                      <span class="al image" style="width:max-content;">
+                        <vue-load-image>
+                          <img slot="image" :src="getIndicatorURL(props.i)" style="height:85px;"/>
+                          <img slot="preloader" :src="getImageURL('https://i.stack.imgur.com/kOnzy.gif')" style="height:25px;"/>
+                          <img slot="error" src="/ui/images/blank_female_profile.png" style="height:85px;"/>
+                        </vue-load-image>
+                      </span>
                   </template>
-                </b-taginput>
-              </b-field>              
-              <b-field :label="$t('Ethnicity')" label-position="on-border">
-                <b-input type="text" v-model="actor.ethnicity" @blur="blur('ethnicity')"/>
-              </b-field>
-               <b-datepicker v-model="birthdate" icon="calendar-today" @blur="blur('birth_date')">
-                 <b-button :label="$t('Clear')" type="is-danger" icon-left="close" outlined @click="birthdate = null" />
-               </b-datepicker>
-            </b-field>
-            <b-field grouped group-multiline style="margin-bottom: 2em;">
-              <b-field :label="$t('Eye Color')" label-position="on-border">
-                <b-input type="text" v-model="actor.eye_color" @blur="blur('eye_color')"/>
-              </b-field>
-              <b-field :label="$t('Hair Color')" label-position="on-border">
-                <b-input type="text" v-model="actor.hair_color" @blur="blur('hair_color')"/>
-              </b-field>
-            </b-field>
-            <b-field grouped group-multiline style="margin-bottom: 2em;">
-              <b-field v-if="useImperialEntry" :label="$t('Weight in lbs')" label-position="on-border">
-                <b-input type="number" v-model.number="actor.lbs" :placeholder="$t('Enter Weight in lbs')"  @blur="blur('weight')"/>                 
-              </b-field>
-              <b-field v-if="!useImperialEntry" :label="$t('Weight')" label-position="on-border">
-                <b-input type="number" v-model.number="actor.weight" :placeholder="$t('Enter Weight in kg')"  @blur="blur('weight')"/>                 
-              </b-field>
-              <b-field>
-              <b-field v-if="useImperialEntry" :label="$t('Height feet/inches')" label-position="on-border">
-                <b-input type="number" v-model.number="actor.feet" min="0" max="10" placeholder="Height in feet" @blur="blur('height')" style="width: 5em;"/>
-                <b-input type="number" v-model.number="actor.inches" min="0" max="12" placeholder="Height in inches" @blur="blur('height')" style="width: 5em;"/>
-              </b-field>
-              </b-field>
-              <b-field v-if="!useImperialEntry" :label="$t('Height')" label-position="on-border">
-                <b-input type="number" v-model.number="actor.height"  placeholder="Height in cm" @blur="blur('height')"/>
-              </b-field>
-            </b-field>
-            <b-field grouped group-multiline style="margin-bottom: 2em;">
-              <b-field :label="$t('Measurements')" label-position="on-border">
-                <b-input type="text" v-model="actor.measurements" placeholder="eg 36C-24-36" pattern="(^(\d{2})?([A-Za-z]{0,2})-(\d{2})?-(\d{2}$)?)|^[A-Z]{0,2}$" validation-message="use the format 99A-99-99"
-                  @blur="blur('measurements')"/>
-              </b-field>
-              <b-field :label="$t('Breast Type')" label-position="on-border">
-                <b-input type="text" v-model="actor.breast_type" placeholder="eg Fake, Natural" @blur="blur('breast_type')"/>
-              </b-field>
-            </b-field>
-            <b-field grouped group-multiline style="margin-bottom: 2em;">
-              <b-field :label="$t('Active From')" label-position="on-border">
-                <b-input type="number" v-model.number="actor.start_year" :max="new Date().getFullYear()" pattern="^[1-2]\d{1,3}$|^0$|^$"  validation-message="Up to the current year" @blur="blur('start_year')"/>
-              </b-field>
-              <b-field :label="$t('Active To')" label-position="on-border">
-                <b-input type="number" v-model.number="actor.end_year" :max="new Date().getFullYear()" pattern="^[1-2]\d{1,3}$|^0$|^$"  validation-message="Up to the current year" @blur="blur('end_year')"/>
-              </b-field>
-            </b-field>
-            <b-field :label="$t('Biography')" label-position="on-border">
-              <b-input type="textarea" v-model="actor.biography" @blur="blur('biography')"/>
-            </b-field>
-          </b-tab-item>
-
-          <b-tab-item :label="$t('Aliases')">
-            <ListEditor :list="this.actor.aliasArray" type="aliases" :blurFn="() => blur('aliases')"/>
-          </b-tab-item>
-          <b-tab-item :label="$t('Tattoos')">
-            <ListEditor :list="this.actor.tattooArray" type="tattoos" :blurFn="() => blur('tattoos')"/>
-          </b-tab-item>
-          <b-tab-item :label="$t('Piercings')">
-            <ListEditor :list="this.actor.piercingArray" type="piercings" :blurFn="() => blur('piercings')"/>
-          </b-tab-item>
-
-          <b-tab-item :label="$t('Links')">
-            <ListEditor :list="this.actor.urlArray" type="urls" :blurFn="() => blur('urls')" :showUrl="true"/>
+                </b-carousel>
+                <div class="flexcentre">
+                <b-button class="button is-primary is-small" style="display: flex; justify-content: center;" v-on:click="setActorImage()">{{$t('Set Main')}}</b-button>
+                <b-button class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="setActorFaceImage()">{{$t('Set Face')}}</b-button>
+                <b-button v-if="images.length != 0" class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="deleteActorImage()">{{$t('Delete')}}</b-button>
+                <span style="display: flex; justify-content: center;margin-left: 1em;" >Scrape</span>
+                <b-button class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="scrapeActorImage('b', 'エロ')">{{$t('Bing')}}</b-button>
+                <b-button class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="scrapeActorImage('g', 'エロ')">{{$t('Google')}}</b-button>
+                <b-button class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="scrapeActorImage('g', 'セクシー女優 全裸')">{{$t('Google2')}}</b-button>
+                <b-button class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="scrapeActorImage('g', 'グラビア')">{{$t('Gravia')}}</b-button>
+                <b-button class="button is-primary is-small" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="scrapeActorImage('g', '顔')">{{$t('Face')}}</b-button>
+                </div>
           </b-tab-item>
 
           <b-tab-item :label="$t('Images')">
             <ListEditor :list="this.actor.imageArray" type="image_arr" :blurFn="() => blur('image_arr')" :showUrl="true"/>
-          </b-tab-item>
-          <b-tab-item :label="$t('Actor Scraper')">
-            <ListEditor :list="this.extrefsArray" type="extrefs_arr" :blurFn="() => extrefBlur()" :showUrl="true"/>
           </b-tab-item>
         </b-tabs>
 
@@ -123,9 +67,11 @@ import ky from 'ky'
 import GlobalEvents from 'vue-global-events'
 import ListEditor from '../../components/ListEditor'
 
+import VueLoadImage from 'vue-load-image'
+
 export default {
   name: 'EditActorImage',
-  components: { ListEditor, GlobalEvents },
+  components: { VueLoadImage, ListEditor, GlobalEvents },
   data () {
     const actor = Object.assign({}, this.$store.state.overlay.actoreditimage.actor)
     let images;
@@ -140,33 +86,33 @@ export default {
     } catch {
       actor.aliasArray = []
     }
-    try {
-      actor.tattooArray = JSON.parse(actor.tattoos)
-    } catch {
-      actor.tattooArray = []
-    }
-    try {
-      actor.piercingArray = JSON.parse(actor.piercings)
-    } catch {
-      actor.piercingArray = []
-    }
-    actor.measurements = Math.round(actor.band_size / 2.54) + actor.cup_size + '-' + Math.round(actor.waist_size / 2.54) + '-' + Math.round(actor.hip_size / 2.54)
-    this.convertCountryCodeToName()
-    let urls;
-    try {
-      urls = JSON.parse(actor.urls)
-    } catch {
-      urls = []
-    }    
-    actor.urlArray = urls.map(i => i.url)    
+    // try {
+    //   actor.tattooArray = JSON.parse(actor.tattoos)
+    // } catch {
+    //   actor.tattooArray = []
+    // }
+    // try {
+    //   actor.piercingArray = JSON.parse(actor.piercings)
+    // } catch {
+    //   actor.piercingArray = []
+    // }
+    // actor.measurements = Math.round(actor.band_size / 2.54) + actor.cup_size + '-' + Math.round(actor.waist_size / 2.54) + '-' + Math.round(actor.hip_size / 2.54)
+    // this.convertCountryCodeToName()
+    // let urls;
+    // try {
+    //   urls = JSON.parse(actor.urls)
+    // } catch {
+    //   urls = []
+    // }    
+    // actor.urlArray = urls.map(i => i.url)    
 
-    const totalInches = Math.round(actor.height / 2.54)
-    const  feet = Math.floor(totalInches / 12)
-    const inches =  Math.round(totalInches - (feet*12))      
-    const lbs = Math.round(actor.weight * 220462 / 100000);
-    actor.feet = feet
-    actor.inches = inches
-    actor.lbs = lbs
+    // const totalInches = Math.round(actor.height / 2.54)
+    // const  feet = Math.floor(totalInches / 12)
+    // const inches =  Math.round(totalInches - (feet*12))      
+    // const lbs = Math.round(actor.weight * 220462 / 100000);
+    // actor.feet = feet
+    // actor.inches = inches
+    // actor.lbs = lbs
 
     return {
       actor,
@@ -180,9 +126,16 @@ export default {
       filteredCountries: [],
       extrefsArray: [],
       extrefsSource: '',
+      getimages: [],
     }
   },
   computed: {
+    images () {
+      if (this.actor.image_arr==undefined || this.actor.image_arr=="") {
+        return []
+      }      
+      return JSON.parse(this.actor.image_arr).filter(im => im != "")      
+    },
     birthdate: {
       get () {        
         if (this.actor.birth_date=='0001-01-01T00:00:00Z') {
@@ -225,6 +178,22 @@ export default {
     })
   },
   methods: {
+    // Custom Black
+    getImageURL (u, size) {
+      if (u.startsWith('http') || u.startsWith('https')) {
+        return '/img/' + size + '/' + u.replace('://', ':/')
+      } else {
+        return u
+      }
+    },
+    getIndicatorURL (idx) {      
+      if (this.images[idx] !== undefined) {
+        return this.getImageURL(this.images[idx], 'x85')
+      } else {
+        return '/ui/images/blank_female_profile.png'
+      }
+    },
+    // Custom End
     close () {
       if (this.changesMade || this.extrefsChangesMade) {
         this.$buefy.dialog.confirm({
@@ -378,5 +347,17 @@ export default {
 
 .tab-item {
   height: 40vh;
+}
+
+:deep(.carousel .carousel-indicator) {
+  justify-content: flex-start;
+  width: 100%;
+  max-width: min-content;
+  margin-left: auto;
+  margin-right: auto;
+  overflow: auto;
+}
+:deep(.carousel .carousel-indicator .indicator-item:not(.is-active)) {
+  opacity: 0.5;
 }
 </style>
