@@ -45,18 +45,16 @@
     <!-- 左カラム：サイドバー（固定） -->
     <div class="column is-2" style="background-color: #f5f5f5;">
       <div class="p-4">
-        <b-button 
-          @click="scrapeActorImage" 
-          class="is-primary is-fullwidth"
-        >
-          {{ $t('Search') }}
-        </b-button>
-                        <span style="display: flex; justify-content: center;margin-left: 1em;" >Scrape</span>
-                <b-button class="button is-fullwidth" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="scrapeActorImage('b', 'エロ')">{{$t('Bing')}}</b-button>
-                <b-button class="button is-fullwidth" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="scrapeActorImage('g', 'エロ')">{{$t('Google')}}</b-button>
-                <b-button class="button is-fullwidth" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="scrapeActorImage('g', 'セクシー女優 全裸')">{{$t('Google2')}}</b-button>
-                <b-button class="button is-fullwidth" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="scrapeActorImage('g', 'グラビア')">{{$t('Gravia')}}</b-button>
-                <b-button class="button is-fullwidth" style="display: flex; justify-content: center;margin-left: 1em;" v-on:click="scrapeActorImage('g', '顔')">{{$t('Face')}}</b-button>
+        <b-button :disabled="this.SelectMultipleImage.length != 1" @click="setActorImage()" class="is-primary is-fullwidth" style="display:flex; justify-content:center; margin-bottom: 5px;">{{ $t('Set Main') }}</b-button>
+        <b-button :disabled="this.SelectMultipleImage.length != 1" @click="setActorFaceImage()" class="is-primary is-fullwidth" style="display:flex; justify-content:center; margin-bottom: 5px;">{{ $t('Set Face') }}</b-button>
+        <b-button :disabled="this.SelectMultipleImage.length === 0" @click="addActorImages()" class="is-primary is-fullwidth" style="display:flex; justify-content:center; margin-bottom: 5px;">{{ $t('Add Images') }}</b-button>
+        <span style="display: flex; justify-content: center;" >Scrape</span>
+        <b-button class="button is-fullwidth" style="display: flex; justify-content: center;" v-on:click="resetSelection">{{$t('Reset Selection')}}</b-button>
+        <b-button class="button is-fullwidth" style="display: flex; justify-content: center;" v-on:click="scrapeActorImage('b', 'エロ')">{{$t('Bing')}}</b-button>
+        <b-button class="button is-fullwidth" style="display: flex; justify-content: center;" v-on:click="scrapeActorImage('g', 'エロ')">{{$t('Google')}}</b-button>
+        <b-button class="button is-fullwidth" style="display: flex; justify-content: center;" v-on:click="scrapeActorImage('g', 'セクシー女優 全裸')">{{$t('Google2')}}</b-button>
+        <b-button class="button is-fullwidth" style="display: flex; justify-content: center;" v-on:click="scrapeActorImage('g', 'グラビア')">{{$t('Gravia')}}</b-button>
+        <b-button class="button is-fullwidth" style="display: flex; justify-content: center;" v-on:click="scrapeActorImage('g', '顔')">{{$t('Face')}}</b-button>
                 
       </div>
     </div>
@@ -65,12 +63,12 @@
     <div class="column" style="overflow-y: auto; padding: 1rem;">
         <div>
           <vue-select-image
+            ref="vueSelectImage"
             :data-images="getImages"
             :is-multiple="true"
             :selected-images="initialSelected"
             @onselectmultipleimage="onSelectMultipleImage"
           />
-          <p>初期値: {{ initialSelected }}</p>
           <p>選択中: {{ selectMultipleImage }}</p>
         </div>
     </div>
@@ -135,33 +133,11 @@ export default {
       filteredCountries: [],
       extrefsArray: [],
       extrefsSource: '',
-    getImages: [{
-      id: '1',
-      src: 'https://unsplash.it/200?random',
-      alt: 'Alt Image 1'
-    }, {
-      id: '2',
-      src: 'https://unsplash.it/200?random',
-      alt: 'Alt Image 2'
-    }, {
-      id: '3',
-      src: 'https://unsplash.it/200?random',
-      alt: 'Alt Image 3',
-      disabled: true
-    }, {
-      id: '4',
-      src: 'https://unsplash.it/200?random',
-      alt: 'Alt Image 4',
-    }, {
-      id: '5',
-      src: 'https://unsplash.it/200?random',
-      alt: 'Alt Image 5',
-    }],
-    initialSelected:[{
-      id: '5'
-    }],
-    SelectImage: '',
-    SelectMultipleImage:['id:5']
+      getImages: [],
+      // initialSelected:[],
+      SelectImage: '',
+      SelectMultipleImage:[],
+      // selectOne: false
     }
   },
   computed: {
@@ -185,16 +161,78 @@ export default {
   //     this.extrefsSource = JSON.parse(JSON.stringify(this.extrefsArray))
   //     this.extrefsChangesMade=false
   //   })
+
+    //NotFound画像を非表示にする
+    const observer = new MutationObserver(() => {
+    const imgs = this.$el.querySelectorAll('img');
+    imgs.forEach(img => {
+      if (img._errorHandlerAttached) return;
+      img._errorHandlerAttached = true;
+
+      img.addEventListener('error', () => {
+        const li = img.closest('li');
+        if (li) li.style.display = 'none';
+      });
+    });
+  });
+
+  observer.observe(this.$el, {
+    childList: true,
+    subtree: true
+  });
+
   },
+  
   methods: {
     // Custom Black
+    setActorImage (val) {
+      ky.post('/api/actor/setimage', {
+      json: {
+        actor_id: this.actor.id,
+        url: this.SelectMultipleImage[0]
+      }}).json().then(data => {        
+        this.actor = data
+        this.$store.state.overlay.actoredit.actor = data
+        this.$store.state.overlay.actordetails.actor = data
+        this.carouselSlide=0
+      })    
+    },
+    setActorFaceImage (val) {
+      ky.post('/api_custom/actor/setfaceimage', {
+      json: {
+        actor_id: this.actor.id,
+        url: this.SelectMultipleImage[0]
+      }}).json().then(data => {        
+        this.actor = data
+        this.$store.state.overlay.actoredit.actor = data
+        this.$store.state.overlay.actordetails.actor = data
+        this.carouselSlide=0
+      })    
+    },
+    addActorImages (val) {
+      ky.post('/api_custom/actor/addimages', {
+      json: {
+        actor_id: this.actor.id,
+        urls: this.SelectMultipleImage
+      }}).json().then(data => {        
+        this.actor = data
+        this.$store.state.overlay.actoredit.actor = data
+        this.$store.state.overlay.actordetails.actor = data
+        this.carouselSlide=0
+      })    
+    },
+    resetSelection() {
+      this.$refs.vueSelectImage.resetMultipleSelection();
+      this.SelectMultipleImage = [];
+    },
     onSelectImage(selected){
       this.SelectImage = "id:" + selected.id
+      selectOne = true
     },
     onSelectMultipleImage(selected){
       let arr = [];
       for(let i=0; i<selected.length; i++){
-        arr.push("id:" + selected[i].id);
+        arr.push(this.getImages[selected[i].id-1].src);
       }
       this.SelectMultipleImage = arr;
     },
@@ -220,8 +258,8 @@ export default {
         keyword: val,
         site: site
       }}).json().then(data => {
-        // this.$store.state.overlay.actordetails.actor = data
-        this.getImages =data.images      })    
+        this.getImages =data.images
+      })    
     },
 
     // Custom End
@@ -295,7 +333,7 @@ export default {
 }
 </script>
 
-<style>
+<style scoped>
 .modal-card {
     width: 90%;
     height: 90%;
