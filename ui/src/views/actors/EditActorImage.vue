@@ -45,16 +45,41 @@
     <!-- 左カラム：サイドバー（固定） -->
     <div class="column is-2" style="background-color: #f5f5f5;">
       <div class="p-4">
-        <b-button :disabled="this.SelectMultipleImage.length != 1" @click="setActorImage()" class="is-primary is-fullwidth" style="display:flex; justify-content:center; margin-bottom: 5px;">{{ $t('Set Main') }}</b-button>
-        <b-button :disabled="this.SelectMultipleImage.length != 1" @click="setActorFaceImage()" class="is-primary is-fullwidth" style="display:flex; justify-content:center; margin-bottom: 5px;">{{ $t('Set Face') }}</b-button>
-        <b-button :disabled="this.SelectMultipleImage.length === 0" @click="addActorImages()" class="is-primary is-fullwidth" style="display:flex; justify-content:center; margin-bottom: 5px;">{{ $t('Add Images') }}</b-button>
+<div class="columns is-mobile is-multiline">
+  <div class="column is-half"><b-button :disabled="SelectMultipleImage.length != 1" @click="setActorImage()" class="is-primary is-fullwidth" style="display:flex; justify-content:center; margin-bottom:5px;">{{ $t('Set Main') }}</b-button></div>
+  <div class="column is-half"><b-button :disabled="SelectMultipleImage.length != 1" @click="setActorFaceImage()" class="is-primary is-fullwidth" style="display:flex; justify-content:center; margin-bottom:5px;">{{ $t('Set Face') }}</b-button></div>
+  <div class="column is-half"><b-button :disabled="SelectMultipleImage.length === 0" @click="addActorImages()" class="is-primary is-fullwidth" style="display:flex; justify-content:center; margin-bottom:5px;">{{ $t('Add Images') }}</b-button></div>
+  <div class="column is-half"><b-button @click="resetSelection" class="button is-fullwidth" style="display:flex; justify-content:center; margin-bottom:5px;">{{ $t('Reset Selection') }}</b-button></div>
+</div>
         <span style="display: flex; justify-content: center;" >Scrape</span>
-        <b-button class="button is-fullwidth" style="display: flex; justify-content: center;" v-on:click="resetSelection">{{$t('Reset Selection')}}</b-button>
-        <b-button class="button is-fullwidth" style="display: flex; justify-content: center;" v-on:click="scrapeActorImage(SiteEnum.BING, 'エロ')">{{$t('Bing')}}</b-button>
-        <b-button class="button is-fullwidth" style="display: flex; justify-content: center;" v-on:click="scrapeActorImage(SiteEnum.GOOGLE, 'エロ')">{{$t('Google')}}</b-button>
-        <b-button class="button is-fullwidth" style="display: flex; justify-content: center;" v-on:click="scrapeActorImage(SiteEnum.GOOGLE, 'セクシー女優 全裸')">{{$t('Google2')}}</b-button>
-        <b-button class="button is-fullwidth" style="display: flex; justify-content: center;" v-on:click="scrapeActorImage(SiteEnum.GOOGLE, 'グラビア')">{{$t('Gravia')}}</b-button>
-        <b-button class="button is-fullwidth" style="display: flex; justify-content: center;" v-on:click="scrapeActorImage(SiteEnum.GOOGLE, '顔')">{{$t('Face')}}</b-button>
+
+  <div class="toggle-container">
+    <label
+      v-for="(label, key) in SiteEnum"
+      :key="key"
+      :class="['toggle-button', { active: selectedSite === label }]"
+    >
+      <input
+        type="radio"
+        :value="label"
+        v-model="selectedSite"
+      />
+      {{ label }}
+    </label>
+  </div>
+
+
+<div v-for="(row, rowIndex) in chunkedCategories" :key="rowIndex" class="columns is-mobile is-multiline">
+  <div v-for="category in row" :key="category" class="column is-half">
+    <b-button
+      class="button is-fullwidth"
+      style="display: flex; justify-content: center;"
+      @click="scrapeActorImage(selectedSite, category)"
+    >
+      {{ $t(category.charAt(0).toUpperCase() + category.slice(1)) }}
+    </b-button>
+  </div>
+</div>
                 
       </div>
     </div>
@@ -102,6 +127,11 @@ import VueLoadImage from 'vue-load-image'
 import VueSelectImage from 'vue-select-image'
 // require('vue-select-image/dist/vue-select-image.css')
 
+const SiteEnum = Object.freeze({
+  GOOGLE: 'Google',
+  BING: 'Bing'
+})
+
 export default {
   name: 'EditActorImage',
   components: { VueLoadImage, ListEditor, GlobalEvents, VueSelectImage },
@@ -139,10 +169,9 @@ export default {
       SelectMultipleImage:[],
       // selectOne: false
 
-      SiteEnum: Object.freeze({
-        GOOGLE: 'Google',
-        BING: 'Bing'
-      })
+      SiteEnum,
+      selectedSite: SiteEnum.GOOGLE,
+      categories: ['AV', 'PORN', 'AV FACE', 'SEXY', 'GRAVURE', 'ERO', 'NAKED BODY', 'CUTE', 'NIPPLE', 'BOOBS', 'FACE', 'FULL BODY', 'CLOSE UP', 'BODY SHOT'],
     }
   },
   computed: {
@@ -152,6 +181,14 @@ export default {
       }      
       return JSON.parse(this.actor.image_arr).filter(im => im != "")      
     },
+      chunkedCategories() {
+        const chunkSize = 2;
+        const chunks = [];
+        for (let i = 0; i < this.categories.length; i += chunkSize) {
+          chunks.push(this.categories.slice(i, i + chunkSize));
+        }
+        return chunks;
+      },
 
   },
   mounted () {
@@ -388,6 +425,41 @@ export default {
 :deep(.carousel .carousel-indicator .indicator-item:not(.is-active)) {
   opacity: 0.5;
 }
+
+.toggle-container {
+  display: flex;
+  width: 100%;
+  max-width: 400px; /* 任意で制限（不要なら削除OK） */
+  margin-bottom: 1rem;
+}
+
+.toggle-button {
+  flex: 1 1 50%;
+  padding: 10px 0;
+  text-align: center;
+  cursor: pointer;
+  border: 1px solid #ccc;
+  background-color: #f5f5f5;
+  font-weight: bold;
+  user-select: none;
+  transition: background-color 0.2s;
+}
+
+.toggle-button + .toggle-button {
+  border-left: none;
+}
+
+/* ラジオボタン自体は非表示 */
+.toggle-button input {
+  display: none;
+}
+
+/* アクティブ状態 */
+.toggle-button.active {
+  background-color: #42b983;
+  color: white;
+  border-color: #42b983;
+}
 </style>
 
 <style>
@@ -412,7 +484,7 @@ export default {
 .vue-select-image__thumbnail {
   cursor: pointer;
   display: block;
-  padding: 4px;
+  padding: 6px;
   line-height: 20px;
   border: 1px solid #ddd;
   border-radius: 4px;
@@ -421,11 +493,11 @@ export default {
 }
 
 .vue-select-image__thumbnail--selected {
-  background: #08c;
+  background: #fb00d2;
 }
 
 .vue-select-image__thumbnail--disabled {
-  background: #b9b9b9;
+  background: #70006b;
   cursor: not-allowed;
 }
 
