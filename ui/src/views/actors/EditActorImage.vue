@@ -50,11 +50,11 @@
         <b-button :disabled="this.SelectMultipleImage.length === 0" @click="addActorImages()" class="is-primary is-fullwidth" style="display:flex; justify-content:center; margin-bottom: 5px;">{{ $t('Add Images') }}</b-button>
         <span style="display: flex; justify-content: center;" >Scrape</span>
         <b-button class="button is-fullwidth" style="display: flex; justify-content: center;" v-on:click="resetSelection">{{$t('Reset Selection')}}</b-button>
-        <b-button class="button is-fullwidth" style="display: flex; justify-content: center;" v-on:click="scrapeActorImage('b', 'エロ')">{{$t('Bing')}}</b-button>
-        <b-button class="button is-fullwidth" style="display: flex; justify-content: center;" v-on:click="scrapeActorImage('g', 'エロ')">{{$t('Google')}}</b-button>
-        <b-button class="button is-fullwidth" style="display: flex; justify-content: center;" v-on:click="scrapeActorImage('g', 'セクシー女優 全裸')">{{$t('Google2')}}</b-button>
-        <b-button class="button is-fullwidth" style="display: flex; justify-content: center;" v-on:click="scrapeActorImage('g', 'グラビア')">{{$t('Gravia')}}</b-button>
-        <b-button class="button is-fullwidth" style="display: flex; justify-content: center;" v-on:click="scrapeActorImage('g', '顔')">{{$t('Face')}}</b-button>
+        <b-button class="button is-fullwidth" style="display: flex; justify-content: center;" v-on:click="scrapeActorImage(SiteEnum.BING, 'エロ')">{{$t('Bing')}}</b-button>
+        <b-button class="button is-fullwidth" style="display: flex; justify-content: center;" v-on:click="scrapeActorImage(SiteEnum.GOOGLE, 'エロ')">{{$t('Google')}}</b-button>
+        <b-button class="button is-fullwidth" style="display: flex; justify-content: center;" v-on:click="scrapeActorImage(SiteEnum.GOOGLE, 'セクシー女優 全裸')">{{$t('Google2')}}</b-button>
+        <b-button class="button is-fullwidth" style="display: flex; justify-content: center;" v-on:click="scrapeActorImage(SiteEnum.GOOGLE, 'グラビア')">{{$t('Gravia')}}</b-button>
+        <b-button class="button is-fullwidth" style="display: flex; justify-content: center;" v-on:click="scrapeActorImage(SiteEnum.GOOGLE, '顔')">{{$t('Face')}}</b-button>
                 
       </div>
     </div>
@@ -138,6 +138,11 @@ export default {
       SelectImage: '',
       SelectMultipleImage:[],
       // selectOne: false
+
+      SiteEnum: Object.freeze({
+        GOOGLE: 'Google',
+        BING: 'Bing'
+      })
     }
   },
   computed: {
@@ -272,6 +277,8 @@ export default {
       }
     },
     scrapeActorImage (site,val) {
+      this.resetSelection();
+      this.getImages = [];
       ky.post('/api_custom/images/searchImage', {
       json: {
         actor_id: this.actor.id,

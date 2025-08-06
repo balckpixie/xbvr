@@ -14,15 +14,15 @@ import (
 	"github.com/gocolly/colly/v2"
 )
 
-type ResponseGetImages struct {
-	Results int            `json:"results"`
-	Images  []string 		`json:"images"`
-}
-
 type ImageItem struct {
     ID  string `json:"id"`
     Src string `json:"src"`
     Alt string `json:"alt"`
+}
+
+type ResponseGetImages struct {
+	Results int            `json:"results"`
+	Images  []string 		`json:"images"`
 }
 
 type SearchImageResponse struct {
@@ -30,7 +30,36 @@ type SearchImageResponse struct {
     Images []ImageItem `json:"images"`
 }
 
+type RequestSearchImages struct {
+	ActorID uint   		`json:"actor_id"`
+	Url     string 		`json:"url"`
+	Keyword string 		`json:"keyword"`
+	Site 	SiteType  	`json:"site"`
+}
+
 type ImagesResource struct{}
+
+type SiteType string
+const (
+	SiteGoogle SiteType = "Google"
+	SiteBing SiteType = "Bing"
+)
+type SiteConfig struct {
+	BaseURL      string
+	QueryPattern string // %s に検索キーワードを埋め込む
+}
+// 検索サイト設定マップ
+var SiteConfigs = map[SiteType]SiteConfig{
+	SiteGoogle: {// Google画像検索
+		BaseURL:      "https://www.google.com/search",
+		QueryPattern: "q=%s&as_epq=&as_oq=&as_eq=&imgar=t|xt&imgcolor=&imgtype=photo&cr=&as_sitesearch=&as_filetype=&tbs=&udm=2", 
+	},
+	SiteBing: { // Bing画像検索
+		BaseURL:      "https://www.bing.com/images/search",
+		QueryPattern: "q=%s&qft=+filterui:aspect-tall",
+	},
+}
+const userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99 Safari/537.36"
 
 func (i ImagesResource) WebService() *restful.WebService {
 	tags := []string{"CustomImages"}
@@ -46,13 +75,6 @@ func (i ImagesResource) WebService() *restful.WebService {
 		Writes(SearchImageResponse{}))
 
 	return ws
-}
-
-type RequestSearchImages struct {
-	ActorID uint   `json:"actor_id"`
-	Url     string `json:"url"`
-	Keyword string `json:"keyword"`
-	Site string    `json:"site"`
 }
 
 func (i ImagesResource) searchActorImage(req *restful.Request, resp *restful.Response) {
@@ -78,11 +100,16 @@ func (i ImagesResource) searchActorImage(req *restful.Request, resp *restful.Res
 	}
 
 	var imageURLs []string
-	
-	if r.Site == "g" {
-		imageURLs, err = getImageURLsFromGoogleImage2("(\"" + actor.Name + "\") " + r.Keyword)
-	} else {
-		imageURLs, err = getImageURLs2("(\"" + actor.Name + "\") " + r.Keyword)
+	query := "(\"" + actor.Name + "\") " + r.Keyword
+	switch r.Site {
+	case SiteGoogle:
+		imageURLs, err = getImageURLsFromGoogle(query)
+	case SiteBing:
+		imageURLs, err = getImageURLsFromBing(query)
+	default:
+		log.Errorf("invalid site value: %s", r.Site)
+		resp.WriteErrorString(http.StatusBadRequest, "Invalid site parameter")
+		return
 	}
 	
 	if err != nil {
@@ -111,139 +138,168 @@ func (i ImagesResource) searchActorImage(req *restful.Request, resp *restful.Res
         Results: len(images),
         Images:  images,
     })
-	// if len(imageURLs) == 0 || r.ActorID == 0 {
-	// 	return
-	// }
-
-    // resp.WriteHeaderAndEntity(http.StatusOK, ResponseGetImages{Images: imageURLs})
-
 }
 
-func getImageURLsFromGoogleImage2(query string) ([]string, error) {
-	var imageURLs []string
-	searchURL := fmt.Sprintf("https://www.google.com/search?q=%s&as_epq=&as_oq=&as_eq=&imgar=t|xt&imgcolor=&imgtype=photo&cr=&as_sitesearch=&as_filetype=&tbs=&udm=2", url.QueryEscape(query))
-	fmt.Println("searchURL:", searchURL)
-	c := colly.NewCollector()
-	c.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99 Safari/537.36"
-	c.OnHTML("script", func(e *colly.HTMLElement) {
-		// スクリプトコードを取得
-		scriptContent := e.Text
-		re := regexp.MustCompile(`var m=({[^;]*})`)
-		matches := re.FindStringSubmatch(scriptContent)
-	
-		if len(matches) >= 2 {
-			// 変数mの値を取得
-			mValue := matches[1]
-	
-			// fmt.Println("mValue:", mValue)
-			// JSON形式の文字列をパースしてオブジェクトに変換
-			var mObj map[string]interface{}
-			if err := json.Unmarshal([]byte(mValue), &mObj); err != nil {
-				fmt.Println("JSONの解析中にエラーが発生しました:", err)
-				return
-			}
-	
-			// 変数mの値を出力
-			// fmt.Println("変数mの値:")
-			for _, value := range mObj {
-				// fmt.Printf("%s: %v\n", key, value)
-				if array, isArray := value.([]interface{}); isArray {
-					if len(array) >= 2 {
-						if secondArray, isSecondArray := array[1].([]interface{}); isSecondArray {
-							if len(secondArray) >= 4 {
-								if thirdArray, isThirdArray := secondArray[3].([]interface{}); isThirdArray {
-									if len(thirdArray) >= 3 {
-										imageURL := thirdArray[0].(string)
-										if imageURL != "" {
-											imageURLs = append(imageURLs, imageURL)
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-	})
+func getImageURLsFromGoogle(query string) ([]string, error) {
 
-	c.OnError(func(r *colly.Response, err error) {
-		fmt.Println("Request URL:", r.Request.URL, "failed with response:", r, "\nError:", err)
-	})
-	if err := c.Visit(searchURL); err != nil {
+	searchURL, err := buildSearchURL(SiteGoogle, url.QueryEscape(query))
+	if err != nil {
 		return nil, err
 	}
+
+	imageCollector := colly.NewCollector(
+		colly.UserAgent(userAgent),
+	)
+
+	var imageURLs []string
+	var parseErr error
+
+	imageCollector.OnHTML("script", func(e *colly.HTMLElement) {
+		googleScriptRe := regexp.MustCompile(`var m=({[^;]*})`)
+		matches := googleScriptRe.FindStringSubmatch(e.Text)
+		if len(matches) < 1 {
+			return
+		}
+		var mObj map[string]interface{}
+		if err := json.Unmarshal([]byte(matches[1]), &mObj); err != nil {
+			parseErr = fmt.Errorf("failed to parse JSON: %w", err)
+			return
+		}
+
+		imageURLs = append(imageURLs, extractGoogleImageURLs(mObj)...)
+	})
+
+	imageCollector.OnError(func(r *colly.Response, err error) {
+		parseErr = fmt.Errorf("google request failed: %w", err)
+	})
+
+	if err := imageCollector.Visit(searchURL); err != nil {
+		return nil, fmt.Errorf("failed to visit Google search URL: %w", err)
+	}
+
+	if parseErr != nil {
+		return nil, parseErr
+	}
+
 	return imageURLs, nil
 }
 
 
-func getImageURLs2(query string) ([]string, error) {
-	var imageURLs []string
-	// var modifyImages []string
-	var cookies []*http.Cookie
+func getImageURLsFromBing(query string) ([]string, error) {
+	// Cookie取得
+	cookies, err := fetchBingCookies()
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch cookies: %w", err)
+	}
 
-	c0 := colly.NewCollector()
-	c0.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99 Safari/537.36"
-	c0.OnResponse(func(r *colly.Response) {
-		// Access the cookies
-		cookies = c0.Cookies(r.Request.URL.String())
-		for _, cookie := range cookies {
-			// log.Println("Cookie:", cookie.Name, "Value:", cookie.Value)
-			if cookie.Name == "SRCHHPGUSR" {
-				cookie.Value = cookie.Value + "&ADLT=OFF"
-			}
-		}
-	})
-
-	if err := c0.Visit("https://www.bing.com/"); err != nil {
+	searchURL, err := buildSearchURL(SiteBing, url.QueryEscape(query))
+	if err != nil {
 		return nil, err
 	}
 
-	// Bing画像検索のURL
-	searchURL := fmt.Sprintf("https://www.bing.com/images/search?q=%s&qft=+filterui:aspect-tall", url.QueryEscape(query))
+	var imageURLs []string
+	var parseErr error
 
-	fmt.Println("searchURL:", searchURL)
-	// Collyのインスタンスを作成
-	c := colly.NewCollector()
-	// ユーザーエージェントを設定
-	c.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99 Safari/537.36"
+	imageCollector := colly.NewCollector(
+		colly.UserAgent(userAgent),
+	)
 
-	c.OnRequest(func(r *colly.Request) {
-		c.SetCookies("http://www.bing.com", cookies)
+	imageCollector.OnRequest(func(r *colly.Request) {
+		imageCollector.SetCookies("http://www.bing.com", cookies)
 	})
-	c.OnHTML("div.imgpt > a.iusc", func(e *colly.HTMLElement) {
-		// ページから href を取得
+
+	imageCollector.OnHTML("div.imgpt > a.iusc", func(e *colly.HTMLElement) {
 		href := e.Attr("href")
-		fmt.Println("Found href:", href)
-		fmt.Println("Image src :", getCollectImageUrl2(href))
-		imageURL := getCollectImageUrl2(href)
-		if imageURL != "" {
+		if imageURL := extractImageURLFromBing(href); imageURL != "" {
 			imageURLs = append(imageURLs, imageURL)
 		}
 	})
-	c.OnError(func(r *colly.Response, err error) {
-		fmt.Println("Request URL:", r.Request.URL, "failed with response:", r, "\nError:", err)
+
+	imageCollector.OnError(func(r *colly.Response, err error) {
+		parseErr = fmt.Errorf("bing request failed: %w", err)
 	})
-	if err := c.Visit(searchURL); err != nil {
+
+	if err := imageCollector.Visit(searchURL); err != nil {
+		return nil, fmt.Errorf("failed to visit search URL: %w", err)
+	}
+
+	if parseErr != nil {
+		return nil, parseErr
+	}
+
+	return imageURLs, nil
+
+}
+
+func buildSearchURL(site SiteType, keyword string) (string, error) {
+	config, ok := SiteConfigs[site]
+	if !ok {
+		return "", fmt.Errorf("unsupported site: %s", site)
+	}
+	return fmt.Sprintf("%s?%s", config.BaseURL, fmt.Sprintf(config.QueryPattern, keyword)), nil
+}
+
+
+// extractGoogleImageURLs JSONオブジェクトからGoogle画像URL抽出
+func extractGoogleImageURLs(mObj map[string]interface{}) []string {
+	var urls []string
+
+	for _, value := range mObj {
+		arr1, ok := value.([]interface{})
+		if !ok || len(arr1) < 2 {
+			continue
+		}
+		arr2, ok := arr1[1].([]interface{})
+		if !ok || len(arr2) < 4 {
+			continue
+		}
+		arr3, ok := arr2[3].([]interface{})
+		if !ok || len(arr3) < 1 {
+			continue
+		}
+		if imgURL, ok := arr3[0].(string); ok && imgURL != "" {
+			urls = append(urls, imgURL)
+		}
+	}
+
+	return urls
+}
+
+// extractImageURLFromBing Bing画像検索結果のhrefから画像URLを抽出
+func extractImageURLFromBing(href string) string {
+	bingURLRe := regexp.MustCompile(`mediaurl=([^&]+)`)
+	matches := bingURLRe.FindStringSubmatch(href)
+	if len(matches) > 1 {
+		if decodedURL, err := url.QueryUnescape(matches[1]); err == nil {
+			return decodedURL
+		}
+	}
+	return ""
+}
+
+// Bingのトップページを訪問してCookieを取得する
+func fetchBingCookies() ([]*http.Cookie, error) {
+	var cookies []*http.Cookie
+
+	cookieCollector := colly.NewCollector(colly.UserAgent(userAgent))
+	cookieCollector.OnResponse(func(r *colly.Response) {
+		cookies = cookieCollector.Cookies(r.Request.URL.String())
+		for _, cookie := range cookies {
+			if cookie.Name == "SRCHHPGUSR" {
+				cookie.Value += "&ADLT=OFF"
+			}
+		}
+	})
+	//if err := cookieCollector.Visit("https://www.bing.com/"); err != nil {
+	config, _ := SiteConfigs[SiteBing]
+	if err := cookieCollector.Visit(config.BaseURL); err != nil {
 		return nil, err
 	}
-	return imageURLs, nil
+	return cookies, nil
 }
 
-func getCollectImageUrl2(str string) string {
-	re := regexp.MustCompile(`/images/search\?.*?mediaurl=(.*\.jpg)|/images/search\?.*?mediaurl=(.*\.png)|/images/search\?.*?mediaurl=([^&]+)`)
-    match := re.FindStringSubmatch(str)
-	if len(match) > 1 {
-		decodedURL, err := url.QueryUnescape(match[1])
-		if err != nil {
-			return ""
-		}
 
-		fmt.Println("decodedURL:", decodedURL)
-		return decodedURL
-	} else {
-		return ""
-	}
-}
+
+
 
 
