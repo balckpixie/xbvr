@@ -186,39 +186,58 @@ export default {
   methods: {
     // Custom Black
     setActorImage (val) {
+      const selected = this.SelectMultipleImage[0];
+      const selectedId = selected?.id;
+
       ky.post('/api/actor/setimage', {
       json: {
         actor_id: this.actor.id,
-        url: this.SelectMultipleImage[0]
+        url: selected?.url
       }}).json().then(data => {        
         this.actor = data
         this.$store.state.overlay.actoredit.actor = data
         this.$store.state.overlay.actordetails.actor = data
         this.carouselSlide=0
+        if (selectedId != null && this.getImages[selectedId - 1]) {
+          this.getImages[selectedId - 1].disabled = true;
+        }
+        this.resetSelection();
       })    
     },
     setActorFaceImage (val) {
+      const selected = this.SelectMultipleImage[0];
+      const selectedId = selected?.id;
+
       ky.post('/api_custom/actor/setfaceimage', {
       json: {
         actor_id: this.actor.id,
-        url: this.SelectMultipleImage[0]
+        url: selected?.url
       }}).json().then(data => {        
         this.actor = data
         this.$store.state.overlay.actoredit.actor = data
         this.$store.state.overlay.actordetails.actor = data
         this.carouselSlide=0
-      })    
+        if (selectedId != null && this.getImages[selectedId - 1]) {
+          this.getImages[selectedId - 1].disabled = true;
+        }
+        this.resetSelection();
+      })     
     },
     addActorImages (val) {
       ky.post('/api_custom/actor/addimages', {
       json: {
         actor_id: this.actor.id,
-        urls: this.SelectMultipleImage
+        urls: this.SelectMultipleImage.map(img => img.url)
       }}).json().then(data => {        
         this.actor = data
         this.$store.state.overlay.actoredit.actor = data
         this.$store.state.overlay.actordetails.actor = data
         this.carouselSlide=0
+        this.SelectMultipleImage.forEach(selected => {
+          const target = this.getImages.find(img => img.id === selected.id);
+          if (target) target.disabled = true;
+        });
+        this.resetSelection();
       })    
     },
     resetSelection() {
@@ -232,7 +251,9 @@ export default {
     onSelectMultipleImage(selected){
       let arr = [];
       for(let i=0; i<selected.length; i++){
-        arr.push(this.getImages[selected[i].id-1].src);
+        const id = selected[i].id;
+        const url = this.getImages[id - 1].src;
+        arr.push({ id: id, url: url });
       }
       this.SelectMultipleImage = arr;
     },
