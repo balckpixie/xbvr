@@ -31,7 +31,19 @@ Actorスクレイパパの設定を追加（model_external_reference.goも忘れ
 
 サムネイル作成のCronと必要となる関連の処理を追加
 
+サムネイル表示機能をViewに追加
 
+シーンの削除ボタンをListとDetailに追加
 
+シーンマッチング時にファイル名検索結果の同一シーン情報を排除
 
+動画サムネイルスのプライトを追加
+（スプライトは独自カスタムコンポーネントを使用）
+# using yarn
+yarn add videojs-thumbnail-sprite
+# nodeバージョン依存を無視してインストール
+yarn add videojs-thumbnail-sprite --ignore-engines
 
+シーン詳細にスプリットを追加
+
+Actor画像の追加用ダイアログを作成（画像検索機能）

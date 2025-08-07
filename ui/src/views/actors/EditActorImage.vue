@@ -282,7 +282,7 @@ export default {
       })    
     },
     changeActorFaceImage (val) {
-      ky.post('/api/actor/setfaceimage', {
+      ky.post('/api_custom/actor/setfaceimage', {
       json: {
         actor_id: this.actor.id,
         url: this.images[this.carouselSlide]
