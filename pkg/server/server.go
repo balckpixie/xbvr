@@ -94,6 +94,8 @@ func StartServer(version, commit, branch, date string) {
 	restful.Add(customapi.FilesResource{}.WebService())
 	restful.Add(customapi.TaskResource{}.WebService())
 	restful.Add(customapi.ThumbnailResource{}.WebService())
+	restful.Add(customapi.ImagesResource{}.WebService())
+	restful.Add(customapi.ActorResource{}.WebService())
 	// Custom END
 
 	restConfig := restfulspec.Config{

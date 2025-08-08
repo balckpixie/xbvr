@@ -2,12 +2,12 @@
   "version": "0.2.0",
   "compounds": [
     {
-      "name": "Go + Vue Debug",
+      "name": "Debug by Task",
       "configurations": ["Go: Launch", "Chrome: Vue"],
       "preLaunchTask": "Start Go Server",
     },
     {
-      "name": "Go Debug",
+      "name": "Go+Vue Debug",
       "configurations": ["Go: Launch", "Chrome: Vue"]
     }
   ],
