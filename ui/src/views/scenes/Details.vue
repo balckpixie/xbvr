@@ -315,6 +315,12 @@
                         <button class="button is-dark is-small is-outlined" title="Unmatch file from scene" @click='unmatchFile(f)'>
                           <b-icon pack="fas" icon="unlink" size="is-small"></b-icon>
                         </button>&nbsp;
+                        <button class="button is-danger is-small is-outlined" title="reset filename" @click='resetFileName(f)'>
+                          <b-icon pack="fas" icon="redo-alt" size="is-small"></b-icon>
+                        </button>&nbsp;
+                        <button class="button is-danger is-small is-outlined" title="rename file" @click='renameFile(f)'>
+                          <b-icon pack="fas" icon="pen" size="is-small"></b-icon>
+                        </button>&nbsp;
                         <button class="button is-danger is-small is-outlined" title="Delete file from disk" @click='removeFile(f)'>
                           <b-icon pack="fas" icon="trash" size="is-small"></b-icon>
                         </button>
@@ -1147,6 +1153,55 @@ watch:{
         }
       })
     },
+
+    // Custom Black
+    // resetFileName (file) {
+    //       this.activeMedia = 0
+    //       this.updatePlayer(undefined, this.projectionMode)
+    //       ky.post(`/api_custom/files/resetname`, {json:{file_id: file.id, scene_id: this.item.scene_id }}).json().then(data => {
+    //         this.$store.commit('sceneList/updateScene', data)
+    //         this.$store.commit('overlay/showDetails', { scene: data })
+    //       })
+    // },
+    resetFileName (file) {
+      this.$buefy.dialog.confirm({
+        title: 'Reset filename',
+        message: 'Reset the file name?',
+        confirmText: 'OK',
+        cancelText: 'Cancel',
+        type: 'is-danger', 
+        hasIcon: true,
+        onConfirm: () => {
+          ky.post(`/api_custom/files/resetname`, {json:{file_id: file.id, scene_id: this.item.scene_id }}).json().then(data => {
+            this.$store.commit('sceneList/updateScene', data)
+            this.$store.commit('overlay/showDetails', { scene: data })
+          })
+        }
+      })
+    },
+    renameFile (file) {
+      this.$buefy.dialog.prompt({
+        title: 'Rename file',
+        message: `Please input new filename for <strong>${file.filename}</strong>`,
+        animation: 'fade', // 軽量なアニメーションを指定
+        hasAnimation: false, // アニメーションを完全に無効化（必要なら）
+        type: 'is-danger',
+        hasIcon: true,
+        inputAttrs: {
+                    type: "text",
+                    placeholder: "new filename is...",
+                    value: file.filename
+                },
+        onConfirm: value => {
+          ky.post(`/api_custom/files/rename`, {json:{file_id: file.id, filename: value}}).json().then(data => {
+            this.$store.commit('sceneList/updateScene', data)
+            this.$store.commit('overlay/showDetails', { scene: data })
+          })
+        }
+      })
+    },
+    // Custom END
+
     selectScript (file) {
       ky.post(`/api/scene/selectscript/${this.item.id}`, {
         json: {

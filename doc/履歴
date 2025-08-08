@@ -1,0 +1,49 @@
+
+-- 2025/7/12
+マイグレーションを追加（migration_custome）
+faceImageのパラメータを追加（model>actor）
+独自関数用のファイルを追加（Custom_Common）
+
+Actorのソート順にAliaseを追加
+※JumpToの処理は未実装
+- mode_actorに追加
+- actorスクレイパーにAliases処理を追加
+
+オプションにサムネイル作成スケジュールと DMMパラメータを追加
+
+DMMスクレーパーを追加
+- DMMのスクレーパーは、DMMのサイトから情報を取得するためのものです。
+- 同時にActor取得時の共通スクレーパーへもDMMパラメータを追加
+- オプションのスクレーパー選択リストに選択項目を追加
+
+ボリューム検索処理にJAVスクレイパー処理を追加
+
+プレイヤーの自動再生はミュートに設定（Fileメニュー）
+
+Fileメニューのシーンマッチ画面にJAV検索機能を追加
+
+
+File APIの削除時の処理にサムネイル消去などを追加
+
+Fiile APIにリネームとファイル名のリセットを追加
+
+Actorスクレイパパの設定を追加（model_external_reference.goも忘れず）
+
+サムネイル作成のCronと必要となる関連の処理を追加
+
+サムネイル表示機能をViewに追加
+
+シーンの削除ボタンをListとDetailに追加
+
+シーンマッチング時にファイル名検索結果の同一シーン情報を排除
+
+動画サムネイルスのプライトを追加
+（スプライトは独自カスタムコンポーネントを使用）
+# using yarn
+yarn add videojs-thumbnail-sprite
+# nodeバージョン依存を無視してインストール
+yarn add videojs-thumbnail-sprite --ignore-engines
+
+シーン詳細にスプリットを追加
+
+Actor画像の追加用ダイアログを作成（画像検索機能）
