@@ -27,6 +27,9 @@
             <b-menu-item :label="$t('Web UI')" :active="active==='interface_web'" @click="setActive('interface_web')"/>
             <b-menu-item :label="$t('Advanced')" :active="active==='interface_advanced'" @click="setActive('interface_advanced')"/>
           </b-menu-list>
+          <b-menu-list :label="$t('Custom')">
+            <b-menu-item :label="$t('CustomOption')" :active="active==='custom_option'" @click="setActive('custom_option')"/>
+          </b-menu-list>
         </b-menu>
       </div>
 
@@ -45,6 +48,7 @@
           <InterfaceDeoVR v-show="active==='interface_deovr'"/>
           <InterfaceAdvanced v-show="active==='interface_advanced'"/>
           <SceneMatchParams v-if="showMatchParamsOverlay"/>
+          <CustomOption v-show="active==='custom_option'"/>
         </div>
       </div>
 
@@ -66,9 +70,10 @@ import Schedules from './sections/Schedules.vue'
 import InterfaceDeoVR from './sections/InterfaceDeoVR.vue'
 import InterfaceAdvanced from './sections/InterfaceAdvanced.vue'
 import SceneMatchParams from './overlays/SceneMatchParams.vue'
+import CustomOption from './sections/CustomOption.vue'
 
 export default {
-  components: { Storage, SceneDataScrapers, SceneCreate, Funscripts, SceneDataImportExport, InterfaceWeb, InterfaceDLNA, InterfaceDeoVR, Cache, Previews, Schedules, InterfaceAdvanced,SceneMatchParams },
+  components: { Storage, SceneDataScrapers, SceneCreate, Funscripts, SceneDataImportExport, InterfaceWeb, InterfaceDLNA, InterfaceDeoVR, Cache, Previews, Schedules, InterfaceAdvanced,SceneMatchParams,CustomOption },
   data: function () {
     return {
       active: 'storage'

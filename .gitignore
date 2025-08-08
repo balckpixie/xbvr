@@ -1,6 +1,5 @@
 /.idea
 .DS_Store
-.vscode/
 
 test.db
 /test_cache
@@ -18,3 +17,4 @@ yarn-error.log
 
 xbvr.exe
 xbvr
+_debug_bin*

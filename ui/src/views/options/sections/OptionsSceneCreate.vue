@@ -7,6 +7,7 @@
         <div class="card-content content">
           <b-field grouped>
             <b-select placeholder="Select scraper" v-model="javrScraper">
+              <option value="dmm">DMM(FANZA)</option>
               <option value="javdatabase">javdatabase.com</option>
               <option value="r18d">r18.dev</option>
               <option value="javlibrary">javlibrary.com</option>
@@ -100,7 +101,7 @@ export default {
   data () {
     return {
       isLoading: true,
-      javrScraper: 'javdatabase',
+      javrScraper: 'dmm',
       javrQuery: '',
       tpdbSceneUrl: '',
       customSceneTitle: '',

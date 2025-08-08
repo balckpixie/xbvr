@@ -8,6 +8,8 @@ import (
 
 	"github.com/xbapps/xbvr/pkg/common"
 	"github.com/xbapps/xbvr/pkg/models"
+
+	customconfig "github.com/xbapps/xbvr/pkg/custom/config"
 )
 
 type CronSchedule struct {
@@ -21,6 +23,8 @@ type CronSchedule struct {
 }
 
 type ObjectConfig struct {
+	Custom customconfig.Custom `json:"custom"`
+
 	Server struct {
 		BindAddress string `default:"0.0.0.0" json:"bindAddress"`
 		Port        int    `default:"9999" json:"port"`
@@ -114,6 +118,9 @@ type ObjectConfig struct {
 		} `json:"preview"`
 	} `json:"library"`
 	Cron struct {
+		// Custom Black
+		ThumbnailSchedule customconfig.ThumbnailSchedule `json:"thumbnailSchedule"`
+		// Custom END
 		RescrapeSchedule struct {
 			Enabled         bool `default:"true" json:"enabled"`
 			HourInterval    int  `default:"12" json:"hourInterval"`

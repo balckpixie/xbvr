@@ -21,9 +21,17 @@
 
     <div class="modal-card">
       <section class="modal-card-body">
-        <div class="columns">
 
-          <div class="column is-half">
+        <!-- <div class="columns"> -->
+        <div style="display:flex">
+          <button rounded 
+            class="button is-outlined is-small" 
+            style="margin-left:auto"
+            @click="hidePane2 = !hidePane2" >{{ hidePane2 ? 'Show' : 'Hide' }} Pane 2</button>
+        </div>
+        <splitpanes class="default-theme">
+        <pane min-size="27" max-size="100">
+          <div class="">
             <b-tabs v-model="activeMedia" position="is-centered" :animated="false">
 
               <b-tab-item label="Gallery">
@@ -45,31 +53,58 @@
               </b-tab-item>
 
               <b-tab-item label="Player" v-if="!displayingAlternateSource">
-                <video ref="player" class="video-js vjs-default-skin" controls playsinline preload="none"/>
-                <b-field position="is-centered">
-                  <b-field>
-                    <b-tooltip v-for="(skipBack, i) in skipBackIntervals" class="is-size-7" :key="i" :active="skipBack == lastSkipBackInterval ? true : false" :label="$t('Keyboard shortcut: Left Arrow')"
-                        position="is-top" type="is-primary is-light" >
-                    <b-button class="tag is-small is-outlined is-info is-light"  @click="playerStepBack(skipBack)">
-                      <b-icon v-if="skipBack == lastSkipBackInterval" pack="mdi" icon="arrow-left-thin" size="is-small"></b-icon> {{ skipBack }}</b-button>
-                    </b-tooltip>
-                  </b-field>
-                  <b-field style="margin-left:1em">
-                    <b-tooltip v-for="(skipForward, i) in skipForwardIntervals" :key="i" :active="skipForward == lastSkipFowardInterval ? true : false" :label="$t('Keyboard shortcut: Right Arrow')"
-                        position="is-top" type="is-primary is-light" >
-                    <b-button class="tag is-small is-outlined is-info is-light" @click="playerStepForward(skipForward)">
-                      <b-icon v-if="skipForward == lastSkipFowardInterval" pack="mdi" icon="arrow-right-thin" size="is-small"></b-icon> +{{ skipForward }}</b-button>
-                    </b-tooltip>
-                  </b-field>
-                </b-field>
-             </b-tab-item>
+                <div :class="['video-player-wrapper', aspectClass]" ref="videoContainer">
+                  <video id="videoPlayer" ref="player" class="video-js vjs-default-skin video-custom" controls playsinline preload="none"
+                    muted />
+                </div>
+
+                <div class="columns is-vcentered" style="max-width: 120px;">
+                  <div class="column pb-0 is-small">
+                    <!-- アスペクト比選択プルダウン -->
+                    <b-select v-model="aspectRatio" placeholder="Select Aspect Ratio">
+                      <option value="16:10">16:10</option>
+                      <option value="16:9">16:9</option>
+                      <option value="4:3">4:3</option>
+                      <option value="1:1">1:1</option>
+                      <option value="9:16">9:16</option>
+                    </b-select>
+                  </div>
+                  <div class="column pb-0 is-small" style="max-width: 120px;">
+                    <!-- プロジェクション比選択プルダウン -->
+                    <b-select v-model="projectionMode" placeholder="Select Projection Mode">
+                      <option value="NONE">Flat</option>
+                      <option value="180">180</option>
+                      <option value="360_TB">360</option>
+                    </b-select>
+                  </div>
+                  <div class="column pb-0">
+                      <!-- スキップ操作ボタン群 -->
+                      <b-field position="is-centered">
+                        <b-field>
+                          <b-tooltip v-for="(skipBack, i) in skipBackIntervals" class="is-size-7" :key="i" :active="skipBack == lastSkipBackInterval ? true : false" :label="$t('Keyboard shortcut: Left Arrow')"
+                              position="is-top" type="is-primary is-light" >
+                          <b-button class="tag is-small is-outlined is-info is-light"  @click="playerStepBack(skipBack)">
+                            <b-icon v-if="skipBack == lastSkipBackInterval" pack="mdi" icon="arrow-left-thin" size="is-small"></b-icon> {{ skipBack }}</b-button>
+                          </b-tooltip>
+                        </b-field>
+                        <b-field style="margin-left:1em">
+                          <b-tooltip v-for="(skipForward, i) in skipForwardIntervals" :key="i" :active="skipForward == lastSkipFowardInterval ? true : false" :label="$t('Keyboard shortcut: Right Arrow')"
+                              position="is-top" type="is-primary is-light" >
+                          <b-button class="tag is-small is-outlined is-info is-light" @click="playerStepForward(skipForward)">
+                            <b-icon v-if="skipForward == lastSkipFowardInterval" pack="mdi" icon="arrow-right-thin" size="is-small"></b-icon> +{{ skipForward }}</b-button>
+                          </b-tooltip>
+                        </b-field>
+                      </b-field>
+                  </div>
+                </div>
+              </b-tab-item>
 
             </b-tabs>
 
           </div>
-
-          <div class="column is-half">
-
+        </pane>
+        <Pane v-if="!hidePane2" min-size="27" max-size="100">
+          <div class="">
             <div class="block-info block">
               <div class="content">
                 <h3>
@@ -82,7 +117,7 @@
                 <div class="columns">
                   <div class="column pb-0">
                     <small>
-                      <a :href="item.scene_url" target="_blank" rel="noreferrer">{{ item.site }}</a>
+                      <a :href="item.scene_url" target="_blank" rel="noreferrer">{{ item.site }} [ {{ item.scene_id }} ]</a>
                       <br v-if="item.members_url != ''"/>
                       <a v-if="item.members_url != ''" :href="item.members_url" target="_blank" rel="noreferrer"><b-icon pack="mdi" icon="link-lock" custom-size="mdi-18px"/>Members Link</a>
                     </small>
@@ -104,6 +139,18 @@
                       <strong>Linked scene, Not an XBVR Scene</strong>
                     </b-field>
                   </div>
+
+                  <div class="column pt-0">
+                    <div class="is-flex is-pulled-left" style="gap: 0.25rem">
+                    <!--<div class="content" style="display: flex; flex-wrap: wrap;">-->
+                      <div class="" v-for="(f, idx) in filesByType" :key="idx" style="margin-top: 3px;">
+                        <button rounded class="button is-success is-small" @click='playFile(f)' v-show="f.type === 'video'">
+                        {{idx+1}}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
                   <div class="column pt-0">
                     <div class="is-flex is-pulled-right" style="gap: 0.25rem">
                       <a class="button is-primary is-outlined is-small" @click="searchAlternateSourceScene()" title="Search for a different scene" v-if="displayingAlternateSource">
@@ -125,6 +172,7 @@
                       <wishlist-button :item="item" v-if="!displayingAlternateSource"/>
                       <watched-button :item="item" v-if="!displayingAlternateSource"/>
                       <edit-button :item="item"/>
+                      <delete-button :item="item"/>
                       <refresh-button :item="item" v-if="!displayingAlternateSource"/>
                       <rescrape-button :item="item" v-if="!displayingAlternateSource"/>
                       <link-stashdb-button :item="item" objectType="scene" />
@@ -162,17 +210,17 @@
 
             <div class="block-tags block" v-if="activeTab != 1">
               <b-taglist>
-                <span v-for="(c, idx) in item.cast" :key="'cast' + idx" >
-                  <a class="tag is-warning is-small" @click='showCastScenes([c.name])' :style="showOpenInNewWindow ? 'margin-right: 0;': 'margin-right: .5em;'" >{{ c.name }} ({{ c.avail_count }}/{{ c.count }})</a>
-                  <a v-if="showOpenInNewWindow" class="tag is-warning is-small" :href='getCastScenesUrl([c.name])' target="_blank" style="margin-right: 0.5em;"><b-icon pack="mdi" icon="open-in-new" size="is-small"></b-icon></a>
+                <span v-for="(c, idx) in item.cast" :key="'cast' + idx">
+                  <a class="tagbutton tag is-warning is-small" @click='showCastScenes([c.name])' :style="showOpenInNewWindow ? 'margin-right: 0;': 'margin-right: .5em;'" >{{ c.name }} ({{ c.avail_count }}/{{ c.count }})</a>
+                  <a v-if="showOpenInNewWindow" class="tagbutton tag is-warning is-small" :href='getCastScenesUrl([c.name])' target="_blank" style="margin-right: 0.5em;"><b-icon pack="mdi" icon="open-in-new" size="is-small"></b-icon></a>
                 </span>
                 <span>
-                  <a @click='showSiteScenes([item.site])' class="tag is-primary is-small" :style="showOpenInNewWindow ? 'margin-right: 0;': 'margin-right: .5em;'">{{ item.site }}</a>
-                  <a v-if="showOpenInNewWindow" class="tag is-primary is-small" :href='getSiteScenesUrl([item.site])' target="_blank" style="margin-right: 0.5em;"><b-icon pack="mdi" icon="open-in-new" size="is-small"></b-icon></a>
+                  <a @click='showSiteScenes([item.site])' class="tagbutton tag is-primary is-small" :style="showOpenInNewWindow ? 'margin-right: 0;': 'margin-right: .5em;'">{{ item.site }}</a>
+                  <a v-if="showOpenInNewWindow" class="tagbutton tag is-primary is-small" :href='getSiteScenesUrl([item.site])' target="_blank" style="margin-right: 0.5em;"><b-icon pack="mdi" icon="open-in-new" size="is-small"></b-icon></a>
                 </span>
                 <span v-for="(tag, idx) in item.tags" :key="'tag' + idx">
-                  <a  @click='showTagScenes([tag.name])' class="tag is-info is-small" :style="showOpenInNewWindow ? 'margin-right: 0;': 'margin-right: .5em;'">{{ tag.name }} ({{ tag.count }})</a>
-                  <a v-if="showOpenInNewWindow" class="tag is-info is-small" :href='getTagScenesUrl([tag.name])' target="_blank" style="margin-right: 0.5em;"><b-icon pack="mdi" icon="open-in-new" size="is-small"></b-icon></a>
+                  <a  @click='showTagScenes([tag.name])' class="tagbutton tag is-info is-small" :style="showOpenInNewWindow ? 'margin-right: 0;': 'margin-right: .5em;'">{{ tag.name }} ({{ tag.count }})</a>
+                  <a v-if="showOpenInNewWindow" class="tagbutton tag is-info is-small" :href='getTagScenesUrl([tag.name])' target="_blank" style="margin-right: 0.5em;"><b-icon pack="mdi" icon="open-in-new" size="is-small"></b-icon></a>
                 </span>
               </b-taglist>              
             </div>
@@ -223,7 +271,7 @@
             </div>
 
 
-            <div class="block-opts block">
+            <div class="block-opts block" ref="tabBar">
               <b-tabs v-model="activeTab" :animated="false">
 
                 <b-tab-item :label="`Files (${fileCount})`" v-if="!displayingAlternateSource">
@@ -266,6 +314,12 @@
                       <div class="media-right">
                         <button class="button is-dark is-small is-outlined" title="Unmatch file from scene" @click='unmatchFile(f)'>
                           <b-icon pack="fas" icon="unlink" size="is-small"></b-icon>
+                        </button>&nbsp;
+                        <button class="button is-danger is-small is-outlined" title="reset filename" @click='resetFileName(f)'>
+                          <b-icon pack="fas" icon="redo-alt" size="is-small"></b-icon>
+                        </button>&nbsp;
+                        <button class="button is-danger is-small is-outlined" title="rename file" @click='renameFile(f)'>
+                          <b-icon pack="fas" icon="pen" size="is-small"></b-icon>
                         </button>&nbsp;
                         <button class="button is-danger is-small is-outlined" title="Delete file from disk" @click='removeFile(f)'>
                           <b-icon pack="fas" icon="trash" size="is-small"></b-icon>
@@ -366,6 +420,26 @@
                     </b-message>
                   </div>
                 </b-tab-item>
+
+                <!--
+                <b-tab-item label="Thumbnail">
+                  <div ref="thumbContainer" id="thumbContainer" :style="{ maxHeight: computedMaxHeight() }" class="block-tab-content block container">
+                  </div>
+                </b-tab-item>
+              -->
+
+                <b-tab-item label="Thumbnails" name="thumbnails">
+                  <div ref="thumbnailTabRef">
+                  <ThumbnailTab
+                    ref="thumbnailRef"
+                    :file=undefined
+                    @thumbnailClicked="onThumbnailClicked"
+                    class="block-tab-content block container thumbnail-tab"
+                    :style="{ maxHeight: computedMaxHeight() }" 
+                  />
+                  </div>
+                </b-tab-item>
+
                 <b-tab-item v-if="this.$store.state.optionsAdvanced.advanced.showSceneSearchField && !displayingAlternateSource" label="Search fields">
                   <div class="block-tab-content block">
                     <div class="content is-small">
@@ -380,7 +454,9 @@
             </div>
 
           </div>
-        </div>
+        </pane>
+        </splitpanes>
+        <!-- </div> -->
       </section>
       <div class="scene-id">
         {{ item.scene_id }}
@@ -418,9 +494,19 @@ import RescrapeButton from '../../components/RescrapeButton'
 import TrailerlistButton from '../../components/TrailerlistButton'
 import HiddenButton from '../../components/HiddenButton'
 
+import 'videojs-thumbnail-sprite-custom';
+// import 'videojs-sprite-thumbnails'
+import { Splitpanes, Pane } from 'splitpanes'
+import 'splitpanes/dist/splitpanes.css'
+import ThumbnailTab from '../../components/ThumbnailTab.vue'
+import DeleteButton from '../../components/DeleteButton.vue'
+import { vi } from 'date-fns/locale';
+
 export default {
   name: 'Details',
-  components: { VueLoadImage, GlobalEvents, StarRating, WatchlistButton, FavouriteButton, LinkStashdbButton, WishlistButton, WatchedButton, EditButton, RefreshButton, RescrapeButton, TrailerlistButton, HiddenButton },
+  components: { VueLoadImage, GlobalEvents, StarRating, WatchlistButton, FavouriteButton, LinkStashdbButton, WishlistButton, WatchedButton, EditButton, RefreshButton, RescrapeButton, TrailerlistButton, HiddenButton
+    , ThumbnailTab, DeleteButton, Splitpanes, Pane 
+   },
   data () {
     return {
       index: 1,
@@ -449,9 +535,24 @@ export default {
       searchfields: [],
       alternateSources: [],
       waitingForQuickFind: false,
+      // Custom Black
+      marginBottom: 10,  //サムネイルコンポーネント高さ調整用
+      currentFile: null,
+      currentDuraiton: 0,
+      aspectRatio: '1:1',
+      projectionMode: '180',
+      hidePane2:false,
+      // Custom END
     }
   },
   computed: {
+    // Custom Black
+    aspectClass() {
+      if (this.aspectRatio === 'original') return '';
+      const value = this.aspectRatio.replace(':', '_');
+      return `aspect-${value}`;
+    },
+    // Custom END
     item () {
       const item = this.$store.state.overlay.details.scene
       if (this.$store.state.optionsWeb.web.tagSort === 'alphabetically') {
@@ -526,7 +627,18 @@ export default {
     },
     filesByType () {
       if (this.item.file !== null) {
-        return this.item.file.slice().sort((a, b) => (a.type === 'video') ? -1 : 1)
+        // Custom Black
+        //return this.item.file.slice().sort((a, b) => (a.type === 'video') ? -1 : 1)
+                return this.item.file.slice().sort((a, b) => {
+          if (a.Type === "video" && b.Type !== "video") {
+              return -1;
+          }
+          if (a.Type !== "video" && b.Type === "video") {
+              return 1;
+          }
+          return a.filename.localeCompare(b.filename);
+        });
+        // Custom END
       }
       return []
     },
@@ -618,6 +730,29 @@ export default {
       })    
 },
 watch:{
+    // Custom Black
+    projectionMode(newVal) {
+      this.$nextTick(() => {
+        this.restartPlayer()
+      });
+    },
+    aspectRatio() {
+      this.$nextTick(() => {
+        if (this.player && typeof this.player.aspectRatio === 'function') {
+          this.player.aspectRatio(this.aspectRatio);
+        }        
+        window.dispatchEvent(new Event('resize'));
+      });
+    },
+    activeTab(newIndex) {
+      if (newIndex === 4) {
+        this.$nextTick(() => {
+           this.loadVideThumbnails()
+        });
+      }
+   },
+   // Custom END
+
   quickFindOverlayState(newVal, oldVal){
     if (newVal == true) {
       return
@@ -647,11 +782,173 @@ watch:{
   }
 },
   methods: {
-    setupPlayer () {
-      this.player = videojs(this.$refs.player, {
-        aspectRatio: '1:1',
+    // Custom Black
+    
+    // Playerを再起動する（projection mode変更時に使用）
+    async restartPlayer()
+    {
+      const currentTime = this.player.currentTime();
+      // const isPaused = this.player.paused();
+      // const wasMuted = this.player.muted();
+      // const volume = this.player.volume();
+      const currentSrc = this.player.currentSrc();
+      // const duration = this.player.duration()
+      const wasPlaying = !this.player.paused()
+
+      this.recreateVideoPlayer()
+      //this.playFile (this.currentFile)
+      // this.updatePlayerWithCheckPaused(this.currentFile, this.projectionMode, !wasPlaying)
+      this.updatePlayer(currentSrc, this.projectionMode)
+
+      // if (wasPlaying) {
+        this.player.ready(() => {
+          if (wasPlaying) {
+              //this.loadVideThumbnails()
+              this.player.load();     // 動画を読み込む（バッファ開始）
+              this.player.play();
+              this.setCurrentTime(currentTime);
+              this.setupSprite(this.currentFile)
+          } else {
+              this.player.load();     // 動画を読み込む（バッファ開始）
+              // 一時的に再生し、描画されたらすぐに停止する
+              this.player.one('playing', () => {
+                this.player.pause();
+                this.setCurrentTime(currentTime); // 必要ならここで現在時刻も設定
+                this.setupSprite(this.currentFile)
+              });
+              this.player.play(); // `playing` イベントを発火させる
+          }
+        })  
+      // } 
+
+
+      //this.player.volume(volume);
+      //this.player.muted(wasMuted);
+
+    },
+
+    // Create New Video Player（for Change projection mode）
+    // videojsのパラメータ( restoreEl: true )を設定しているのでdispose()時にvideoタグは維持される前提
+    recreateVideoPlayer() {
+      if (this.player) {
+        this.player.dispose();
+        this.player = null;
+      }
+      this.setupPlayer();
+
+      return;
+    },
+
+    // Playerの再生位置指定
+    setCurrentTime(seconds) {
+      const wasPlaying = !this.player.paused()
+      if (!wasPlaying) {
+        this.player.pause();
+      }
+      setTimeout(() => {
+        this.player.currentTime(Math.floor(seconds));
+        if (wasPlaying) {
+          this.player.play();
+        }
+        this.currentDuraiton = seconds
+      }, 0);
+    },
+
+    // Player表示のMax高さ設定値を取得
+    computedMaxHeight() {
+      const element = this.$refs.tabBar;
+      if (element) {
+        const rect = this.$refs.tabBar.getBoundingClientRect()
+        const y = rect.top
+        const adjustedTop = element.offsetTop + 200;
+        return `calc(100vh - ${adjustedTop}px - ${this.marginBottom}px)`;
+      }
+      else
+      {
+        return 'calc(100vh - 20px)';
+      }
+    },
+
+    // サムネイルスプライト読み込み
+    setupSprite(file) {
+      let tileHeight = 200
+      if (file.projection === 'flat')
+      {
+          tileHeight = (file.video_height / file.video_width) * 200;
+      }
+      const thumbnailUrl = '/api_custom/thumbnail/image/' + file.id
+      const videPlayer = this.player
+      this.checkImageExists(thumbnailUrl, (exists) =>{
+        if (exists) {
+
+          this.setThumbnails(videPlayer, {
+            sprites: [
+              {
+                url: thumbnailUrl,
+                duration: file.duration,
+                start: 25,
+                interval: 30,
+                width: 200,
+                height: tileHeight,
+              },
+            ],
+          });
+        }
+      });
+    },
+
+    // サムネイルスプライトの設定＆再設定用メソッド
+    setThumbnails(player, options) {
+        // ThumbnailSprite クラスのコンストラクタを Video.js レジストリから取得
+        const ThumbnailSpriteClass = videojs.getPlugin('thumbnailSprite');
+        if (!ThumbnailSpriteClass) {
+            //console.error("ThumbnailSprite plugin is not registered with Video.js. Cannot set thumbnails.");
+            return;
+        }
+        const pluginInstance = player.thumbnailSprite();
+        if (pluginInstance instanceof ThumbnailSpriteClass) {
+            //console.log("Plugin already initialized. Calling updateSprites.");
+            pluginInstance.updateSprites(options);
+        } else {
+            //console.log("Plugin not yet initialized or instance type mismatch. Initializing with options.");
+            player.thumbnailSprite(options);
+        }
+    },
+
+    // サーバー上に画像データが存在するか確認する
+    checkImageExists(url, callback) {
+      fetch(url, { method: 'HEAD' })
+        .then(response => {
+          callback(response.ok); // true if status is 200–299
+        })
+        .catch(() => {
+          callback(false);
+        });
+    },
+
+    // サムネイルパネルを表示する
+    loadVideThumbnails() {
+      if (this.$refs.thumbnailRef) {
+        this.$refs.thumbnailRef.file = this.currentFile
+        this.$refs.thumbnailRef.loadThumbnails()
+      }
+    },
+
+    // サムネイルのクリックイベント
+    onThumbnailClicked(duration) {
+          this.setCurrentTime(duration)
+    },
+
+    // Custom END
+
+    setupPlayer()
+    {
+      // Custom Black 再作成時にref参照できなるなるため、id参照に変更
+      this.player = videojs('videoPlayer', {
+        aspectRatio: this.aspectRatio,
         fluid: true,
-        loop: true
+        loop: true,
+        restoreEl: true
       })
 
       this.player.hotkeys({
@@ -723,8 +1020,15 @@ watch:{
       if (src) {
         this.player.src({ src: src, type: 'video/mp4' })
       }
-      this.player.poster(this.getImageURL(this.item.cover_url, ''))
+      // this.player.poster(this.getImageURL(this.item.cover_url, ''))
+      // Custom Black
+      // poster 設定を2秒後に実行
+      setTimeout(() => {
+        this.player.poster(this.getImageURL(this.item.cover_url, ''));
+      }, 1000);
+      // Custom END
     },
+
     showCastScenes (actor) {
       this.$store.state.sceneList.filters.cast = actor
       this.$store.state.sceneList.filters.sites = []
@@ -807,8 +1111,21 @@ watch:{
     playFile (file) {
       this.activeMedia = 1
       this.updatePlayer('/api/dms/file/' + file.id + '?dnt=true', (file.projection == 'flat' ? 'NONE' : '180'))
+      
+      // Custom Black
+      this.setupSprite(file)
+      // Custom END
+
       this.player.play()
+
+      // Custom Black
+      if (this.currentFile != file) {
+        this.currentFile = file
+        this.loadVideThumbnails()
+      }
+      // Custom END
     },
+
     unmatchFile (file) {
       this.$buefy.dialog.confirm({
         title: 'Unmatch file',
@@ -836,6 +1153,55 @@ watch:{
         }
       })
     },
+
+    // Custom Black
+    // resetFileName (file) {
+    //       this.activeMedia = 0
+    //       this.updatePlayer(undefined, this.projectionMode)
+    //       ky.post(`/api_custom/files/resetname`, {json:{file_id: file.id, scene_id: this.item.scene_id }}).json().then(data => {
+    //         this.$store.commit('sceneList/updateScene', data)
+    //         this.$store.commit('overlay/showDetails', { scene: data })
+    //       })
+    // },
+    resetFileName (file) {
+      this.$buefy.dialog.confirm({
+        title: 'Reset filename',
+        message: 'Reset the file name?',
+        confirmText: 'OK',
+        cancelText: 'Cancel',
+        type: 'is-danger', 
+        hasIcon: true,
+        onConfirm: () => {
+          ky.post(`/api_custom/files/resetname`, {json:{file_id: file.id, scene_id: this.item.scene_id }}).json().then(data => {
+            this.$store.commit('sceneList/updateScene', data)
+            this.$store.commit('overlay/showDetails', { scene: data })
+          })
+        }
+      })
+    },
+    renameFile (file) {
+      this.$buefy.dialog.prompt({
+        title: 'Rename file',
+        message: `Please input new filename for <strong>${file.filename}</strong>`,
+        animation: 'fade', // 軽量なアニメーションを指定
+        hasAnimation: false, // アニメーションを完全に無効化（必要なら）
+        type: 'is-danger',
+        hasIcon: true,
+        inputAttrs: {
+                    type: "text",
+                    placeholder: "new filename is...",
+                    value: file.filename
+                },
+        onConfirm: value => {
+          ky.post(`/api_custom/files/rename`, {json:{file_id: file.id, filename: value}}).json().then(data => {
+            this.$store.commit('sceneList/updateScene', data)
+            this.$store.commit('overlay/showDetails', { scene: data })
+          })
+        }
+      })
+    },
+    // Custom END
+
     selectScript (file) {
       ky.post(`/api/scene/selectscript/${this.item.id}`, {
         json: {
@@ -1227,7 +1593,7 @@ watch:{
 }
 
 .modal-card {
-  width: 85%;
+  width: 90%;
 }
 
 .missing {
@@ -1364,4 +1730,68 @@ span.is-active img {
 .altsrc-image-wrapper {
   display: inline-block;
   margin-left: 5px;  
-}</style>
+}
+
+.thumbnail-tab {
+  overflow: auto;
+}
+
+.tagbutton {
+  vertical-align: top;
+}
+
+.video-player-wrapper {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.aspect-16_10 {
+  aspect-ratio: 16 / 10;
+  max-height: 75vh;
+}
+
+.aspect-16_9 {
+  aspect-ratio: 16 / 9;
+  max-height: 75vh;
+}
+
+.aspect-4_3 {
+  aspect-ratio: 4 / 3;
+  max-height: 75vh;
+}
+
+.aspect-1_1 {
+  aspect-ratio: 1 / 1;
+  max-height: 75vh;
+}
+
+.aspect-9_16 {
+  aspect-ratio: 9 / 16;
+  max-height: 75vh;
+}
+
+.video-custom {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+// .splitpanes {
+//   background-color: #ffffff00;
+//   border: none;
+// }
+
+.splitpanes {
+  background: #ffffff00 !important;
+}
+.splitpanes__pane {
+  background: #ffffff00 !important;
+}
+
+.carousel {
+  aspect-ratio: 1 / 1;
+  max-height: 82vh;
+  margin-left: auto;
+  margin-right: auto;
+}
+</style>

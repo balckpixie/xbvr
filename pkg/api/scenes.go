@@ -635,7 +635,21 @@ func (i SceneResource) searchSceneIndex(req *restful.Request, resp *restful.Resp
 		var scene models.Scene
 		scene.GetIfExistByPK(file.SceneID)
 		if scene.ID != 0 {
-			scenes = append(scenes, scene)
+			// Custom Black
+			exists := func(target models.Scene) bool {
+            	for _, s := range scenes {
+                	if s.ID == target.ID {
+                    	return true
+	                }
+            	}
+            	return false
+        	}
+			if !exists(scene) {
+				scene.Score = 1
+				scenes = append(scenes, scene)
+			}
+			// Custom END
+			//scenes = append(scenes, scene)
 		}
 	}
 

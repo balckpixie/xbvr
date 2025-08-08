@@ -96,7 +96,7 @@ type Scene struct {
 	TotalWatchTime int             `json:"total_watch_time" gorm:"default:0" xbvrbackup:"total_watch_time"`
 
 	HasVideoPreview bool `json:"has_preview" gorm:"default:false" xbvrbackup:"-"`
-	// HasVideoThumbnail bool `json:"has_video_thumbnail" gorm:"default:false"`
+
 
 	NeedsUpdate   bool   `json:"needs_update" xbvrbackup:"-"`
 	EditsApplied  bool   `json:"edits_applied" gorm:"default:false" xbvrbackup:"-"`
@@ -116,6 +116,10 @@ type Scene struct {
 	Score       float64 `gorm:"-" json:"_score" xbvrbackup:"-"`
 
 	AlternateSource []ExternalReferenceLink `json:"alternate_source" xbvrbackup:"-"`
+
+	// Custom black
+    IsDeleted bool `gorm:"-" json:"is_deleted" xbvrbackup:"-"` // DBに保存しないフラグ
+	// Custom END
 }
 
 type Image struct {
@@ -300,6 +304,16 @@ func (o *Scene) PreviewExists() bool {
 	return true
 }
 
+// Custom Black
+func (o *Scene) ThumbnailExists() bool {
+
+	if _, err := os.Stat(filepath.Join(common.VideoThumbnailDir, fmt.Sprintf("%v.jpg", strconv.FormatUint(uint64(o.Files[0].ID), 10)))); os.IsNotExist(err) {
+		return false
+	}
+	return true
+}
+// Custom END
+
 func (o *Scene) UpdateStatus() {
 	// Check if file with scene association exists
 	files, err := o.GetFiles()
@@ -448,6 +462,7 @@ func SceneCreateUpdateFromExternal(db *gorm.DB, ext ScrapedScene) error {
 	// Clean & Associate Actors
 	db.Model(&o).Association("Cast").Clear()
 	var tmpActor Actor
+	cnt := 0
 	for _, name := range ext.Cast {
 		tmpActor = Actor{}
 		db.Where(&Actor{Name: strings.Replace(name, ".", "", -1)}).FirstOrCreate(&tmpActor)
@@ -470,6 +485,17 @@ func SceneCreateUpdateFromExternal(db *gorm.DB, ext ScrapedScene) error {
 				}
 			}
 		}
+
+		// Custom Black add Aliases Parameter
+		if ext.Aliases != nil && ext.Aliases[cnt] != "" {
+			if tmpActor.Aliases == "" {
+				tmpActor.Aliases = "[\"" + ext.Aliases[cnt] + "\"]"
+				saveActor = true
+			}
+		}
+		cnt++
+		// Custom END
+
 		if saveActor {
 			tmpActor.Save()
 		}

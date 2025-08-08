@@ -13,3 +13,9 @@ func buildCmd(name string, arg ...string) *exec.Cmd {
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	return cmd
 }
+
+// Custom Black
+func BuildCmdEx(name string, arg ...string) *exec.Cmd {
+	return buildCmd(name, arg...)
+}
+// Custom END

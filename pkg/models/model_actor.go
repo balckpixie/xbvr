@@ -52,6 +52,9 @@ type Actor struct {
 
 	SceneRatingAverage string `json:"scene_rating_average" gorm:"-" `
 	AkaGroups          []Aka  `gorm:"many2many:actor_akas;" json:"aka_groups" xbvrbackup:"-"`
+
+	// Custom black
+	FaceImageUrl   string  `json:"face_image_url" xbvrbackup:"face_image_url"`
 }
 
 type RequestActorList struct {
@@ -415,6 +418,13 @@ func QueryActors(r RequestActorList, enablePreload bool) ResponseActorList {
 	}
 
 	switch r.Sort.OrElse("") {
+	//custom black
+	case "aliases_asc":
+		tx = tx.Order("actors.aliases asc")
+	case "aliases_desc":
+		tx = tx.Order("actors.aliases desc")
+	//
+
 	case "name_asc":
 		tx = tx.Order("name asc")
 	case "name_desc":

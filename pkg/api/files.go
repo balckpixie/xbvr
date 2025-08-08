@@ -15,7 +15,10 @@ import (
 	restfulspec "github.com/emicklei/go-restful-openapi/v2"
 	"github.com/emicklei/go-restful/v3"
 	"github.com/markphelps/optional"
+	"github.com/xbapps/xbvr/pkg/common"
 	"github.com/xbapps/xbvr/pkg/models"
+
+	customcommon "github.com/xbapps/xbvr/pkg/custom/common"
 )
 
 type RequestMatchFile struct {
@@ -262,6 +265,10 @@ func (i FilesResource) matchFile(req *restful.Request, resp *restful.Response) {
 	// Finally, update scene available/accessible status
 	scene.UpdateStatus()
 
+	// Custom Black（ファイル名を自動付与する）
+	customcommon.RenameFileBySceneID(scene, f)
+	// Custom END
+
 	resp.WriteHeaderAndEntity(http.StatusOK, nil)
 }
 
@@ -369,6 +376,18 @@ func removeFileByFileId(fileId uint) models.Scene {
 		}
 
 		if deleted {
+			// Custom Black
+			if file.HasThumbnail {
+				thumbFile := filepath.Join(common.VideoThumbnailDir, strconv.FormatUint(uint64(file.ID), 10)+".jpg")
+				err := os.Remove(thumbFile)
+				if err == nil {
+					deleted = true
+				} else {
+					log.Errorf("error deleting thumbnail file: %v", err)
+				}
+			}
+			// Custom END
+
 			db.Delete(&file)
 			if file.SceneID != 0 {
 				scene.GetIfExistByPK(file.SceneID)

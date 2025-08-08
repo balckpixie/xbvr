@@ -26,6 +26,8 @@ import (
 	"github.com/xbapps/xbvr/pkg/models"
 	"github.com/xbapps/xbvr/pkg/scrape"
 	"github.com/xbapps/xbvr/pkg/tasks"
+
+	custommigrations "github.com/xbapps/xbvr/pkg/custom/migrations"
 )
 
 type RequestSceneList struct {
@@ -58,7 +60,8 @@ func Migrate() {
 	var retryMigration []string
 	db, _ := models.GetDB()
 
-	m := gormigrate.New(db, gormigrate.DefaultOptions, []*gormigrate.Migration{
+	//m := gormigrate.New(db, gormigrate.DefaultOptions, []*gormigrate.Migration{
+	allMigrations := append([]*gormigrate.Migration{
 		{
 			ID: "0001",
 			Migrate: func(tx *gorm.DB) error {
@@ -2340,7 +2343,10 @@ func Migrate() {
 				return nil
 			},
 		},
-	})
+	//Custom Black
+	}, custommigrations.CustomMigrations()...)
+	m := gormigrate.New(db, gormigrate.DefaultOptions, allMigrations)
+	// Custom END
 
 	if err := m.Migrate(); err != nil {
 		common.Log.Fatalf("Could not migrate: %v", err)

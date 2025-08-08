@@ -1,0 +1,37 @@
+{
+  "version": "0.2.0",
+  "compounds": [
+    {
+      "name": "Debug by Task",
+      "configurations": ["Go: Launch", "Chrome: Vue"],
+      "preLaunchTask": "Start Go Server",
+    },
+    {
+      "name": "Go+Vue Debug",
+      "configurations": ["Go: Launch", "Chrome: Vue"]
+    }
+  ],
+  "configurations": [
+    {
+      "name": "Go: Launch",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}",
+      "env": {},
+      "args": []
+    },
+    {
+      "name": "Chrome: Vue",
+      "type": "pwa-chrome",
+      "request": "launch",
+      "url": "http://localhost:9999",
+      "webRoot": "${workspaceFolder}/ui/src",
+      "sourceMaps": true,
+      "sourceMapPathOverrides": {
+        "webpack:///src/*": "${webRoot}/*"
+      },
+      "postDebugTask": "Kill Go Server"  // ここに記述
+    }
+  ]
+}

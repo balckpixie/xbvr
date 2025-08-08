@@ -18,6 +18,9 @@ import (
 	"github.com/xbapps/xbvr/pkg/config"
 	"github.com/xbapps/xbvr/pkg/externalreference"
 	"github.com/xbapps/xbvr/pkg/models"
+
+	custommcommon "github.com/xbapps/xbvr/pkg/custom/common"
+
 	nethtml "golang.org/x/net/html"
 )
 
@@ -266,6 +269,12 @@ func applyRules(actorPage string, source string, rules models.GenericScraperRule
 			}
 		})
 	}
+	// Custom black
+	if custommcommon.DomainMatch(actorPage, "*.dmm.com") {
+		actorPage, _ = custommcommon.AddAPIParam(actorPage)
+	}
+	// Custom END
+
 	url, _ := url.Parse(actorPage)
 	if rules.IsJson {
 		ScraperRateLimiterWait(url.Host)
@@ -403,6 +412,9 @@ func assignField(field string, value string, actor *models.Actor, overwrite bool
 		if value != "" && (actor.ImageUrl == "" || (overwrite && !actor.CheckForSetImage())) {
 			//if (overwrite || actor.ImageUrl == "" ) && value != ""  && !actor.CheckForSetImage() {
 			actor.ImageUrl = value
+			// custom black
+			actor.FaceImageUrl = value
+			// custom END
 			changed = true
 		}
 	case "images":

@@ -333,6 +333,11 @@ func (scrapeRules ActorScraperConfig) buildGenericActorScraperRules() {
 	commonDb, _ := GetCommonDB()
 	var sites []Site
 
+	// Custom Black
+	dmmDetails := buildDmmSiteDetail()
+	scrapeRules.GenericActorScrapingConfig["dmm scrape"] = dmmDetails
+	// Custom END
+
 	// To understand the regex used, sign up to chat.openai.com and just ask something like Explain (.*, )?(.*)$
 	// To test regex I use https://regex101.com/
 	siteDetails := GenericScraperRuleSet{}
@@ -1230,4 +1235,53 @@ func (scrapeRules ActorScraperConfig) getSiteUrlMatchingRules() {
 			}
 		}
 	}
+}
+
+
+func buildDmmSiteDetail() GenericScraperRuleSet {
+	siteDetails := GenericScraperRuleSet{
+		Domain: "api.dmm.com",
+		IsJson: true,
+	}
+
+	siteDetails.SiteRules = append(siteDetails.SiteRules,
+		GenericActorScraperRule{
+			XbvrField: "cup_size",
+			Selector:  `result.actress.0.cup`,
+		},
+		GenericActorScraperRule{
+			XbvrField: "waist_size",
+			Selector:  `result.actress.0.waist`,
+		},
+		GenericActorScraperRule{
+			XbvrField: "hip_size",
+			Selector:  `result.actress.0.hip`,
+		},
+		GenericActorScraperRule{
+			XbvrField: "band_size",
+			Selector:  `result.actress.0.bust`,
+		},
+		GenericActorScraperRule{
+			XbvrField: "birth_date",
+			Selector:  `result.actress.0.birthday`,
+			PostProcessing: []PostProcessing{{
+				Function: "Parse Date",
+				Params:   []string{"2006-01-02"},
+			}},
+		},
+		GenericActorScraperRule{
+			XbvrField: "height",
+			Selector:  `result.actress.0.height`,
+		},
+		GenericActorScraperRule{
+			XbvrField: "ethnicity",
+			Selector:  `result.actress.0.prefectures`,
+		},
+		GenericActorScraperRule{
+			XbvrField: "image_url",
+			Selector:  `result.actress.0.imageURL.large`,
+		},
+	)
+
+	return siteDetails
 }

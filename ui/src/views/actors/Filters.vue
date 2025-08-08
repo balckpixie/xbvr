@@ -29,6 +29,10 @@
           <select v-model="sort">
             <option value="name_asc">↑ {{ $t("Name") }}</option>
             <option value="name_desc">↓ {{ $t("Name") }}</option>
+            <!-- Custom start -->
+            <option value="aliases_asc">↑ {{ $t("Aliases") }}</option>
+            <option value="aliases_desc">↓ {{ $t("Aliases") }}</option>
+            <!-- Custom end -->
             <option value="birthday_desc">↓ {{ $t("Birthdate") }}</option>
             <option value="birthday_asc">↑ {{ $t("Birthdate") }}</option>
             <option value="rating_desc">↓ {{ $t("Rating") }}</option>

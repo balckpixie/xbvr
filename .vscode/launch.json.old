@@ -1,0 +1,31 @@
+{
+  "version": "0.2.0",
+  "compounds": [
+    {
+      "name": "Go + Vue Debug",
+      "configurations": ["Go: Launch", "Chrome: Vue"]
+    }
+  ],
+  "configurations": [
+    {
+      "name": "Go: Launch",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}", // ← Goサーバmain.goのあるパスに変更
+      "env": {},
+      "args": []
+    },
+    {
+      "name": "Chrome: Vue",
+      "type": "pwa-chrome",
+      "request": "launch",
+      "url": "http://localhost:9999",  // ← 開発サーバーの実ポートに合わせて
+      "webRoot": "${workspaceFolder}/ui/src",  // ← ThumbnailTab.vue がある場所に正確に合わせる
+      "sourceMaps": true,
+      "sourceMapPathOverrides": {
+        "webpack:///src/*": "${webRoot}/*",
+      }
+    }
+  ]
+}

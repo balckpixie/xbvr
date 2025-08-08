@@ -23,6 +23,8 @@ import (
 	"github.com/xbapps/xbvr/pkg/ffprobe"
 	"github.com/xbapps/xbvr/pkg/models"
 	"github.com/xbapps/xbvr/pkg/scrape"
+
+	customcommon "github.com/xbapps/xbvr/pkg/custom/common"
 )
 
 var allowedVideoExt = []string{".mp4", ".avi", ".wmv", ".mpeg4", ".mov", ".mkv"}
@@ -63,6 +65,10 @@ func RescanVolumes(id int) {
 		var scenes []models.Scene
 		var extrefs []models.ExternalReference
 
+		// Custom Black
+		var scenes_for_search []models.Scene
+		// Custom END
+
 		tlog.Infof("Matching Scenes to known filenames")
 		db.Model(&models.File{}).Where("files.scene_id = 0").Find(&files)
 
@@ -83,6 +89,19 @@ func RescanVolumes(id int) {
 			if err != nil {
 				log.Error(err, " when matching "+unescapedFilename)
 			}
+
+			// Custom Black
+			if len(scenes) == 0 {
+				queryString := customcommon.ExtractDVDIDLogic(unescapedFilename)
+				if queryString != "" {
+					err = db.Where("scene_id = ?", queryString).Find(&scenes_for_search).Error
+					if len(scenes_for_search) == 0 || err != nil {
+						ScrapeJAVR(queryString, "dmm")
+					}
+				}
+			}
+			// Custom END
+
 			if len(scenes) == 0 && config.Config.Advanced.UseAltSrcInFileMatching {
 				// check if the filename matches in external_reference record
 
