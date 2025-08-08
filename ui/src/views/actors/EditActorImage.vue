@@ -20,18 +20,20 @@
               <div class="column is-2" style="background-color: #f5f5f5;">
                 <div class="p-4">
                   <div class="columns is-mobile is-multiline">
-                    <div class="column is-half card-container">
+                    <div class="column is-full card-container">
                       <b-button @click="changeActorImage()" class="is-primary is-fullwidth" style="display:flex; justify-content:center; margin-bottom:5px;">{{ $t('Set Main') }}</b-button>
                     </div>
-                    <div class="column is-half card-container">
+                    <div class="column is-full card-container">
                       <b-button @click="changeActorFaceImage()" class="is-primary is-fullwidth" style="display:flex; justify-content:center; margin-bottom:5px;">{{ $t('Set Face') }}</b-button>
                     </div>
-                    <div class="column is-half card-container">
+                    <div class="column is-full card-container">
                       <b-button @click="deleteActorImage()" class="is-primary is-fullwidth" style="display:flex; justify-content:center; margin-bottom:5px;">{{ $t('Delete')}}</b-button></div>
                   </div>
-                  <span style="display: flex; justify-content: center;">Scrape</span>
+                  <span style="display: flex; justify-content: center;">{{ $t('Face Image')}}</span>
 
-
+                  <div class="vue-load-image">
+                    <img :src="actor.face_image_url" style="width: 100%; height: auto;">
+                  </div>
                 </div>
               </div>
 
