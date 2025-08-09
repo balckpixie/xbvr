@@ -95,6 +95,18 @@
                   </div>
 
                   <div>
+                    <vue-select-multi
+                      class="select"
+                      v-model="value"
+                      :options="showOptions"
+                      :popperProps="popperProps"
+                      :canSearch="false"
+                      @search="log">
+                      No Result
+                    </vue-select-multi>
+
+                  </div>
+                  <div>
                     <div class="columns is-multiline is-mobile">
                       <div v-for="category in categories" :key="category" class="column is-half card-container">
                         <div class="card selectable-card"
@@ -152,7 +164,7 @@ import ListEditor from '../../components/ListEditor'
 import VueLoadImage from 'vue-load-image'
 
 import VueSelectImage from 'vue-select-image'
-// require('vue-select-image/dist/vue-select-image.css')
+import VueSelect from '@livelybone/vue-select'
 
 const SiteEnum = Object.freeze({
   GOOGLE: 'Google',
@@ -161,7 +173,7 @@ const SiteEnum = Object.freeze({
 
 export default {
   name: 'EditActorImage',
-  components: { VueLoadImage, ListEditor, GlobalEvents, VueSelectImage },
+  components: { VueLoadImage, ListEditor, GlobalEvents, VueSelectImage, VueSelect  },
   data() {
     const actor = Object.assign({}, this.$store.state.overlay.actoreditimage.actor)
 
@@ -202,10 +214,20 @@ export default {
       selectedKeywords: [],
 
       carouselSlide: 0,
+      
+      value: options.map(function (o) {
+        return o.value
+      }),
+      options: options,
+      keyword: '',
+      popperProps: popperProps,
 
     }
   },
   computed: {
+    showOptions: function () {
+      return this.keyword ? this.options.filter(this.filter) : this.options
+    },
     images() {
       if (this.actor.image_arr == undefined || this.actor.image_arr == "") {
         return []
@@ -258,6 +280,13 @@ export default {
 
   methods: {
     // Custom Black
+    log(val) {
+      console.log(val)
+      this.keyword = val
+    },
+    filter(op) {
+      return op.name.toString().indexOf(this.keyword) > -1
+    },
     toggleKeyword(category) {
       const index = this.selectedKeywords.indexOf(category);
       if (index === -1) {
