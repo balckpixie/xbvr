@@ -1061,6 +1061,45 @@
   resolved "https://registry.npmjs.org/@leichtgewicht/ip-codec/-/ip-codec-2.0.5.tgz"
   integrity sha512-Vo+PSpZG2/fmgmiNzYK9qWRh8h/CHrwD0mo1h1DzL4yzHNSfWYujGTYsWGreD000gcgmZ7K4Ys6Tx9TxtsKdDw==
 
+"@livelybone/copy@^2.5.4":
+  version "2.6.6"
+  resolved "https://registry.npmjs.org/@livelybone/copy/-/copy-2.6.6.tgz"
+  integrity sha512-JpscUiN8Ta8as2/w9RCtnqPveGw7/ilTZl1M9hXueGNZtjPRNSQCw53eIY+GsSZ7aHn+cLxaitEOtXr1Jhxwbw==
+
+"@livelybone/mouse-events@^1.0.0":
+  version "1.0.0"
+  resolved "https://registry.npmjs.org/@livelybone/mouse-events/-/mouse-events-1.0.0.tgz"
+  integrity sha512-JuAy6wq2CJnvOnmFX26OSy5n1G7b2TxizD2FMTuphcQAGBRGxsb/o+ZAydG3xIekrrxYS9E6Fwpap/1c0KJQ0A==
+  dependencies:
+    "@livelybone/mouse-wheel" "^4.2.1"
+    is-mobile "^2.0.1"
+
+"@livelybone/mouse-wheel@^4.2.1":
+  version "4.2.1"
+  resolved "https://registry.npmjs.org/@livelybone/mouse-wheel/-/mouse-wheel-4.2.1.tgz"
+  integrity sha512-4MSMarV5bYE2g7EksiWEM3gr+Z4zaCyIiU7uyyRZ4eqfCzLKo+LCStrUgAv4PC6ykmZpASYUzwM2PWSeqJuTqw==
+
+"@livelybone/scroll-get@^5.0.2":
+  version "5.0.2"
+  resolved "https://registry.npmjs.org/@livelybone/scroll-get/-/scroll-get-5.0.2.tgz"
+  integrity sha512-zswJ9y1Ygsu5Nnewu+i/Ee/vSsVpENCt67zDxuUo2CyGPtNVFF3eKcs1JMFmPJUrltb49SFgDOFoGXsPFIFjhw==
+
+"@livelybone/vue-popper@^2.3.1":
+  version "2.4.0"
+  resolved "https://registry.npmjs.org/@livelybone/vue-popper/-/vue-popper-2.4.0.tgz"
+  integrity sha512-JUADQjeHKV8ACBzcdJRXivAZ71/Iz7FJ8vQTkqS0eM+EDZtQoqsFW4AQoGJHlfw7L5TxUxY3BDLu9Dqb2cy03A==
+  dependencies:
+    popper.js "^1.14.4"
+
+"@livelybone/vue-select@^2.7.0":
+  version "2.7.0"
+  resolved "https://registry.npmjs.org/@livelybone/vue-select/-/vue-select-2.7.0.tgz"
+  integrity sha512-gdLvwc6HshD3qxDB6qhy3QHhsFSBrmHk6SfMVgNR3/UAKd22ZQtgl6TdRsaxU0RKIyw0NgdAmKzgJWrQJbHm1A==
+  dependencies:
+    "@livelybone/copy" "^2.5.4"
+    "@livelybone/vue-popper" "^2.3.1"
+    vue-scrollbar-live "^5.2.2"
+
 "@mdi/font@7.4.47":
   version "7.4.47"
   resolved "https://registry.npmjs.org/@mdi/font/-/font-7.4.47.tgz"
@@ -4960,6 +4999,11 @@ is-map@^2.0.3:
   resolved "https://registry.npmjs.org/is-map/-/is-map-2.0.3.tgz"
   integrity sha512-1Qed0/Hr2m+YqxnM09CjA2d/i6YZNfF6R2oRAOj36eUdS6qIV/huPJNSEpKbupewFs+ZsJlxsjjPbc0/afW6Lw==
 
+is-mobile@^2.0.1:
+  version "2.2.2"
+  resolved "https://registry.npmjs.org/is-mobile/-/is-mobile-2.2.2.tgz"
+  integrity sha512-wW/SXnYJkTjs++tVK5b6kVITZpAZPtUrt9SF80vvxGiF/Oywal+COk1jlRkiVq15RFNEQKQY31TkV24/1T5cVg==
+
 is-negative-zero@^2.0.3:
   version "2.0.3"
   resolved "https://registry.npmjs.org/is-negative-zero/-/is-negative-zero-2.0.3.tgz"
@@ -6167,6 +6211,11 @@ pkg-dir@^4.1.0:
   integrity sha512-HRDzbaKjC+AOWVXxAU/x54COGeIv9eb+6CkDSQoNTt4XyWoIJvuPsXizxu/Fr23EiekbtZwmh1IcIG/l/a10GQ==
   dependencies:
     find-up "^4.0.0"
+
+popper.js@^1.14.4:
+  version "1.16.1"
+  resolved "https://registry.npmjs.org/popper.js/-/popper.js-1.16.1.tgz"
+  integrity sha512-Wb4p1J4zyFTbM+u6WuO4XstYx4Ky9Cewe4DWrel7B0w6VVICvPwdOpotjzcf6eD8TsckVnIMNONQyPIUFOUbCQ==
 
 portfinder@^1.0.26:
   version "1.0.37"
@@ -7902,6 +7951,14 @@ vue-router@3.6.5:
   version "3.6.5"
   resolved "https://registry.npmjs.org/vue-router/-/vue-router-3.6.5.tgz"
   integrity sha512-VYXZQLtjuvKxxcshuRAwjHnciqZVoXAjTjcqBTz4rKc8qih9g9pI3hbDjmqXaHdgL3v8pV6P8Z335XvHzESxLQ==
+
+vue-scrollbar-live@^5.2.2:
+  version "5.7.1"
+  resolved "https://registry.npmjs.org/vue-scrollbar-live/-/vue-scrollbar-live-5.7.1.tgz"
+  integrity sha512-bN/Bx6Olq9IWi6fR4BdsvslKfBlX6oz7ocS8haev09PmP2bgSzCdv/J2SQdra8QgHB0FfXwKOjg7cqkSrWVWsA==
+  dependencies:
+    "@livelybone/mouse-events" "^1.0.0"
+    "@livelybone/scroll-get" "^5.0.2"
 
 vue-select-image@^1.9.0:
   version "1.9.0"
