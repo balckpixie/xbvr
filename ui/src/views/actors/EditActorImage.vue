@@ -97,7 +97,7 @@
                   <div>
                     <vue-select-multi
                       class="select"
-                      v-model="value"
+                      v-model="value "
                       :options="showOptions"
                       :popperProps="popperProps"
                       :canSearch="false"
