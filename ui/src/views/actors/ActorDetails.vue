@@ -72,6 +72,9 @@
                   </div>
                 </div>
                 <div class="columns is-vcentered">
+                  <div class="vue-load-image">
+                    <img :src="actor.face_image_url" style="width: 100%; height: auto;">
+                  </div>
                   <div class="column pt-0">
                     <b-field>
                       <strong style="width: 8em;">{{ $t('Your Rating') }}</strong>

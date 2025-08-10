@@ -2,7 +2,7 @@
   <div class="card is-shadowless">
     <div class="card-image">
       <div class="bbox"
-           v-bind:style="{backgroundImage: `url(${getImageURL(actor.image_url)})`, backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', opacity:isAvailable(actor) ? 1.0 : isAvailOpactiy}"
+           v-bind:style="{backgroundImage: `url(${getActorImageURL(actor)})`, backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', opacity:isAvailable(actor) ? 1.0 : isAvailOpactiy}"
            @click="showDetails(actor)"
            @mouseover="preview = true"
            @mouseleave="preview = false">
@@ -20,7 +20,8 @@
       </a>
       <actor-favourite-button :actor="actor" v-if="this.$store.state.optionsWeb.web.sceneFavourite"/>
       <actor-watchlist-button :actor="actor" v-if="this.$store.state.optionsWeb.web.sceneWatchlist"/>
-      <actor-edit-button :actor="actor"/>&nbsp;
+      <actor-edit-button :actor="actor"/>
+      <actor-edit-image-button :actor="actor"/>&nbsp;
       <link-stashdb-button :item="actor" objectType="actor" />
       <b-tooltip :label="$t('Your rating')" :delay="500">
       <b-tag type="is-warning" v-if="actor.star_rating != 0 " size="is-small" style="height:30px;">
@@ -59,10 +60,14 @@ import LinkStashdbButton from '../../components/LinkStashdbButton'
 import VueLoadImage from 'vue-load-image'
 import { tr } from 'date-fns/locale'
 
+import ActorEditImageButton from '../../components/ActorEditImageButton.vue'
+
 export default {
   name: 'ActorCard',
-  props: { actor: Object, colleague: String },
-   components: {ActorFavouriteButton, ActorWatchlistButton, VueLoadImage, ActorEditButton, LinkStashdbButton},
+  props: { actor: Object, colleague: String, showFace: Boolean },
+   components: {ActorFavouriteButton, ActorWatchlistButton, VueLoadImage, ActorEditButton, LinkStashdbButton,
+                ActorEditImageButton,
+   },
   data () {
     return {
       preview: false,
@@ -79,6 +84,11 @@ export default {
     },
   },
   methods: {
+    // Custom Black
+    getActorImageURL(actor) {
+        return this.showFace ? actor.face_image_url : actor.image_url;
+    },
+    // Custom END
     getImageURL (u) {
       if (u=='' || u == undefined) {
         return "/ui/images/blank_female_profile.png"
