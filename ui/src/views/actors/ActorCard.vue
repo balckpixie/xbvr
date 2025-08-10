@@ -21,7 +21,7 @@
       <actor-favourite-button :actor="actor" v-if="this.$store.state.optionsWeb.web.sceneFavourite"/>
       <actor-watchlist-button :actor="actor" v-if="this.$store.state.optionsWeb.web.sceneWatchlist"/>
       <actor-edit-button :actor="actor"/>
-      <actor-edit-image-button :actor="actor"/>&nbsp;
+      <actor-edit-image-button :actor="actor"/>
       <link-stashdb-button :item="actor" objectType="actor" />
       <b-tooltip :label="$t('Your rating')" :delay="500">
       <b-tag type="is-warning" v-if="actor.star_rating != 0 " size="is-small" style="height:30px;">

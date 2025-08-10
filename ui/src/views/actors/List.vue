@@ -173,7 +173,7 @@ export default {
         this.$store.state.actorList.filters.cardSize = value
         switch (value){
           case "0":
-            this.limit=27
+            this.limit=32
             break
           case "1":
             this.limit=18
