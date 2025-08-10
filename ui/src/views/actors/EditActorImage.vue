@@ -95,7 +95,7 @@
                   </div>
 
                   <div>
-                    <div class="columns is-multiline is-mobile">
+                    <!-- <div class="columns is-multiline is-mobile">
                       <div v-for="category in categories" :key="category" class="column is-half card-container">
                         <div class="card selectable-card"
                           :class="{ 'is-selected': selectedKeywords.includes(category) }"
@@ -105,11 +105,38 @@
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </div> -->
 
+                    <div class="columns is-multiline is-mobile" style="margin-inline: -2px;">
+                      <div
+                        v-for="category in categories"
+                        :key="category"
+                        class="column is-half card-container"
+                      >
+                        <div
+                          class="card selectable-card"
+                          :class="{ 'is-selected': selectedKeywords.includes(category) }"
+                          @click="toggleKeyword(category)"
+                          role="button"
+                          tabindex="0"
+                          @keydown.space.prevent="toggleKeyword(category)"
+                          @keydown.enter.prevent="toggleKeyword(category)"
+                          :aria-pressed="selectedKeywords.includes(category).toString()"
+                        >
+                          <div class="card-content">
+                            {{ $t(category) }}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                     <b-button class="is-primary is-fullwidth" style="margin-top: 10px;"
                       :disabled="selectedKeywords.length === 1000" @click="searchWithSelectedKeywords">
                       {{ $t('Search') }}
+                    </b-button>
+
+                    <b-button class="is-fullwidth" style="margin-top: 5px;"
+                      :disabled="selectedKeywords.length === 0"  @click="clearSelection">
+                      {{ $t('Clear All') }}
                     </b-button>
                   </div>
 
@@ -267,10 +294,14 @@ export default {
       }
     },
     searchWithSelectedKeywords() {
-      const keywordString = this.selectedKeywords.join(' ');
+      const keywordString = this.selectedKeywords
+                            .map(kw => (kw.includes(' ') ? `"${kw}"` : kw))
+                            .join(' ');
       this.scrapeActorImage(this.selectedSite, keywordString);
     },
-    
+    clearSelection() {
+      this.selectedKeywords = []
+    },
     changeActorImage (val) {
       ky.post('/api/actor/setimage', {
       json: {
@@ -548,7 +579,7 @@ export default {
   border-color: #42b983;
 }
 
-.card-container {
+/* .card-container {
   padding: 0.25rem;
 }
 
@@ -571,6 +602,44 @@ export default {
 .selectable-card.is-selected {
   border-color: #3273dc;
   background-color: #f0f8ff;
+} */
+ .card-container {
+  padding: 0.25rem;
+}
+
+.selectable-card {
+  border-radius: 999px; /* 角丸 */
+  border: 1px solid #e6e6e6;
+  background: #fff;
+  cursor: pointer;
+  user-select: none;
+  transition: box-shadow 0.16s ease, transform 0.12s ease, background-color 0.12s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+}
+
+.selectable-card .card-content {
+  width: 100%;
+  text-align: center;
+  padding: 0.5rem 0.75rem;
+  font-weight: 600;
+  font-size: smaller;
+}
+
+.selectable-card.is-selected {
+  /* background: #3273dc22;
+  border-color: #3273dc; */
+  background: #0044ff29;
+  border-color: #3273dc;
+  box-shadow: 0 2px 6px rgba(50, 115, 220, 0.12);
+  transform: translateY(-1px);
+}
+
+.selectable-card:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(50, 115, 220, 0.12);
 }
 </style>
 
