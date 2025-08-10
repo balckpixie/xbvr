@@ -55,7 +55,7 @@ type SiteConfig struct {
 var SiteConfigs = map[SiteType]SiteConfig{
 	SiteGoogle: { // Google画像検索
 		BaseURL:      "https://www.google.com/search",
-		QueryPattern: "q=%s&as_epq=&as_oq=&as_eq=&imgar=t|xt&imgcolor=&imgtype=photo&cr=&as_sitesearch=&as_filetype=&tbs=&udm=2",
+		QueryPattern: "q=%s&as_epq=&as_oq=&as_eq=&imgar=t|xt&imgcolor=&imgtype=photo&cr=&as_sitesearch=&as_filetype=&tbs=&udm=2&no_sw_cr=1&sssc=1",
 	},
 	SiteBing: { // Bing画像検索
 		BaseURL:      "https://www.bing.com/images/search",
@@ -63,7 +63,8 @@ var SiteConfigs = map[SiteType]SiteConfig{
 	},
 }
 
-const userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99 Safari/537.36"
+const userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+//const userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99 Safari/537.36"
 
 func (i ImagesResource) WebService() *restful.WebService {
 	tags := []string{"CustomImages"}
@@ -145,15 +146,24 @@ func (i ImagesResource) searchActorImage(req *restful.Request, resp *restful.Res
 }
 
 func getImageURLsFromGoogle(query string) ([]string, error) {
-
+	// Cookie取得
+	// cookies, err := fetchGoogleCookies()
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to fetch cookies: %w", err)
+	// }
 	searchURL, err := buildSearchURL(SiteGoogle, url.QueryEscape(query))
 	if err != nil {
 		return nil, err
 	}
 
+	fmt.Println("Google Search URL:", searchURL)
+	
 	imageCollector := colly.NewCollector(
 		colly.UserAgent(userAgent),
 	)
+	imageCollector.OnRequest(func(r *colly.Request) {
+		// imageCollector.SetCookies("http://www.google.com", cookies)
+	})
 
 	var imageURLs []string
 	var parseErr error
@@ -284,6 +294,21 @@ func extractImageURLFromBing(href string) string {
 	return ""
 }
 
+// Googleのトップページを訪問してCookieを取得する
+func fetchGoogleCookies() ([]*http.Cookie, error) {
+	var cookies []*http.Cookie
+
+	cookieCollector := colly.NewCollector(colly.UserAgent(userAgent))
+	cookieCollector.OnResponse(func(r *colly.Response) {
+		cookies = cookieCollector.Cookies(r.Request.URL.String())
+	})
+	config, _ := SiteConfigs[SiteGoogle]
+	if err := cookieCollector.Visit(config.BaseURL); err != nil {
+		return nil, err
+	}
+	return cookies, nil
+}
+
 // Bingのトップページを訪問してCookieを取得する
 func fetchBingCookies() ([]*http.Cookie, error) {
 	var cookies []*http.Cookie
@@ -297,7 +322,6 @@ func fetchBingCookies() ([]*http.Cookie, error) {
 			}
 		}
 	})
-	//if err := cookieCollector.Visit("https://www.bing.com/"); err != nil {
 	config, _ := SiteConfigs[SiteBing]
 	if err := cookieCollector.Visit(config.BaseURL); err != nil {
 		return nil, err
