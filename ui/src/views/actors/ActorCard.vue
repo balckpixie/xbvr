@@ -20,7 +20,8 @@
       </a>
       <actor-favourite-button :actor="actor" v-if="this.$store.state.optionsWeb.web.sceneFavourite"/>
       <actor-watchlist-button :actor="actor" v-if="this.$store.state.optionsWeb.web.sceneWatchlist"/>
-      <actor-edit-button :actor="actor"/>&nbsp;
+      <actor-edit-button :actor="actor"/>
+      <actor-edit-image-button :actor="actor"/>&nbsp;
       <link-stashdb-button :item="actor" objectType="actor" />
       <b-tooltip :label="$t('Your rating')" :delay="500">
       <b-tag type="is-warning" v-if="actor.star_rating != 0 " size="is-small" style="height:30px;">
@@ -59,10 +60,14 @@ import LinkStashdbButton from '../../components/LinkStashdbButton'
 import VueLoadImage from 'vue-load-image'
 import { tr } from 'date-fns/locale'
 
+import ActorEditImageButton from '../../components/ActorEditImageButton.vue'
+
 export default {
   name: 'ActorCard',
   props: { actor: Object, colleague: String, showFace: Boolean },
-   components: {ActorFavouriteButton, ActorWatchlistButton, VueLoadImage, ActorEditButton, LinkStashdbButton},
+   components: {ActorFavouriteButton, ActorWatchlistButton, VueLoadImage, ActorEditButton, LinkStashdbButton,
+                ActorEditImageButton,
+   },
   data () {
     return {
       preview: false,
