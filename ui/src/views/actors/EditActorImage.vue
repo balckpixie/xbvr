@@ -111,7 +111,11 @@
                       <div
                         v-for="category in categories"
                         :key="category"
-                        class="column is-half card-container"
+                        class="column card-container"
+                        :class="{
+                          'is-half': $t(category).length >= 7,
+                          'is-4': $t(category).length < 7
+                        }"
                       >
                         <div
                           class="card selectable-card"
@@ -129,15 +133,35 @@
                         </div>
                       </div>
                     </div>
-                    <b-button class="is-primary is-fullwidth" style="margin-top: 10px;"
-                      :disabled="selectedKeywords.length === 1000" @click="searchWithSelectedKeywords">
-                      {{ $t('Search') }}
-                    </b-button>
+                    
+                    <div class="columns is-mobile is-multiline">
+                      <div class="column is-half card-container"><b-button :disabled="selectedKeywords.length === 1000"
+                          @click="searchWithSelectedKeywords()" class="is-primary is-fullwidth"
+                          style="display:flex; justify-content:center; margin-bottom:5px;">{{ $t('Search') }}</b-button>
+                      </div>
+                      <div class="column is-half card-container"><b-button :disabled="selectedKeywords.length === 0"
+                          @click="clearSelection()" class="is-fullwidth"
+                          style="display:flex; justify-content:center; margin-bottom:5px;">{{ $t('Clear All') }}</b-button>
+                      </div>
+                    </div>
 
-                    <b-button class="is-fullwidth" style="margin-top: 5px;"
-                      :disabled="selectedKeywords.length === 0"  @click="clearSelection">
-                      {{ $t('Clear All') }}
-                    </b-button>
+                        <!-- 追加キーワード入力 -->
+    <div class="field has-addons" style="margin-bottom: 10px;">
+      <div class="control is-expanded">
+        <input
+          v-model.trim="newKeyword"
+          class="input"
+          type="text"
+          placeholder="キーワードを追加"
+          @keyup.enter="addKeyword"
+        />
+      </div>
+      <div class="control">
+        <button class="button is-primary" @click="addKeyword">
+          追加
+        </button>
+      </div>
+    </div>
                   </div>
 
                 </div>
@@ -225,7 +249,7 @@ export default {
 
       SiteEnum,
       selectedSite: SiteEnum.GOOGLE,
-      categories: ['AV', 'PORN', 'SEXY', 'GRAVURE', 'ERO', 'NAKED', 'CUTE', 'NIPPLE', 'BOOBS', 'FACE', 'FULL BODY', 'CLOSE UP', 'BODY SHOT', 'FANZA'],
+      categories: ['AV', 'PORN', 'SEXY', 'ERO', 'NAKED', 'CUTE', 'NIPPLE', 'OPPAI', 'BOOBS', 'BUSTY', 'FACE', 'FANZA', 'GRAVURE', 'FULL BODY', 'CLOSE UP', 'BODY SHOT'],
       selectedKeywords: [],
 
       carouselSlide: 0,
@@ -285,6 +309,12 @@ export default {
 
   methods: {
     // Custom Black
+    addKeyword() {
+      if (this.newKeyword && !this.categories.includes(this.newKeyword)) {
+        this.categories.push(this.newKeyword)
+      }
+      this.newKeyword = ''
+    },
     toggleKeyword(category) {
       const index = this.selectedKeywords.indexOf(category);
       if (index === -1) {
