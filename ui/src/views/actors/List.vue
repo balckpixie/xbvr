@@ -38,6 +38,9 @@
         <div class="is-pulled-right">
           <b-field>
             <span class="list-header-label">{{$t('Card size')}}</span>
+            <b-radio-button v-model="cardSize" native-value="0" size="is-small">
+              SS
+            </b-radio-button>
             <b-radio-button v-model="cardSize" native-value="1" size="is-small">
               S
             </b-radio-button>
@@ -49,6 +52,22 @@
             </b-radio-button>
           </b-field>
         </div>
+
+        <div class="is-pulled-right">
+          <div class="toggle-container">
+            <label class="toggle-button" :class="{ active: showFace === true }">
+              <input type="radio" :value="true" v-model="showFace" />
+              Face
+            </label>
+            <label class="toggle-button" :class="{ active: showFace === false }">
+              <input type="radio" :value="false" v-model="showFace" />
+              Body
+            </label>
+          </div>
+        </div>
+
+
+
       </div>
     </div>
         <div class="columns is-gapless is-centered" v-if="hideLetters">
@@ -81,7 +100,7 @@
     <div class="columns is-multiline">
       <div :class="['column', 'is-multiline', cardSizeClass]"
            v-for="actor in actors" :key="actor.id">
-        <ActorCard :actor="actor"/>
+        <ActorCard :actor="actor" :showFace="showFace"/>
       </div>
     </div>
       <div class="columns is-gapless is-centered" v-if="hideLetters">
@@ -142,6 +161,7 @@ export default {
   data () {
     return {      
       current: 1,      
+      showFace:false,
     }
   },
   computed: {
@@ -152,6 +172,9 @@ export default {
       set (value) {
         this.$store.state.actorList.filters.cardSize = value
         switch (value){
+          case "0":
+            this.limit=27
+            break
           case "1":
             this.limit=18
             break
@@ -192,6 +215,8 @@ export default {
     },
     cardSizeClass () {
       switch (this.$store.state.actorList.filters.cardSize) {
+        case '0':
+          return 'is-1-5' 
         case '1':
           return 'is-2'
         case '2':
@@ -288,4 +313,44 @@ export default {
   .list-header-label {
     padding-right: 1em;
   }
+
+  /* Custom Black */
+  .toggle-container {
+    margin-right: 1.5rem;
+    margin-top: 0.25rem;
+  }
+
+  .toggle-button {
+    flex: 1 1 50%;
+    padding: 5px 10px;
+    text-align: center;
+    cursor: pointer;
+    border: 1px solid #ccc;
+    background-color: #f5f5f5;
+    font-weight: bold;
+    user-select: none;
+    transition: background-color 0.2s;
+  }
+
+  .toggle-button+.toggle-button {
+    border-left: none;
+  }
+
+  /* ラジオボタン自体は非表示 */
+  .toggle-button input {
+    display: none;
+  }
+
+  /* アクティブ状態 */
+  .toggle-button.active {
+    background-color: #42b983;
+    color: white;
+    border-color: #42b983;
+  }
+
+  .column.is-1-5 {
+    flex: none;
+   width: 12.5%; /* 1.5/12カラム相当 */
+  }
+  /* Custom END */
 </style>
