@@ -194,9 +194,9 @@
 
             <div class="image-row" v-if="activeTab != 1 && !displayingAlternateSource">
               <div v-for="(image, idx) in castimages" :key="idx" class="image-wrapper">
-                <b-tooltip  type="is-light" :label="image.actor_label"  :delay=100>
+                <b-tooltip  type="is-light" :label="image.actor_label"  :delay=100 position="is-right" >
                   <vue-load-image>
-                    <img slot="image" :src="getImageURL(image.src)" alt="Image" class="thumbnail" @mouseover="showTooltip(idx)" @mouseout="hideTooltip(idx)" @click='showActorDetail([image.actor_id])' />
+                    <img slot="image" :src="getImageURL(image.facesrc)" alt="Image" class="thumbnail" @mouseover="showTooltip(idx)" @mouseout="hideTooltip(idx)" @click='showActorDetail([image.actor_id])' />
                     <img slot="preloader" :src="getImageURL('https://i.stack.imgur.com/kOnzy.gif')" style="height: 50px;display: block;margin-left:auto;margin-right: auto;" @click='showCastScenes([image.actor_name])' />
                     <img slot="error" src="/ui/images/blank_female_profile.png" width="80" @click='showActorDetail([image.actor_id])' />
                   </vue-load-image>
@@ -570,17 +570,18 @@ export default {
           label += `, ${age} in scene`
         }
         let img = actor.image_url
+        let face = actor.face_image_url
         if (img == "" ){
           img = "blank"  // forces an error image to load, blank won't display an image
         }
         if (actor.name.startsWith("aka:")) {
           img = ""
         }
-        return {src: img, visible: false, actor_name: actor.name, actor_label: label, actor_id: actor.id};
+        return {src: img, facesrc: face, visible: false, actor_name: actor.name, actor_label: label, actor_id: actor.id};
       });
 
       this.castimages =  imgs.filter((img) => {
-        return img.src !== '';
+        return img.facesrc !== '';
         });
       this.getSearchFields(item.id)
       return item
@@ -1711,10 +1712,10 @@ span.is-active img {
 .tooltip {
   position: absolute;
   z-index: 1;
-  top: 50px;
-  right: 100%;
-  width: 400px;
-  height: 400px;
+  //top: 50px;
+  //right: 100%;
+  width: 300px;
+  //height: 400px;
   background-color: white;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
   display: flex;
