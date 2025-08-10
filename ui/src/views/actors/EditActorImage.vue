@@ -95,19 +95,20 @@
                   </div>
 
                   <div>
-                    <vue-select-multi
-                      class="select"
-                      v-model="value "
-                      :options="showOptions"
-                      :popperProps="popperProps"
-                      :canSearch="false"
-                      @search="log">
-                      No Result
-                    </vue-select-multi>
-
+                    <multiselect v-model="value"
+                      :options="options"
+                      :multiple="true"
+                      :taggable="true"
+                      :closeOnSelect="false"
+                      :hideSelected="true"
+                      :searchable="false" 
+                      placeholder="Select keywords"
+                      selectLabel=""
+                    ></multiselect>
                   </div>
+
                   <div>
-                    <div class="columns is-multiline is-mobile">
+                    <!-- <div class="columns is-multiline is-mobile">
                       <div v-for="category in categories" :key="category" class="column is-half card-container">
                         <div class="card selectable-card"
                           :class="{ 'is-selected': selectedKeywords.includes(category) }"
@@ -117,7 +118,7 @@
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </div> -->
 
                     <b-button class="is-primary is-fullwidth" style="margin-top: 10px;"
                       :disabled="selectedKeywords.length === 1000" @click="searchWithSelectedKeywords">
@@ -164,7 +165,9 @@ import ListEditor from '../../components/ListEditor'
 import VueLoadImage from 'vue-load-image'
 
 import VueSelectImage from 'vue-select-image'
-import VueSelect from '@livelybone/vue-select'
+
+import Multiselect from 'vue-multiselect'
+import 'vue-multiselect/dist/vue-multiselect.min.css' 
 
 const SiteEnum = Object.freeze({
   GOOGLE: 'Google',
@@ -173,7 +176,7 @@ const SiteEnum = Object.freeze({
 
 export default {
   name: 'EditActorImage',
-  components: { VueLoadImage, ListEditor, GlobalEvents, VueSelectImage, VueSelect  },
+  components: { VueLoadImage, ListEditor, GlobalEvents, VueSelectImage, Multiselect },
   data() {
     const actor = Object.assign({}, this.$store.state.overlay.actoreditimage.actor)
 
@@ -215,19 +218,13 @@ export default {
 
       carouselSlide: 0,
       
-      value: options.map(function (o) {
-        return o.value
-      }),
-      options: options,
-      keyword: '',
-      popperProps: popperProps,
+      value: [],
+      options: ['AV', 'PORN', 'SEXY', 'GRAVURE', 'ERO', 'NAKED', 'CUTE', 'NIPPLE', 'BOOBS', 'FACE', 'FULL BODY', 'CLOSE UP', 'BODY SHOT', 'FANZA'],
 
     }
   },
   computed: {
-    showOptions: function () {
-      return this.keyword ? this.options.filter(this.filter) : this.options
-    },
+
     images() {
       if (this.actor.image_arr == undefined || this.actor.image_arr == "") {
         return []
@@ -280,13 +277,15 @@ export default {
 
   methods: {
     // Custom Black
-    log(val) {
-      console.log(val)
-      this.keyword = val
+    addTag (newTag) {
+      const tag = {
+        name: newTag,
+        code: newTag.substring(0, 2) + Math.floor((Math.random() * 10000000))
+      }
+      this.options.push(tag)
+      this.value.push(tag)
     },
-    filter(op) {
-      return op.name.toString().indexOf(this.keyword) > -1
-    },
+
     toggleKeyword(category) {
       const index = this.selectedKeywords.indexOf(category);
       if (index === -1) {
@@ -296,7 +295,8 @@ export default {
       }
     },
     searchWithSelectedKeywords() {
-      const keywordString = this.selectedKeywords.join(' ');
+      //const keywordString = this.selectedKeywords.join(' ');
+      const keywordString = this.value.join(' ');
       this.scrapeActorImage(this.selectedSite, keywordString);
     },
     
