@@ -42,6 +42,7 @@ func AddAPIParam(originalURL string) (string, error) {
 	queryParams := parsedURL.Query()
 	queryParams.Set("api_id", config.Config.Custom.DmmApiId)
 	queryParams.Set("affiliate_id", config.Config.Custom.DmmAffiliateId)
+	queryParams.Set("offset", "1")
 	parsedURL.RawQuery = queryParams.Encode()
 
 	return parsedURL.String(), nil
