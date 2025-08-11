@@ -160,8 +160,8 @@ export default {
   components: { ActorCard, GlobalEvents },
   data () {
     return {      
-      current: 1,      
-      showFace:false,
+      current: 0,      
+      showFace:true,
     }
   },
   computed: {
