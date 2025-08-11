@@ -24,7 +24,7 @@ import (
 	"github.com/xbapps/xbvr/pkg/models"
 	"github.com/xbapps/xbvr/pkg/scrape"
 
-	customcommon "github.com/xbapps/xbvr/pkg/custom/common"
+	shared "github.com/xbapps/xbvr/pkg/custom/shared"
 )
 
 var allowedVideoExt = []string{".mp4", ".avi", ".wmv", ".mpeg4", ".mov", ".mkv"}
@@ -92,7 +92,7 @@ func RescanVolumes(id int) {
 
 			// Custom Black
 			if len(scenes) == 0 {
-				queryString := customcommon.ExtractDVDIDLogic(unescapedFilename)
+				queryString := shared.ExtractDVDIDLogic(unescapedFilename)
 				if queryString != "" {
 					err = db.Where("scene_id = ?", queryString).Find(&scenes_for_search).Error
 					if len(scenes_for_search) == 0 || err != nil {

@@ -5,10 +5,16 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/avast/retry-go/v4"
 	"github.com/jinzhu/gorm"
 	"github.com/markphelps/optional"
+
+	// customcommon "github.com/xbapps/xbvr/pkg/custom/common"
+	// customcommon "github.com/xbapps/xbvr/pkg/custom/common"
+	shared "github.com/xbapps/xbvr/pkg/custom/shared"
+	
 )
 
 type Actor struct {
@@ -424,7 +430,6 @@ func QueryActors(r RequestActorList, enablePreload bool) ResponseActorList {
 	case "aliases_desc":
 		tx = tx.Order("actors.aliases desc")
 	//
-
 	case "name_asc":
 		tx = tx.Order("name asc")
 	case "name_desc":
@@ -485,17 +490,41 @@ func QueryActors(r RequestActorList, enablePreload bool) ResponseActorList {
 	})
 
 	if r.JumpTo.OrElse("") != "" {
-		// if we want to jump to actors starting with a specific letter, then we need to work out the offset to them
 		cnt := 0
-		txList := tx.Select(`distinct actors.name`)
-		txList.Find(&out.Actors)
-		for idx, actor := range out.Actors {
-			if strings.ToLower(actor.Name) >= strings.ToLower(r.JumpTo.OrElse("")) {
-				break
+
+		switch r.Sort.OrElse("") {
+		case "aliases_asc", "aliases_desc":
+			txList := tx.Select(`distinct actors.name, actors.aliases`)
+			txList.Find(&out.Actors)
+			for idx, actor := range out.Actors {
+				if actor.Aliases != "" {
+					count := utf8.RuneCountInString(r.JumpTo.OrElse(""))
+					firstChar, err :=  shared.GetFirstCharsFromJSON(actor.Aliases, count)
+					if err != nil {
+	
+					} else {
+						if actor.Aliases != "" {
+							if string(firstChar) >= r.JumpTo.OrElse("") {
+								break
+							}
+						}
+					}
+				}
+				cnt = idx
 			}
-			cnt = idx
+			offset = offset + cnt + 1
+		default:
+			// if we want to jump to actors starting with a specific letter, then we need to work out the offset to them
+			txList := tx.Select(`distinct actors.name`)
+			txList.Find(&out.Actors)
+			for idx, actor := range out.Actors {
+				if strings.ToLower(actor.Name) >= strings.ToLower(r.JumpTo.OrElse("")) {
+					break
+				}
+				cnt = idx
+			}
+			offset = (cnt / limit) * limit
 		}
-		offset = (cnt / limit) * limit
 	}
 	out.Offset = offset
 

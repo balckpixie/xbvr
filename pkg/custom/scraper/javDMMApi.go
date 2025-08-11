@@ -16,6 +16,7 @@ import (
 	"github.com/xbapps/xbvr/pkg/common"
 
 	customcommon "github.com/xbapps/xbvr/pkg/custom/common"
+	shared "github.com/xbapps/xbvr/pkg/custom/shared"
 )
 
 var log = &common.Log
@@ -191,7 +192,7 @@ func ScrapeDMMapi(out *[]models.ScrapedScene, queryString string) {
 			sc.Studio = jsonResponse.Result.Items[0].Iteminfo.Label[0].Name
 		}
 		dvdId := strings.ToUpper(jsonResponse.Result.Items[0].ProductID)
-		sc.SceneID = customcommon.ConvertToDVDId(dvdId)
+		sc.SceneID = shared.ConvertToDVDId(dvdId)
 
 		log.Info("(dvdId)" + dvdId + "(productID)" + jsonResponse.Result.Items[0].ProductID + "(SceneID)" + sc.SceneID)
 
@@ -246,13 +247,13 @@ func ScrapeDMMapi(out *[]models.ScrapedScene, queryString string) {
 	}
 
 	for _, v := range scenes {
-		if customcommon.IsQuoted(v) {
-			param, err := customcommon.GetQuotedString(strings.ToLower(v))
+		if shared.IsQuoted(v) {
+			param, err := shared.GetQuotedString(strings.ToLower(v))
 			if err == nil {
 				queryurl, err = customcommon.AddQueryParam(queryurl, "keyword", param)
 			}
 		} else {
-			queryurl, err = customcommon.AddQueryParam(queryurl, "cid", customcommon.ConvertFormat(strings.ToLower(v)))
+			queryurl, err = customcommon.AddQueryParam(queryurl, "cid", shared.ConvertFormat(strings.ToLower(v)))
 		}
 		if err == nil {
 			sceneCollector.Visit(queryurl)
