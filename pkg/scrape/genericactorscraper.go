@@ -270,18 +270,26 @@ func applyRules(actorPage string, source string, rules models.GenericScraperRule
 		})
 	}
 	// Custom black
+	// external idへの保存時にAPIパラメータを除くため
+	actorPageUrl := actorPage
 	if custommcommon.DomainMatch(actorPage, "*.dmm.com") {
-		actorPage, _ = custommcommon.AddAPIParam(actorPage)
+		actorPageUrl, _ = custommcommon.AddAPIParam(actorPageUrl)
 	}
+	actorCollector.OnError(func(r *colly.Response, err error) {
+		log.Errorf("Error visiting %s %d %v", r.Request.URL, r.StatusCode, err)
+		if r.Body != nil {
+			log.Errorf("Response Body:\n%s\n", string(r.Body))
+		}
+	})
 	// Custom END
 
-	url, _ := url.Parse(actorPage)
+	url, _ := url.Parse(actorPageUrl)
 	if rules.IsJson {
 		ScraperRateLimiterWait(url.Host)
-		err := actorCollector.Request("GET", actorPage, nil, nil, nil)
+		err := actorCollector.Request("GET", actorPageUrl, nil, nil, nil)
 		ScraperRateLimiterCheckErrors(url.Host, err)
 	} else {
-		WaitBeforeVisit(url.Host, actorCollector.Visit, actorPage)
+		WaitBeforeVisit(url.Host, actorCollector.Visit, actorPageUrl)
 	}
 	var extref models.ExternalReference
 	var extreflink models.ExternalReferenceLink

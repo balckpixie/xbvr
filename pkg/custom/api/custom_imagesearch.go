@@ -169,10 +169,9 @@ func getImageURLsFromGoogle(query string) ([]string, error) {
 	var parseErr error
 
 	imageCollector.OnHTML("script", func(e *colly.HTMLElement) {
-		contentType := e.Response.Headers.Get("Content-Type")
-		fmt.Println("Content-Type:", contentType)
+		// contentType := e.Response.Headers.Get("Content-Type")
+		// fmt.Println("Content-Type:", contentType)
 
-		//googleScriptRe := regexp.MustCompile(`var m=({[^;]*})`)
 		googleScriptRe := regexp.MustCompile(`(?s)var m\s*=\s*(\{.*?\});`)
 
 		matches := googleScriptRe.FindStringSubmatch(e.Text)
