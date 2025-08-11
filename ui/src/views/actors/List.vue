@@ -13,7 +13,7 @@
       <div class="column">
         <strong>{{total}} results</strong>
       </div>
-      <div class="column">
+      <div class="column" v-if="!hideHiragana">
         <b-tooltip :label="$t('Press o/left arrow to page back, p/right arrow to page forward')" :delay="500" position="is-top">
           <b-pagination
               :total="total"
@@ -34,6 +34,16 @@
         </b-tooltip>
         <span v-show="show_actor_id==='never show, just need the computed show_actor_id to trigger '">{{show_actor_id}}</span>
       </div>
+
+      <div v-if="hideHiragana">
+        <CustomPagination
+          :total="total"
+          :limit="limit"
+          :offset="offset"
+          @change="onOffsetChange"
+        />
+      </div>
+
       <div class="column">
         <div class="is-pulled-right">
           <b-field>
@@ -95,6 +105,21 @@
           <b-radio-button v-model="jumpTo" native-value="W" size="is-small">W/X/Y/Z</b-radio-button>
         </div>
 
+        <!-- Hiragana Jump to -->
+        <div v-if="hideHiragana" style="margin-top: -0.9rem; margin-bottom: 1.0rem;">
+          <div class="columns is-gapless is-centered" style="margin-bottom: 0.2rem;">
+            <b-radio-button v-model="jumpToKana" native-value="" size="is-small"></b-radio-button>
+            <div v-for="group in groups" :key="group">
+              <b-radio-button v-model="selectedGroup" :native-value="group" size="is-small">{{ group }}</b-radio-button>
+            </div>
+          </div>
+          <div class="columns is-gapless is-centered" style="display:block" v-for="group in groups" v-if="selectedGroup === group">
+            <div class="buttons is-centered is-multiline">
+              <b-radio-button v-for="letter in hiragana[group]" :key="letter" v-model="jumpToKana" :native-value="letter" size="is-small">{{ letter }}</b-radio-button>
+            </div>
+          </div>
+        </div>
+        
     <div class="is-clearfix"></div>
 
     <div class="columns is-multiline">
@@ -127,7 +152,7 @@
         <b-radio-button v-model="jumpTo" native-value="U" size="is-small">U/V</b-radio-button>        
         <b-radio-button v-model="jumpTo" native-value="W" size="is-small">W/X/Y/Z</b-radio-button>
       </div>
-      <div class="columns is-gapless is-centered">          
+      <div class="columns is-gapless is-centered" v-if="!hideHiragana">          
         <b-tooltip :label="$t('Press k to page back, l to page forward')" :delay="500" position="is-top">
           <b-pagination
             :total="total"
@@ -147,6 +172,15 @@
         </b-pagination>
       </b-tooltip>
       </div>
+
+      <div v-if="hideHiragana">
+        <CustomPagination
+          :total="total"
+          :limit="limit"
+          :offset="offset"
+          @change="onOffsetChange"
+        />
+      </div>
   </div>
 </template>
 
@@ -154,14 +188,40 @@
 import ActorCard from './ActorCard'
 import ky from 'ky'
 import GlobalEvents from 'vue-global-events'
+import CustomPagination from '../../components/CustomPagination.vue';
 
 export default {
   name: 'List',
-  components: { ActorCard, GlobalEvents },
+  components: { ActorCard, GlobalEvents, CustomPagination },
   data () {
     return {      
       current: 0,      
       showFace:true,
+      groups: ['あ', 'か', 'さ', 'た', 'な', 'は', 'ま', 'や', 'ら', 'わ'],
+      hiragana: {
+        'あ': ['あ', 'い', 'う', 'え', 'お'],
+        'か': ['か', 'き', 'く', 'け', 'こ'],
+        'さ': ['さ', 'し', 'す', 'せ', 'そ'],
+        'た': ['た', 'ち', 'つ', 'て', 'と'],
+        'な': ['な', 'に', 'ぬ', 'ね', 'の'],
+        'は': ['は', 'ひ', 'ふ', 'へ', 'ほ'],
+        'ま': ['ま', 'み', 'む', 'め', 'も'],
+        'や': ['や', 'ゆ', 'よ'],
+        'ら': ['ら', 'り', 'る', 'れ', 'ろ'],
+        'わ': ['わ', 'を', 'ん']
+      },
+      selectedGroup: 'あ',
+      selectedLetter: '',
+    }
+  },
+  watch: {
+    // selectedGroupが変更されたとき、JumpToのデフォルト値を設定する
+    selectedGroup(newVal, oldVal) {
+      if (newVal != "") {
+        this.jumpToKana = this.hiragana[newVal][0];
+      } else {
+        this.jumpToKana = ""
+      }
     }
   },
   computed: {
@@ -187,6 +247,17 @@ export default {
             }            
         }      
     },
+    offset: {
+      get () {
+        return this.$store.state.actorList.offset - this.$store.state.actorList.limit  
+      },
+      set (value) {
+        // this.$store.state.actorList.offset = value
+        // this.reloadList()
+        this.$store.state.actorList.offset =  value
+        this.$store.dispatch('actorList/load', { offset: this.$store.state.actorList.offset })
+      } 
+    },
     limit: {
       get(){
         return this.$store.state.actorList.limit
@@ -204,13 +275,27 @@ export default {
         this.$store.dispatch('actorList/load', { offset: this.$store.state.actorList.offset })
       }
     },
+    jumpToKana : {
+      get () {
+        return this.selectedLetter
+      },
+      set (value) {
+        if (value !== this.$store.state.actorList.filters.jumpTo) {
+          this.$store.state.actorList.filters.jumpTo = value
+          this.selectedLetter = value
+          this.reloadList()
+        }
+      }
+    },
     jumpTo: {
       get () {
         return this.$store.state.actorList.filters.jumpTo
       },
       set (value) {
-        this.$store.state.actorList.filters.jumpTo = value
-        this.reloadList()
+        if (value !== this.$store.state.actorList.filters.jumpTo) {
+          this.$store.state.actorList.filters.jumpTo = value
+          this.reloadList()
+        }
       }
     },
     cardSizeClass () {
@@ -263,8 +348,24 @@ export default {
         return false
         },
     },
+    hideHiragana: {
+      get () {        
+        switch (this.$store.state.actorList.filters.sort) {
+          case "aliases_asc":
+            return true
+          case "aliases_desc":
+            return true
+        }
+        return false
+      },
+    },
   },
   methods: {
+    onOffsetChange(newOffset) {
+      this.offset = newOffset;
+      // ここでAPIやデータ取得を実施する
+      console.log('Offset changed:', newOffset);
+    },
     reloadList () {
       this.$router.push({
         name: 'actors',
@@ -274,7 +375,8 @@ export default {
       })
     },
     async pageChanged () {      
-      this.$store.state.actorList.offset = (this.current -1) * this.$store.state.actorList.limit
+      // this.$store.state.actorList.offset = (this.current -1) * this.$store.state.actorList.limit
+      this.$store.state.actorList.offset =  parseInt((this.current - 1) * this.$store.state.actorList.limit, 10)
       this.$store.dispatch('actorList/load', { offset: this.$store.state.actorList.offset })
     },
     nextpage () {

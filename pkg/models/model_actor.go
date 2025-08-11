@@ -513,6 +513,7 @@ func QueryActors(r RequestActorList, enablePreload bool) ResponseActorList {
 				cnt = idx
 			}
 			offset = offset + cnt + 1
+			// offset = (cnt / limit) * limit
 		default:
 			// if we want to jump to actors starting with a specific letter, then we need to work out the offset to them
 			txList := tx.Select(`distinct actors.name`)
