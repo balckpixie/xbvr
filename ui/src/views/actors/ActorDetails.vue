@@ -73,7 +73,7 @@
                 </div>
                 <div class="columns is-vcentered">
                   <div class="vue-load-image">
-                    <img :src="actor.face_image_url" style="width: 100%; height: auto;">
+                    <img :src="actor.face_image_url" style="width: 160px; height: auto;">
                   </div>
                   <div class="column pt-0">
                     <b-field>
