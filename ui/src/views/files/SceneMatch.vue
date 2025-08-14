@@ -119,8 +119,8 @@
                 <option value="javlandjp">jav.land(JP)</option>
               </b-select>
               <b-input v-model="javrQuery" placeholder="ID (xxxx-001)" type="search"></b-input>
-              <b-button class="button is-primary is-outlined" style="margin-left:10px" v-on:click="extractDVDID()">{{$t('Get DVDID')}}</b-button>
-              <b-button class="button is-primary" style="margin-left:10px" v-on:click="scrapeJAVR()">{{$t('Go')}}</b-button>
+              <b-button class="button is-primary is-outlined" style="margin-left:10px" v-on:click="extractDVDID()">{{$t('Analysis DVDID')}}</b-button>
+              <b-button class="button is-primary" style="margin-left:10px" v-on:click="scrapeJAVR()">{{$t('Scrape')}}</b-button>
               <b-button class="button is-primary is-outlined" style="margin-left:10px" v-on:click="reload()">{{$t('Reload List')}}</b-button>
               <b-navbar-item>
                 <table style="font-size:0.9em">
