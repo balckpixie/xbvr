@@ -936,6 +936,12 @@ watch:{
       }
     },
 
+    clearThumbnails() {
+      if (this.$refs.thumbnailRef) {
+        this.$refs.thumbnailRef.clearVideThumbnails()
+      }
+    },
+
     // サムネイルのクリックイベント
     onThumbnailClicked(duration) {
           this.setCurrentTime(duration)
@@ -1323,6 +1329,7 @@ watch:{
         this.$store.commit('overlay/showDetails', { scene: data })
         this.activeMedia = 0
         this.carouselSlide = 0
+        this.clearThumbnails();
         this.updatePlayer(undefined, '180')
       }
     },
@@ -1332,6 +1339,7 @@ watch:{
         this.$store.commit('overlay/showDetails', { scene: data })
         this.activeMedia = 0
         this.carouselSlide = 0
+        this.clearThumbnails();
         this.updatePlayer(undefined, '180')
       }
     },
