@@ -146,6 +146,9 @@
                     <b-field v-if="actor.aliases != '' && actor.aliases != '[]'">
                       <strong class="attribute-heading">{{ $t('Aliases') }}:</strong> <small class="attribute-long-data">{{ joinArray(actor.aliases) }}</small>
                     </b-field>
+                    <b-field v-if="actor.furigana != ''">
+                      <strong class="attribute-heading">{{ $t('Furigana') }}:</strong> <small class="attribute-long-data">{{ actor.furigana }}</small>
+                    </b-field>
                     <b-field v-if="actor.tattoos != '' && actor.tattoos != '[]'">
                       <strong class="attribute-heading">{{ $t('Tattoos') }}:</strong> <small class="attribute-long-data">{{ joinArray(actor.tattoos) }}</small>
                     </b-field>

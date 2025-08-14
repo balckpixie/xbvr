@@ -1,10 +1,11 @@
 package shared
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
-    "encoding/json"
+	"unicode/utf8"
 )
 
 func IsQuoted(input string) bool {
@@ -23,15 +24,22 @@ func GetQuotedString(input string) (string, error) {
 }
 
 func GetFirstCharsFromJSON(jsonStr string, count int) (string, error) {
-    var arr []string
-    err := json.Unmarshal([]byte(jsonStr), &arr)
-    if err != nil {
-        return "", err
-    }
-    if len(arr) > 0 && len(arr[0]) > 0 {
-        return truncateUTF8String(arr[0], count), nil
-    }
-    return "", fmt.Errorf("empty array or empty first element")
+	var arr []string
+	err := json.Unmarshal([]byte(jsonStr), &arr)
+	if err == nil {
+		// JSON配列として処理
+		if len(arr) > 0 && len(arr[0]) > 0 {
+			return truncateUTF8String(arr[0], count), nil
+		}
+		return "", fmt.Errorf("empty array or empty first element")
+	}
+
+	// JSONでない場合は普通の文字列として処理
+	if utf8.RuneCountInString(jsonStr) > 0 {
+		return truncateUTF8String(jsonStr, count), nil
+	}
+
+	return "", fmt.Errorf("empty string")
 }
 
 // UTF-8エンコードを考慮して文字列を切り詰める
