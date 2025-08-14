@@ -14,7 +14,6 @@ import (
 	// customcommon "github.com/xbapps/xbvr/pkg/custom/common"
 	// customcommon "github.com/xbapps/xbvr/pkg/custom/common"
 	shared "github.com/xbapps/xbvr/pkg/custom/shared"
-	
 )
 
 type Actor struct {
@@ -60,8 +59,8 @@ type Actor struct {
 	AkaGroups          []Aka  `gorm:"many2many:actor_akas;" json:"aka_groups" xbvrbackup:"-"`
 
 	// Custom black
-	FaceImageUrl   string  `json:"face_image_url" xbvrbackup:"face_image_url"`
-	Furigana	 string  `json:"furigana" xbvrbackup:"furigana"`
+	FaceImageUrl string `json:"face_image_url" xbvrbackup:"face_image_url"`
+	Furigana     string `json:"furigana" xbvrbackup:"furigana"`
 }
 
 type RequestActorList struct {
@@ -427,10 +426,12 @@ func QueryActors(r RequestActorList, enablePreload bool) ResponseActorList {
 	switch r.Sort.OrElse("") {
 	//custom black
 	case "furigana_asc":
-		tx = tx.Order("actors.furigana asc")
+		//tx = tx.Order("actors.furigana asc NULLS LAST")
+		tx = tx.Order("CASE WHEN furigana IS NULL OR TRIM(furigana) = '' THEN 1 ELSE 0 END,  furigana ASC")
 	case "furigana_desc":
-		tx = tx.Order("actors.furigana desc")
-	//
+		// tx = tx.Order("actors.furigana desc NULLS LAST")
+		tx = tx.Order("CASE WHEN furigana IS NULL OR TRIM(furigana) = '' THEN 1 ELSE 0 END,  furigana DESC")
+	// custom END
 	case "name_asc":
 		tx = tx.Order("name asc")
 	case "name_desc":
@@ -500,9 +501,9 @@ func QueryActors(r RequestActorList, enablePreload bool) ResponseActorList {
 			for idx, actor := range out.Actors {
 				if actor.Furigana != "" {
 					count := utf8.RuneCountInString(r.JumpTo.OrElse(""))
-					firstChar, err :=  shared.GetFirstCharsFromJSON(actor.Furigana, count)
+					firstChar, err := shared.GetFirstCharsFromJSON(actor.Furigana, count)
 					if err != nil {
-	
+
 					} else {
 						if actor.Furigana != "" {
 							if string(firstChar) >= r.JumpTo.OrElse("") {
