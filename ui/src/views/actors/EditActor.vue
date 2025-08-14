@@ -37,6 +37,13 @@
                  <b-button :label="$t('Clear')" type="is-danger" icon-left="close" outlined @click="birthdate = null" />
                </b-datepicker>
             </b-field>
+
+            <b-field grouped group-multiline style="margin-bottom: 2em;">
+              <b-field :label="$t('Furigana')" label-position="on-border">
+                <b-input type="text" v-model="actor.furigana" @blur="blur('furigana')"/>
+              </b-field>
+            </b-field>
+
             <b-field grouped group-multiline style="margin-bottom: 2em;">
               <b-field :label="$t('Eye Color')" label-position="on-border">
                 <b-input type="text" v-model="actor.eye_color" @blur="blur('eye_color')"/>

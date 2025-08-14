@@ -306,6 +306,8 @@ type RequestEditActorDetails struct {
 	Aliases   string `json:"aliases"`
 	Gender    string `json:"gender"`
 	URLs      string `json:"urls"`
+
+	Furigana  string `json:"furigana"`
 }
 
 type RequestEditActorExtRefs struct {
@@ -420,6 +422,8 @@ func (i ActorResource) editActor(req *restful.Request, resp *restful.Response) {
 	checkStringFieldChanged("biography", &r.Biography, &actor.Biography, actor.ID)
 	checkStringArrayChanged("aliases", &r.Aliases, &actor.Aliases, actor.ID)
 	checkStringArrayChanged("urls", &r.URLs, &actor.URLs, actor.ID)
+
+	checkStringFieldChanged("furigana", &r.Furigana, &actor.Furigana, actor.ID)
 
 	actor.Save()
 

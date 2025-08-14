@@ -30,7 +30,7 @@
             @click="hidePane2 = !hidePane2" >{{ hidePane2 ? 'Show' : 'Hide' }} Pane 2</button>
         </div>
         <splitpanes class="default-theme">
-        <pane min-size="27" max-size="100">
+        <pane min-size="27" max-size="100" :size="splitSize">
           <div class="">
             <b-tabs v-model="activeMedia" position="is-centered" :animated="false">
 
@@ -539,7 +539,8 @@ export default {
       marginBottom: 10,  //サムネイルコンポーネント高さ調整用
       currentFile: null,
       currentDuraiton: 0,
-      aspectRatio: '1:1',
+      aspectRatio: '4:3',
+      splitSize: 60,
       projectionMode: '180',
       hidePane2:false,
       // Custom END
@@ -935,6 +936,12 @@ watch:{
       }
     },
 
+    clearThumbnails() {
+      if (this.$refs.thumbnailRef) {
+        this.$refs.thumbnailRef.clearVideThumbnails()
+      }
+    },
+
     // サムネイルのクリックイベント
     onThumbnailClicked(duration) {
           this.setCurrentTime(duration)
@@ -1322,6 +1329,7 @@ watch:{
         this.$store.commit('overlay/showDetails', { scene: data })
         this.activeMedia = 0
         this.carouselSlide = 0
+        this.clearThumbnails();
         this.updatePlayer(undefined, '180')
       }
     },
@@ -1331,6 +1339,7 @@ watch:{
         this.$store.commit('overlay/showDetails', { scene: data })
         this.activeMedia = 0
         this.carouselSlide = 0
+        this.clearThumbnails();
         this.updatePlayer(undefined, '180')
       }
     },

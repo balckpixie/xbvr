@@ -486,12 +486,17 @@ func SceneCreateUpdateFromExternal(db *gorm.DB, ext ScrapedScene) error {
 			}
 		}
 
-		// Custom Black add Aliases Parameter
-		if ext.Aliases != nil && ext.Aliases[cnt] != "" {
+		// Custom Black add Aliases and Furigana Parameter
+		if ext.Rubys != nil && ext.Rubys[cnt] != "" {
 			if tmpActor.Aliases == "" {
-				tmpActor.Aliases = "[\"" + ext.Aliases[cnt] + "\"]"
+				tmpActor.Aliases = "[\"" + ext.Rubys[cnt] + "\"]"
 				saveActor = true
 			}
+			if tmpActor.Furigana == "" {
+				tmpActor.Furigana = ext.Rubys[cnt]
+				saveActor = true
+			}
+
 		}
 		cnt++
 		// Custom END

@@ -351,9 +351,9 @@ export default {
     hideHiragana: {
       get () {        
         switch (this.$store.state.actorList.filters.sort) {
-          case "aliases_asc":
+          case "furigana_asc":
             return true
-          case "aliases_desc":
+          case "furigana_desc":
             return true
         }
         return false

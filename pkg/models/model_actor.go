@@ -61,6 +61,7 @@ type Actor struct {
 
 	// Custom black
 	FaceImageUrl   string  `json:"face_image_url" xbvrbackup:"face_image_url"`
+	Furigana	 string  `json:"furigana" xbvrbackup:"furigana"`
 }
 
 type RequestActorList struct {
@@ -425,10 +426,10 @@ func QueryActors(r RequestActorList, enablePreload bool) ResponseActorList {
 
 	switch r.Sort.OrElse("") {
 	//custom black
-	case "aliases_asc":
-		tx = tx.Order("actors.aliases asc")
-	case "aliases_desc":
-		tx = tx.Order("actors.aliases desc")
+	case "furigana_asc":
+		tx = tx.Order("actors.furigana asc")
+	case "furigana_desc":
+		tx = tx.Order("actors.furigana desc")
 	//
 	case "name_asc":
 		tx = tx.Order("name asc")
@@ -493,17 +494,17 @@ func QueryActors(r RequestActorList, enablePreload bool) ResponseActorList {
 		cnt := 0
 
 		switch r.Sort.OrElse("") {
-		case "aliases_asc", "aliases_desc":
-			txList := tx.Select(`distinct actors.name, actors.aliases`)
+		case "furigana_asc", "furigana_desc":
+			txList := tx.Select(`distinct actors.name, actors.furigana`)
 			txList.Find(&out.Actors)
 			for idx, actor := range out.Actors {
-				if actor.Aliases != "" {
+				if actor.Furigana != "" {
 					count := utf8.RuneCountInString(r.JumpTo.OrElse(""))
-					firstChar, err :=  shared.GetFirstCharsFromJSON(actor.Aliases, count)
+					firstChar, err :=  shared.GetFirstCharsFromJSON(actor.Furigana, count)
 					if err != nil {
 	
 					} else {
-						if actor.Aliases != "" {
+						if actor.Furigana != "" {
 							if string(firstChar) >= r.JumpTo.OrElse("") {
 								break
 							}
