@@ -216,7 +216,7 @@ func ScrapeDMMapi(out *[]models.ScrapedScene, queryString string) {
 		sc.ActorDetails = make(map[string]models.ActorDetails)
 		for _, item := range jsonResponse.Result.Items[0].Iteminfo.Actress {
 			sc.Cast = append(sc.Cast, item.Name)
-			sc.Aliases = append(sc.Aliases, item.Ruby)
+			sc.Rubys = append(sc.Rubys, item.Ruby)
 			actressurl, err := customcommon.AddQueryParam(dmm_actorListSearchDigitalUrl, "actress_id", strconv.FormatInt(item.ID, 10))
 			if err == nil {
 				sc.ActorDetails[item.Name] = models.ActorDetails{Source: "dmm scrape", ProfileUrl: actressurl}

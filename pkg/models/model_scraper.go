@@ -31,7 +31,7 @@ type ScrapedScene struct {
 	Tags      []string `json:"tags"`
 	Cast      []string `json:"cast"`
 	// Custom Black
-	Aliases []string `json:"aliases"`
+	Rubys []string `json:"ruby"`
 	// Custom END
 	Filenames         []string `json:"filename"`
 	Duration          int      `json:"duration"`

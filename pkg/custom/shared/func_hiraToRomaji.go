@@ -1,7 +1,6 @@
 package shared
 
 import (
-	"fmt"
 	"strings"
 )
 
@@ -84,7 +83,3 @@ func HiraganaToRomaji(input string) string {
 	return result.String()
 }
 
-func main() {
-	sample := "きょうはいいてんきですね"
-	fmt.Println(HiraganaToRomaji(sample)) // kyouhaiitenkidesune
-}

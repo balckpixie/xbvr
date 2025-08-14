@@ -61,6 +61,7 @@ type Actor struct {
 
 	// Custom black
 	FaceImageUrl   string  `json:"face_image_url" xbvrbackup:"face_image_url"`
+	Furigana	 string  `json:"furigana" xbvrbackup:"furigana"`
 }
 
 type RequestActorList struct {
