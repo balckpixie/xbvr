@@ -16,28 +16,7 @@
           <b-tab-item :label="$t('Actor')">
             <div class="columns is-gapless" style="height: 64vh;overflow: hidden;">
 
-              <!-- 左カラム：サイドバー（固定） -->
-              <div class="column is-2" style="background-color: #f5f5f5;">
-                <div class="p-4">
-                  <div class="columns is-mobile is-multiline">
-                    <div class="column is-full card-container">
-                      <b-button @click="changeActorImage()" class="is-primary is-fullwidth" style="display:flex; justify-content:center; margin-bottom:5px;">{{ $t('Set Main') }}</b-button>
-                    </div>
-                    <div class="column is-full card-container">
-                      <b-button @click="changeActorFaceImage()" class="is-primary is-fullwidth" style="display:flex; justify-content:center; margin-bottom:5px;">{{ $t('Set Face') }}</b-button>
-                    </div>
-                    <div class="column is-full card-container">
-                      <b-button @click="deleteActorImage()" class="is-primary is-fullwidth" style="display:flex; justify-content:center; margin-bottom:5px;">{{ $t('Delete')}}</b-button></div>
-                  </div>
-                  <span style="display: flex; justify-content: center;">{{ $t('Face Image')}}</span>
-
-                  <div class="vue-load-image">
-                    <img :src="actor.face_image_url" style="width: 100%; height: auto;">
-                  </div>
-                </div>
-              </div>
-
-              <!-- 右カラム：スクロール可能 -->
+              <!-- カルーセル：スクロール可能 -->
               <div class="column" style="overflow-y: auto; padding: 1rem;">
                 <b-carousel v-model="carouselSlide" @change="scrollToActiveIndicator" :autoplay="false"
                   :indicator-inside="false">
@@ -58,13 +37,52 @@
                   </template>
                 </b-carousel>
               </div>
+              
+              <!-- サイドバー（固定） -->
+              <div class="column is-2" style="background-color: #f5f5f5;">
+                <div class="p-4">
+                  <div class="columns is-mobile is-multiline">
+                    <div class="column is-half card-container">
+                      <b-button @click="changeActorImage()" class="is-primary is-fullwidth"
+                        style="display:flex; justify-content:center; margin-bottom:5px;">{{ $t('Set Main') }}</b-button>
+                    </div>
+                    <div class="column is-half card-container">
+                      <b-button @click="changeActorFaceImage()" class="is-primary is-fullwidth"
+                        style="display:flex; justify-content:center; margin-bottom:5px;">{{ $t('Set Face') }}</b-button>
+                    </div>
+                    <div class="column is-full card-container">
+                      <b-button @click="deleteActorImage()" class="is-danger is-fullwidth"
+                        style="display:flex; justify-content:center; margin-bottom:5px;">{{ $t('Delete') }}</b-button>
+                    </div>
+                  </div>
+                  <span style="display: flex; justify-content: center;">{{ $t('Main Image') }}</span>
+                  <div class="vue-load-image" style="display: flex; justify-content: center;">
+                    <img :src="actor.image_url" style="max-height: 23vh">
+                  </div>
+                  <span style="display: flex; justify-content: center;">{{ $t('Face Image') }}</span>
+                  <div class="vue-load-image" style="display: flex; justify-content: center;">
+                    <img :src="actor.face_image_url" style="max-height: 23vh">
+                  </div>
+                </div>
+              </div>
+
             </div>
+
           </b-tab-item>
 
           <b-tab-item :label="$t('Search')">
             <div class="columns is-gapless" style="height: 66vh;overflow: hidden;">
 
-              <!-- 左カラム：サイドバー（固定） -->
+
+              <!-- カルーセル：スクロール可能 -->
+              <div class="column" style="overflow-y: auto; padding: 1rem;">
+                <div>
+                  <vue-select-image ref="vueSelectImage" :data-images="getImages" :is-multiple="true"
+                    :selected-images="initialSelected" @onselectmultipleimage="onSelectMultipleImage" />
+                </div>
+              </div>
+              
+              <!-- サイドバー（固定） -->
               <div class="column is-2" style="background-color: #f5f5f5;">
                 <div class="p-4">
                   <div class="columns is-mobile is-multiline">
@@ -82,7 +100,7 @@
                         }}</b-button></div>
                     <div class="column is-half card-container"><b-button @click="resetSelection"
                         class="button is-fullwidth" style="display:flex; justify-content:center; margin-bottom:5px;">{{
-                        $t('Clear') }}</b-button></div>
+                          $t('Clear') }}</b-button></div>
                   </div>
                   <span style="display: flex; justify-content: center;">Scrape</span>
 
@@ -95,45 +113,24 @@
                   </div>
 
                   <div>
-                    <!-- <div class="columns is-multiline is-mobile">
-                      <div v-for="category in categories" :key="category" class="column is-half card-container">
+                    <div class="columns is-multiline is-mobile" style="margin-inline: -2px;">
+                      <div v-for="category in categories" :key="category" class="column card-container" :class="{
+                        'is-half': $t(category).length >= 7,
+                        'is-4': $t(category).length < 7
+                      }">
                         <div class="card selectable-card"
                           :class="{ 'is-selected': selectedKeywords.includes(category) }"
-                          @click="toggleKeyword(category)">
-                          <div class="card-content" style="text-align: center;">
-                            {{ $t(category) }}
-                          </div>
-                        </div>
-                      </div>
-                    </div> -->
-
-                    <div class="columns is-multiline is-mobile" style="margin-inline: -2px;">
-                      <div
-                        v-for="category in categories"
-                        :key="category"
-                        class="column card-container"
-                        :class="{
-                          'is-half': $t(category).length >= 7,
-                          'is-4': $t(category).length < 7
-                        }"
-                      >
-                        <div
-                          class="card selectable-card"
-                          :class="{ 'is-selected': selectedKeywords.includes(category) }"
-                          @click="toggleKeyword(category)"
-                          role="button"
-                          tabindex="0"
+                          @click="toggleKeyword(category)" role="button" tabindex="0"
                           @keydown.space.prevent="toggleKeyword(category)"
                           @keydown.enter.prevent="toggleKeyword(category)"
-                          :aria-pressed="selectedKeywords.includes(category).toString()"
-                        >
+                          :aria-pressed="selectedKeywords.includes(category).toString()">
                           <div class="card-content">
                             {{ $t(category) }}
                           </div>
                         </div>
                       </div>
                     </div>
-                    
+
                     <div class="columns is-mobile is-multiline">
                       <div class="column is-half card-container"><b-button :disabled="selectedKeywords.length === 1000"
                           @click="searchWithSelectedKeywords()" class="is-primary is-fullwidth"
@@ -141,37 +138,24 @@
                       </div>
                       <div class="column is-half card-container"><b-button :disabled="selectedKeywords.length === 0"
                           @click="clearSelection()" class="is-fullwidth"
-                          style="display:flex; justify-content:center; margin-bottom:5px;">{{ $t('Clear All') }}</b-button>
+                          style="display:flex; justify-content:center; margin-bottom:5px;">{{ $t('Clear All')
+                          }}</b-button>
                       </div>
                     </div>
 
-                        <!-- 追加キーワード入力 -->
-    <div class="field has-addons" style="margin-bottom: 10px;">
-      <div class="control is-expanded">
-        <input
-          v-model.trim="newKeyword"
-          class="input"
-          type="text"
-          placeholder="キーワードを追加"
-          @keyup.enter="addKeyword"
-        />
-      </div>
-      <div class="control">
-        <button class="button is-primary" @click="addKeyword">
-          追加
-        </button>
-      </div>
-    </div>
+                    <!-- 追加キーワード入力 -->
+                    <div class="field has-addons" style="margin-bottom: 10px;">
+                      <div class="control is-expanded">
+                        <input v-model.trim="newKeyword" class="input" type="text" placeholder="キーワードを追加"
+                          @keyup.enter="addKeyword" />
+                      </div>
+                      <div class="control">
+                        <button class="button is-primary" @click="addKeyword">
+                          追加
+                        </button>
+                      </div>
+                    </div>
                   </div>
-
-                </div>
-              </div>
-
-              <!-- 右カラム：スクロール可能 -->
-              <div class="column" style="overflow-y: auto; padding: 1rem;">
-                <div>
-                  <vue-select-image ref="vueSelectImage" :data-images="getImages" :is-multiple="true"
-                    :selected-images="initialSelected" @onselectmultipleimage="onSelectMultipleImage" />
                 </div>
               </div>
 
@@ -325,48 +309,51 @@ export default {
     },
     searchWithSelectedKeywords() {
       const keywordString = this.selectedKeywords
-                            .map(kw => (kw.includes(' ') ? `"${kw}"` : kw))
-                            .join(' ');
+        .map(kw => (kw.includes(' ') ? `"${kw}"` : kw))
+        .join(' ');
       this.scrapeActorImage(this.selectedSite, keywordString);
     },
     clearSelection() {
       this.selectedKeywords = []
     },
-    changeActorImage (val) {
+    changeActorImage(val) {
       ky.post('/api/actor/setimage', {
-      json: {
-        actor_id: this.actor.id,
-        url: this.images[this.carouselSlide]
-      }}).json().then(data => {    
+        json: {
+          actor_id: this.actor.id,
+          url: this.images[this.carouselSlide]
+        }
+      }).json().then(data => {
         this.actor = data
         this.$store.state.overlay.actoreditimage.actor = data
         this.$store.state.overlay.actordetails.actor = data
         this.carouselSlide = 0
-      })    
+      })
     },
-    changeActorFaceImage (val) {
+    changeActorFaceImage(val) {
       ky.post('/api_custom/actor/setfaceimage', {
-      json: {
-        actor_id: this.actor.id,
-        url: this.images[this.carouselSlide]
-      }}).json().then(data => {
+        json: {
+          actor_id: this.actor.id,
+          url: this.images[this.carouselSlide]
+        }
+      }).json().then(data => {
         this.actor = data
         this.$store.state.overlay.actoreditimage.actor = data
         this.$store.state.overlay.actordetails.actor = data
         // this.carouselSlide = 0
-      })    
+      })
     },
-    deleteActorImage (val) {
+    deleteActorImage(val) {
       ky.delete('/api/actor/delimage', {
-      json: {
-        actor_id: this.actor.id,
-        url: this.images[this.carouselSlide]
-      }}).json().then(data => {
+        json: {
+          actor_id: this.actor.id,
+          url: this.images[this.carouselSlide]
+        }
+      }).json().then(data => {
         this.actor = data
         this.$store.state.overlay.actoreditimage.actor = data
         this.$store.state.overlay.actordetails.actor = data
         // this.carouselSlide = 0
-      })    
+      })
     },
 
     setActorImage(val) {
@@ -633,12 +620,13 @@ export default {
   border-color: #3273dc;
   background-color: #f0f8ff;
 } */
- .card-container {
+.card-container {
   padding: 0.25rem;
 }
 
 .selectable-card {
-  border-radius: 999px; /* 角丸 */
+  border-radius: 999px;
+  /* 角丸 */
   border: 1px solid #e6e6e6;
   background: #fff;
   cursor: pointer;

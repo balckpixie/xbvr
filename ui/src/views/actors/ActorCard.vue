@@ -13,6 +13,7 @@
 
     <div style="padding-top:4px;">
       <div class="scene_title">{{actor.name}}</div>
+      <div v-if="actor.furigana!=''" class="furigana">{{actor.furigana}}</div>
       <a v-if="colleague!=undefined" class="button is-info is-outlined is-small"
         @click="showColleague(actor.name,colleague)"
         :title="'Show Scenes with ' + actor.name">
@@ -180,6 +181,15 @@ export default {
   .scene_title {
     font-size: 12px;
     text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .furigana {
+    font-size: 11px;
+    text-align: right;
+    color: #aa0a7d;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
