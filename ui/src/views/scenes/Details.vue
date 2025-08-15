@@ -29,9 +29,12 @@
             style="margin-left:auto"
             @click="hidePane2 = !hidePane2" >{{ hidePane2 ? 'Show' : 'Hide' }} Pane 2</button>
         </div>
-        <splitpanes class="default-theme">
+        <splitpanes class="default-theme"
+          style="max-height: 88vh;"
+          :gutter-size="10" :min-pane-size="27" :max-pane-size="100" :split="splitDirection"
+          @resize="onResize" ref="splitpanesRef">
         <pane min-size="27" max-size="100" :size="splitSize">
-          <div class="">
+          <div>
             <b-tabs v-model="activeMedia" position="is-centered" :animated="false">
 
               <b-tab-item label="Gallery">
@@ -104,7 +107,7 @@
           </div>
         </pane>
         <Pane v-if="!hidePane2" min-size="27" max-size="100">
-          <div class="">
+          <div class="panel-parent">
             <div class="block-info block">
               <div class="content">
                 <h3>
@@ -284,7 +287,7 @@
               <b-tabs v-model="activeTab" :animated="false">
 
                 <b-tab-item :label="`Files (${fileCount})`" v-if="!displayingAlternateSource">
-                  <div class="block-tab-content block">
+                  <div class="block-tab-content block" style="overflow: auto;">
                     <div class="content media is-small" v-for="(f, idx) in filesByType" :key="idx">
                       <div class="media-left">
                         <button rounded class="button is-success is-small" @click='playFile(f)'
@@ -1637,6 +1640,14 @@ watch:{
 }
 
 .block-opts {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.panel-parent {
+    display: flex;
+    flex-direction: column;
+    height: 88vh;
 }
 
 .vue-star-rating {
@@ -1809,7 +1820,7 @@ span.is-active img {
 
 .carousel {
   aspect-ratio: 1 / 1;
-  max-height: 82vh;
+  max-height: 80vh;
   margin-left: auto;
   margin-right: auto;
 }
