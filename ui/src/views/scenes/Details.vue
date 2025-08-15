@@ -207,6 +207,15 @@
                 </div>
               </div>
             </div>
+            <div v-if="castimages.length == 0 && !displayingAlternateSource" class="content is-small">
+              <div v-for="(c, idx) in item.cast" :key="'cast' + idx" class="image-wrapper">
+                <b-tooltip  type="is-light" :label="c.name" :delay=100 position="is-right" >
+                  <vue-load-image>
+                    <img slot="image" src="/ui/images/blank_female_profile.png" width="80" @click='showActorDetail([c.id])' />
+                  </vue-load-image>
+                </b-tooltip>
+              </div>
+            </div>
 
             <div class="block-tags block" v-if="activeTab != 1">
               <b-taglist>
