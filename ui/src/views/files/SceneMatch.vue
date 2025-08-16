@@ -185,30 +185,56 @@ export default {
     extractDVDID() {
         this.javrQuery = this.extractDVDIDlogic(this.file.filename)
     },
+    // extractDVDIDlogic(filename) {
+    //   let dvdid = ""
+    //   let regex = /[a-zA-Z0-9]{2,6}-\d{2,6}/;
+    //   let match = filename.match(regex);
+    //   if (!match) {
+    //     regex = /([a-zA-Z]{2,6})(\d{2,6})/;
+    //     match = filename.match(regex);
+    //     if (match) {
+    //       let firstPart = match[1];
+    //       let secondPart = match[2];
+    //       if (secondPart.length >= 4) {
+    //         secondPart = secondPart.replace(/^0+/, '');
+    //       }
+    //       if (secondPart.length < 3) {
+    //         secondPart = secondPart.padStart(3, '0');
+    //       }
+    //       dvdid = `${firstPart}-${secondPart}`;
+    //     } else {
+    //       dvdid = null;
+    //     }
+    //   } else {
+    //     dvdid = match[0];
+    //   }
+    //   return dvdid
+    // },
     extractDVDIDlogic(filename) {
-      let dvdid = ""
-      let regex = /[a-zA-Z0-9]{2,6}-\d{2,6}/;
+      let dvdid = "";
+      // 末尾アルファベットは無視
+      let regex = /([a-zA-Z]{2,6})-?(\d{2,6})/;
       let match = filename.match(regex);
-      if (!match) {
-        regex = /([a-zA-Z]{2,6})(\d{2,6})/;
-        match = filename.match(regex);
-        if (match) {
-          let firstPart = match[1];
-          let secondPart = match[2];
-          if (secondPart.length >= 4) {
-            secondPart = secondPart.replace(/^0+/, '');
-          }
-          if (secondPart.length < 3) {
-            secondPart = secondPart.padStart(3, '0');
-          }
-          dvdid = `${firstPart}-${secondPart}`;
-        } else {
-          dvdid = null;
+
+      if (match) {
+        let firstPart = match[1];
+        let secondPart = match[2];
+
+        // ✅ 4桁以上で先頭ゼロがある場合 → 先頭ゼロ削除
+        if (secondPart.length >= 4 && secondPart.startsWith('0')) {
+          secondPart = secondPart.replace(/^0+/, '');
         }
+
+        // ✅ 桁不足なら3桁にゼロ埋め
+        if (secondPart.length < 3) {
+          secondPart = secondPart.padStart(3, '0');
+        }
+
+        dvdid = `${firstPart}-${secondPart}`;
       } else {
-        dvdid = match[0];
+        dvdid = null;
       }
-      return dvdid
+      return dvdid;
     },
     scrapeJAVR () {
       ky.post('/api/task/scrape-javr', { json: { s: this.javrScraper, q: this.javrQuery } })
