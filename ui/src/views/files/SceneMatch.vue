@@ -79,7 +79,9 @@
               </b-tag>
             </b-table-column>
             <b-table-column field="scene_id" :label="$t('ID')" sortable nowrap v-slot="props">
-              {{ props.row.scene_id }}
+              <span style="white-space: nowrap;">
+                {{ props.row.scene_id }}
+              </span>
             </b-table-column>
             <b-table-column field="title" :label="$t('Title')" sortable v-slot="props">
               <p v-if="props.row.title">{{ props.row.title }}</p>
