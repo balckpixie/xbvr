@@ -62,22 +62,24 @@
                 </div>
 
                 <div class="columns is-vcentered" style="max-width: 120px;">
-                  <div class="column pb-0 is-small">
-                    <!-- アスペクト比選択プルダウン -->
-                    <b-select v-model="aspectRatio" placeholder="Select Aspect Ratio">
-                      <option value="16:10">16:10</option>
-                      <option value="16:9">16:9</option>
-                      <option value="4:3">4:3</option>
-                      <option value="1:1">1:1</option>
-                      <option value="9:16">9:16</option>
-                    </b-select>
-                  </div>
                   <div class="column pb-0 is-small" style="max-width: 120px;">
                     <!-- プロジェクション比選択プルダウン -->
                     <b-select v-model="projectionMode" placeholder="Select Projection Mode">
                       <option value="NONE">Flat</option>
-                      <option value="180">180</option>
+                      <option value="180_LR">180_LR</option>
+                      <option value="180_MONO">180_MONO</option>
                       <option value="360_TB">360</option>
+                      <option value="AUTO">AUTO</option>
+                    </b-select>
+                  </div>
+                  <div class="column pb-0 is-small">
+                    <!-- アスペクト比選択プルダウン -->
+                    <b-select v-model="aspectRatio" placeholder="Select Aspect Ratio">
+                      <option value="16:9">16:9</option>
+                      <option value="16:10">16:10</option>
+                      <option value="4:3">4:3</option>
+                      <option value="1:1">1:1</option>
+                      <option value="9:16">9:16</option>
                     </b-select>
                   </div>
                   <div class="column pb-0">
@@ -553,7 +555,7 @@ export default {
       currentDuraiton: 0,
       aspectRatio: '4:3',
       splitSize: 60,
-      projectionMode: '180',
+      projectionMode: '180_LR',
       hidePane2:false,
       // Custom END
     }
@@ -1648,6 +1650,7 @@ watch:{
     display: flex;
     flex-direction: column;
     height: 88vh;
+    padding: 0.5rem;
 }
 
 .vue-star-rating {
