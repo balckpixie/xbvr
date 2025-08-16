@@ -1,6 +1,6 @@
 package config
 
-type Custom struct {
+type DmmAPIKey struct {
 	DmmApiId       string `json:"dmmApiId"`
 	DmmAffiliateId string `json:"dmmAffiliateId"`
 }
@@ -13,4 +13,11 @@ type ThumbnailSchedule struct {
 	HourStart       int  `default:"0" json:"hourStart"`
 	HourEnd         int  `default:"23" json:"hourEnd"`
 	RunAtStartDelay int  `default:"0" json:"runAtStartDelay"`
+}
+
+type ThumbnailParams struct {
+	Start    int    `default:"25" json:"start"`
+	Interval int    `default:"30" json:"interval"`
+	Width    int    `default:"200" json:"width"`
+	Command  string `default:"-i {input} -vf thumbnail,scale={width}:-1 -frames:v 1 {output}" json:"command"`
 }

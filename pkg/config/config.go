@@ -23,7 +23,13 @@ type CronSchedule struct {
 }
 
 type ObjectConfig struct {
-	Custom customconfig.Custom `json:"custom"`
+	// Custom Black
+	Custom struct {
+		DmmAPIKey	  		customconfig.DmmAPIKey		  	`json:"dmmapikey"`
+		ThumbnailSchedule	customconfig.ThumbnailSchedule	`json:"thumbnailSchedule"`
+		ThumbnailParams     customconfig.ThumbnailParams 	`json:"thumbnailParams"`
+	}
+	// Custom END
 
 	Server struct {
 		BindAddress string `default:"0.0.0.0" json:"bindAddress"`
@@ -118,9 +124,6 @@ type ObjectConfig struct {
 		} `json:"preview"`
 	} `json:"library"`
 	Cron struct {
-		// Custom Black
-		ThumbnailSchedule customconfig.ThumbnailSchedule `json:"thumbnailSchedule"`
-		// Custom END
 		RescrapeSchedule struct {
 			Enabled         bool `default:"true" json:"enabled"`
 			HourInterval    int  `default:"12" json:"hourInterval"`

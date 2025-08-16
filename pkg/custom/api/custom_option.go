@@ -68,19 +68,19 @@ func (i ConfigResource) saveOptionsTaskSchedule(req *restful.Request, resp *rest
 		return
 	}
 
-	config.Config.Custom.DmmAffiliateId = r.DmmAffiliateId
-	config.Config.Custom.DmmApiId = r.DmmApiId
+	config.Config.Custom.DmmAPIKey.DmmAffiliateId = r.DmmAffiliateId
+	config.Config.Custom.DmmAPIKey.DmmApiId = r.DmmApiId
 
 	if r.ThumbnailHourEnd > 23 {
 		r.ThumbnailHourEnd -= 24
 	}
-	config.Config.Cron.ThumbnailSchedule.Enabled = r.ThumbnailEnabled
-	config.Config.Cron.ThumbnailSchedule.HourInterval = r.ThumbnailHourInterval
-	config.Config.Cron.ThumbnailSchedule.UseRange = r.ThumbnailUseRange
-	config.Config.Cron.ThumbnailSchedule.MinuteStart = r.ThumbnailMinuteStart
-	config.Config.Cron.ThumbnailSchedule.HourStart = r.ThumbnailHourStart
-	config.Config.Cron.ThumbnailSchedule.HourEnd = r.ThumbnailHourEnd
-	config.Config.Cron.ThumbnailSchedule.RunAtStartDelay = r.ThumbnailStartDelay
+	config.Config.Custom.ThumbnailSchedule.Enabled = r.ThumbnailEnabled
+	config.Config.Custom.ThumbnailSchedule.HourInterval = r.ThumbnailHourInterval
+	config.Config.Custom.ThumbnailSchedule.UseRange = r.ThumbnailUseRange
+	config.Config.Custom.ThumbnailSchedule.MinuteStart = r.ThumbnailMinuteStart
+	config.Config.Custom.ThumbnailSchedule.HourStart = r.ThumbnailHourStart
+	config.Config.Custom.ThumbnailSchedule.HourEnd = r.ThumbnailHourEnd
+	config.Config.Custom.ThumbnailSchedule.RunAtStartDelay = r.ThumbnailStartDelay
 
 	config.SaveConfig()
 
