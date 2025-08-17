@@ -18,15 +18,19 @@ type GetStateResponse struct {
 }
 
 type RequestSaveOptions struct {
-	DmmApiId              string    `json:"dmmApiId"`
-	DmmAffiliateId        string    `json:"dmmAffiliateId"`
-	ThumbnailEnabled      bool `json:"thumbnailEnabled"`
-	ThumbnailHourInterval int  `json:"thumbnailHourInterval"`
-	ThumbnailUseRange     bool `json:"thumbnailUseRange"`
-	ThumbnailMinuteStart  int  `json:"thumbnailMinuteStart"`
-	ThumbnailHourStart    int  `json:"thumbnailHourStart"`
-	ThumbnailHourEnd      int  `json:"thumbnailHourEnd"`
-	ThumbnailStartDelay   int  `json:"thumbnailStartDelay"`
+	DmmApiId               string `json:"dmmApiId"`
+	DmmAffiliateId         string `json:"dmmAffiliateId"`
+	ThumbnailEnabled       bool   `json:"thumbnailEnabled"`
+	ThumbnailHourInterval  int    `json:"thumbnailHourInterval"`
+	ThumbnailUseRange      bool   `json:"thumbnailUseRange"`
+	ThumbnailMinuteStart   int    `json:"thumbnailMinuteStart"`
+	ThumbnailHourStart     int    `json:"thumbnailHourStart"`
+	ThumbnailHourEnd       int    `json:"thumbnailHourEnd"`
+	ThumbnailStartDelay    int    `json:"thumbnailStartDelay"`
+	ThumnailStartTime      int    `json:"thumbnailStartTime"`
+	ThumbnailInterval      int    `json:"thumbnailInterval"`
+	ThumbnailResolution    int    `json:"thumbnailResolution"`
+	ThumbnailUseCUDAEncode bool   `json:"thumbnailUseCUDAEncode"`
 }
 
 type ConfigResource struct{}
@@ -81,6 +85,11 @@ func (i ConfigResource) saveOptionsTaskSchedule(req *restful.Request, resp *rest
 	config.Config.Custom.ThumbnailSchedule.HourStart = r.ThumbnailHourStart
 	config.Config.Custom.ThumbnailSchedule.HourEnd = r.ThumbnailHourEnd
 	config.Config.Custom.ThumbnailSchedule.RunAtStartDelay = r.ThumbnailStartDelay
+
+	config.Config.Custom.ThumbnailParams.Start = r.ThumnailStartTime
+	config.Config.Custom.ThumbnailParams.Interval = r.ThumbnailInterval
+	config.Config.Custom.ThumbnailParams.Resolution = r.ThumbnailResolution
+	config.Config.Custom.ThumbnailParams.UseCUDAEncode = r.ThumbnailUseCUDAEncode
 
 	config.SaveConfig()
 

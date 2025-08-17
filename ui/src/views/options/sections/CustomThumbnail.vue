@@ -2,11 +2,11 @@
   <div class="container">
     <b-loading :is-full-page="false" :active.sync="isLoading"></b-loading>
     <div class="content">
-      <h3>{{$t("Custom Settings")}}</h3>
+      <h3>{{$t("Custom > Thumbnail Settings")}}</h3>
       <hr/>
       <b-tabs v-model="activeTab" size="medium" type="is-boxed" style="margin-left: 0px" id="importexporttab">
-            <b-tab-item label="Thumbnail Generation"/>
-            <b-tab-item label="DMM Access"/>
+            <b-tab-item label="Schedules"/>
+            <b-tab-item label="Settings"/>
       </b-tabs>
       <div class="columns">
         <div class="column">
@@ -14,7 +14,6 @@
           <section>
           <!-- Actor Related Settings -->
           <div v-if="activeTab == 0">
-            <section>
               <b-field>
                 <b-switch v-model="thumbnailEnabled">Enable schedule</b-switch>
               </b-field>
@@ -61,12 +60,45 @@
 
           <!-- Actor Related Settings -->
            <div v-if="activeTab == 1">
-                <b-field :label="$t('DMM Api id')" label-position="on-border">
-                  <b-input v-model="dmmApiId" placeholder="Visit https://affiliate.dmm.com/api/ to sign up to DMM-api service" type="password"></b-input>
-                </b-field>
-                <b-field :label="$t('DMM Affiliate id')" label-position="on-border">
-                  <b-input v-model="dmmAffiliateId" placeholder="Visit https://affiliate.dmm.com/api/ to sign up to DMM-api service" type="password"></b-input>
-                </b-field>
+
+            <b-field label="Start time">
+              <div class="columns">
+                <div class="column is-two-thirds">
+                  <b-slider :min="5" :max="60" :step="5" :tooltip="false" v-model="thumbStartTime"></b-slider>
+                </div>
+                <div class="column">
+                  <div class="content">{{thumbStartTime}}sec</div>
+                </div>
+              </div>
+            </b-field>
+
+            <b-field label="Interval seconds">
+              <div class="columns">
+                <div class="column is-two-thirds">
+                  <b-slider :min="5" :max="120" :step="5" :tooltip="false" v-model="thumbInterval"></b-slider>
+                </div>
+                <div class="column">
+                  <div class="content">{{thumbInterval}}sec</div>
+                </div>
+              </div>
+            </b-field>
+
+            <div class="field">
+              <label class="label">Thumbnail resolution</label>
+              <div class="columns">
+                <div class="column is-two-thirds">
+                  <b-slider :min="100" :max="400" :step="20" :tooltip="false" v-model="thumbResolution"></b-slider>
+                </div>
+                <div class="column">
+                  <div class="content">{{thumbResolution}}px</div>
+                </div>
+              </div>
+            </div>
+
+            <b-field>
+              <b-checkbox v-model="useCUDAEncode">Use HW Encode (CUDA)</b-checkbox>
+            </b-field>
+
           </div>
             <hr/>
               <b-field grouped>
@@ -90,15 +122,12 @@ import ky from 'ky'
 import prettyBytes from 'pretty-bytes'
 
 export default {
-  name: 'CustomOption',
+  name: 'CustomThumbnail',
   data () {
     return {
       isLoading: true,
       activeTab: 0,
       
-      dmmApiId: '',
-      dmmAffiliateId: '',
-
       thumbnailEnabled: false,
       thumbnailTimeRange:[0,23],
       thumbnailHourInterval: 0,
@@ -110,31 +139,70 @@ export default {
       timeRange: ['00:00', '01:00', '02:00', '03:00', '04:00', '05:00', '06:00', '07:00', '08:00', '09:00', '10:00', '11:00',
         '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00',
         '00:00', '01:00', '02:00', '03:00', '04:00', '05:00', '06:00', '07:00', '08:00', '09:00', '10:00', '11:00',
-        '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00', '00:00']
+        '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00', '00:00'],
+      
+      thumbStartTime:25,
+      thumbInterval :30,
+      thumbResolution: 200,
+      useCUDAEncode: true,
+      
     }
   },
   async mounted () {
     await this.loadState()
   },
   computed: {
-    // dmmApiId: {
-    //   get () {
-    //     return this.$store.state.optionsAdvanced.advanced.dmmApiId
-    //   },
-    //   set (value) {
-    //     this.$store.state.optionsAdvanced.advanced.dmmApiId = value
-    //   }
-    // },
-    // dmmAffiliateId: {
-    //   get () {
-    //     return this.$store.state.optionsAdvanced.advanced.dmmAffiliateId
-    //   },
-    //   set (value) {
-    //     this.$store.state.optionsAdvanced.advanced.dmmAffiliateId = value
-    //   }
-    // }
   },
   methods: {
+    async loadState () {
+      this.isLoading = true
+      await ky.get('/api_custom/options/state')
+        .json()
+        .then(data => {
+
+          this.thumbnailEnabled = data.config.custom.thumbnailSchedule.enabled
+          this.thumbnailHourInterval = data.config.custom.thumbnailSchedule.hourInterval
+          this.useThumbnailTimeRange = data.config.custom.thumbnailSchedule.useRange
+          this.thumbnailMinuteStart = data.config.custom.thumbnailSchedule.minuteStart
+          if (data.config.custom.thumbnailSchedule.hourStart > data.config.custom.thumbnailSchedule.hourEnd) {
+            this.thumbnailTimeRange = [data.config.custom.thumbnailSchedule.hourStart, data.config.custom.thumbnailSchedule.hourEnd + 24]
+          } else {
+            this.thumbnailTimeRange = [data.config.custom.thumbnailSchedule.hourStart, data.config.custom.thumbnailSchedule.hourEnd]            
+          }
+          this.thumbnailStartDelay = data.config.custom.thumbnailSchedule.runAtStartDelay
+
+          this.thumbStartTime = data.config.custom.thumbnailParams.start
+          this.thumbInterval = data.config.custom.thumbnailParams.interval
+          this.thumbResolution = data.config.custom.thumbnailParams.resolution
+          this.useCUDAEncode = data.config.custom.thumbnailParams.useCUDAEncode
+
+          this.isLoading = false
+        })
+    },
+    async saveSettings () {
+      this.isLoading = true
+      await ky.post('/api_custom/options/save', {
+        json: { 
+
+          thumbnailEnabled: this.thumbnailEnabled,
+          thumbnailHourInterval: this.thumbnailHourInterval,
+          thumbnailUseRange: this.useThumbnailTimeRange,
+          thumbnailMinuteStart: this.thumbnailMinuteStart,
+          thumbnailHourStart: this.thumbnailTimeRange[0],
+          thumbnailHourEnd: this.thumbnailTimeRange[1],
+          thumbnailStartDelay:this.thumbnailStartDelay,
+
+          thumbnailStartTime: this.thumbStartTime,
+          thumbnailInterval: this.thumbInterval,
+          thumbnailResolution: this.thumbResolution,
+          thumbnailUseCUDAEncode:this.useCUDAEncode
+        }
+      })
+        .json()
+        .then(data => {
+          this.isLoading = false
+        })
+    },
     restrictThumbnailTo24Hours () {
       this.thumbnailTimeRange = this.restrictTo24Hours(this.thumbnailTimeRange, this.lastThumbnailTimeRange)
       this.lastThumbnailTimeRange = this.thumbnailTimeRange
@@ -154,28 +222,6 @@ export default {
         }
       }
       return timeRange
-    },
-    async loadState () {
-      this.isLoading = true
-      await ky.get('/api_custom/options/state')
-        .json()
-        .then(data => {
-
-          this.dmmAffiliateId = data.config.custom.dmmAffiliateId
-          this.dmmApiId = data.config.custom.dmmApiId
-          this.thumbnailEnabled = data.config.cron.thumbnailSchedule.enabled
-          this.thumbnailHourInterval = data.config.cron.thumbnailSchedule.hourInterval
-          this.useThumbnailTimeRange = data.config.cron.thumbnailSchedule.useRange
-          this.thumbnailMinuteStart = data.config.cron.thumbnailSchedule.minuteStart
-          if (data.config.cron.thumbnailSchedule.hourStart > data.config.cron.thumbnailSchedule.hourEnd) {
-            this.thumbnailTimeRange = [data.config.cron.thumbnailSchedule.hourStart, data.config.cron.thumbnailSchedule.hourEnd + 24]
-          } else {
-            this.thumbnailTimeRange = [data.config.cron.thumbnailSchedule.hourStart, data.config.cron.thumbnailSchedule.hourEnd]            
-          }
-          this.thumbnailStartDelay = data.config.cron.thumbnailSchedule.runAtStartDelay
-
-          this.isLoading = false
-        })
     },
     minutesStartMsg (start) {
       if (start === 0) {
@@ -197,27 +243,7 @@ export default {
         }
       }
     },
-    async saveSettings () {
-      this.isLoading = true
-      await ky.post('/api_custom/options/save', {
-        json: {          
-          dmmAffiliateId: this.dmmAffiliateId,
-          dmmApiId: this.dmmApiId,
 
-          thumbnailEnabled: this.thumbnailEnabled,
-          thumbnailHourInterval: this.thumbnailHourInterval,
-          thumbnailUseRange: this.useThumbnailTimeRange,
-          thumbnailMinuteStart: this.thumbnailMinuteStart,
-          thumbnailHourStart: this.thumbnailTimeRange[0],
-          thumbnailHourEnd: this.thumbnailTimeRange[1],
-          thumbnailStartDelay:this.thumbnailStartDelay,
-        }
-      })
-        .json()
-        .then(data => {
-          this.isLoading = false
-        })
-    },
     prettyBytes
   }
 }
