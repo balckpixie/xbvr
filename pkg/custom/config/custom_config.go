@@ -18,6 +18,6 @@ type ThumbnailSchedule struct {
 type ThumbnailParams struct {
 	Start    int    `default:"25" json:"start"`
 	Interval int    `default:"30" json:"interval"`
-	Width    int    `default:"200" json:"width"`
-	Command  string `default:"-i {input} -vf thumbnail,scale={width}:-1 -frames:v 1 {output}" json:"command"`
+	Resolution    int    `default:"200" json:"resolution"`
+	UseCUDAEncode	bool `default:"true" json:"useCUDAEncode"`
 }

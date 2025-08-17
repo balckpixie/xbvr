@@ -28,7 +28,7 @@ type ObjectConfig struct {
 		DmmAPIKey	  		customconfig.DmmAPIKey		  	`json:"dmmapikey"`
 		ThumbnailSchedule	customconfig.ThumbnailSchedule	`json:"thumbnailSchedule"`
 		ThumbnailParams     customconfig.ThumbnailParams 	`json:"thumbnailParams"`
-	}
+	} `json:"custom"`
 	// Custom END
 
 	Server struct {
