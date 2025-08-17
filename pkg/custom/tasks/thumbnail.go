@@ -2,6 +2,7 @@ package tasks
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -41,17 +42,21 @@ func GenerateThumnbnails(endTime *time.Time) {
 					file.GetPath(),
 					destFile,
 					file.VideoProjection,
-					config.Config.Library.Preview.StartTime,
-					config.Config.Library.Preview.SnippetLength,
-					config.Config.Library.Preview.SnippetAmount,
-					config.Config.Library.Preview.Resolution,
-					config.Config.Library.Preview.ExtraSnippet,
+					config.Config.Custom.ThumbnailParams.Start,
+					config.Config.Custom.ThumbnailParams.Interval,
+					config.Config.Custom.ThumbnailParams.Resolution,
+					config.Config.Custom.ThumbnailParams.UseCUDAEncode,
 				)
 				if err == nil {
 					log.Infof("Thumbnail Rendering File_ID %v - Finish", file.ID)
+					jsonBytes, err := json.Marshal(config.Config.Custom.ThumbnailParams)
+					if err != nil {
+						log.Warn(err)
+					}
+					jsonString := string(jsonBytes)
+					file.ThumbnailParameters = jsonString
 					file.HasThumbnail = true
 					file.Save()
-					// break
 				} else {
 					log.Warn(err)
 				}
@@ -61,7 +66,7 @@ func GenerateThumnbnails(endTime *time.Time) {
 	log.Infof("Thumnbnails generated")
 }
 
-func RenderThumnbnails(inputFile string, destFile string, videoProjection string, startTime int, snippetLength float64, snippetAmount int, resolution int, extraSnippet bool) error {
+func RenderThumnbnails(inputFile string, destFile string, videoProjection string, startTime int, interval int, resolution int, useCUDA bool) error {
 
 	os.MkdirAll(common.VideoThumbnailDir, os.ModePerm)
 
@@ -84,14 +89,14 @@ func RenderThumnbnails(inputFile string, destFile string, videoProjection string
 	}
 	// Mono 360 crop args: (no way of accurately determining)
 	// "iw/2:ih:iw/4:ih"
-	// 動画ファイルから30秒ごとに1フレームを切り出し、それを横20枚・縦<row>枚のグリッド画像にして保存する
-	vfArgs := fmt.Sprintf("crop=%v,scale=%v:-1:flags=lanczos,fps=fps=1/%v:round=down,tile=20x%v", crop, 200, 30, row)
+	// 動画ファイルからinterval秒ごとに1フレームを切り出し、それを横20枚・縦<row>枚のグリッド画像にして保存する
+	vfArgs := fmt.Sprintf("crop=%v,scale=%v:-1:flags=lanczos,fps=fps=1/%v:round=down,tile=20x%v", crop, resolution, interval, row)
 
-	args := []string{}
-	if isCUDAEnabled() {
+	var args []string
+	if isCUDAEnabled() && useCUDA{
 		args = []string{
 			"-y",
-			"-ss", "5",
+			"-ss", strconv.Itoa(startTime),
 			"-hwaccel", "cuda",
 			"-skip_frame",
 			"nokey",
@@ -106,11 +111,11 @@ func RenderThumnbnails(inputFile string, destFile string, videoProjection string
 			//"-",
 			destFile,
 		}
-		log.Infof("Use Internal hwaccel decoders CUDA")
+		// log.Infof("Use Internal hwaccel decoders CUDA")
 	} else {
 		args = []string{
 			"-y",
-			"-ss", "5",
+			"-ss", strconv.Itoa(startTime),
 			// "-hwaccel", "cuda",
 			"-skip_frame",
 			"nokey",
@@ -132,7 +137,7 @@ func RenderThumnbnails(inputFile string, destFile string, videoProjection string
 	cmd.Stderr = &stderr
 	err = cmd.Run()
 	if err != nil {
-		fmt.Printf("Error: %v\n", err)
+		log.Error("Error:", err)
 		fmt.Printf("Stderr: %s\n", stderr.String()) // Stderrを出力
 		return err
 	}
