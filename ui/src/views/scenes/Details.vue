@@ -550,6 +550,9 @@ export default {
       alternateSources: [],
       waitingForQuickFind: false,
       // Custom Black
+      thumbStartTime:25,
+      thumbInterval :30,
+      thumbResolution: 200,
       marginBottom: 10,  //サムネイルコンポーネント高さ調整用
       currentFile: null,
       currentDuraiton: 0,
@@ -744,8 +747,9 @@ export default {
       this.cuepointActTags.unshift("")
       this.cuepointPositionTags.unshift("")
       })    
-},
-watch:{
+  },
+  
+  watch:{
     // Custom Black
     projectionMode(newVal) {
       this.$nextTick(() => {
@@ -799,7 +803,7 @@ watch:{
 },
   methods: {
     // Custom Black
-    
+
     // Playerを再起動する（projection mode変更時に使用）
     async restartPlayer()
     {
@@ -887,32 +891,40 @@ watch:{
 
     // サムネイルスプライト読み込み
     setupSprite(file) {
-      let tileHeight = 200
-      if (file.projection === 'flat')
+      if (file.has_thumbnail == false)
       {
-          tileHeight = (file.video_height / file.video_width) * 200;
+        return;
       }
-      const thumbnailUrl = '/api_custom/thumbnail/image/' + file.id
+      const params = this.thumbnailParams(file)
       const videPlayer = this.player
-      this.checkImageExists(thumbnailUrl, (exists) =>{
+      this.checkImageExists(params.url, (exists) =>{
         if (exists) {
 
           this.setThumbnails(videPlayer, {
             sprites: [
-              {
-                url: thumbnailUrl,
-                duration: file.duration,
-                start: 25,
-                interval: 30,
-                width: 200,
-                height: tileHeight,
-              },
+             params
             ],
           });
         }
       });
     },
-
+    thumbnailParams(file) {
+      const thumbnailUrl = '/api_custom/thumbnail/image/' + file.id
+      const parsed = JSON.parse(file.thumbnail_parameters)
+      let tileHeight = parsed.resolution
+      if (file.projection === 'flat')
+      {
+          tileHeight = (file.video_height / file.video_width) * parsed.resolution;
+      }
+      return {
+        url: thumbnailUrl,
+        duration: file.duration,
+        start: parsed.start,
+        interval: parsed.interval,
+        width: parsed.resolution,
+        height: tileHeight,
+      }
+    },
     // サムネイルスプライトの設定＆再設定用メソッド
     setThumbnails(player, options) {
         // ThumbnailSprite クラスのコンストラクタを Video.js レジストリから取得
