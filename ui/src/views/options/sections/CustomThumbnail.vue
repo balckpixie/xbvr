@@ -72,7 +72,7 @@
               </div>
             </b-field>
 
-            <b-field label="Interval seconds">
+            <!-- <b-field label="Interval seconds">
               <div class="columns">
                 <div class="column is-two-thirds">
                   <b-slider :min="5" :max="120" :step="5" :tooltip="false" v-model="thumbInterval"></b-slider>
@@ -81,7 +81,19 @@
                   <div class="content">{{thumbInterval}}sec</div>
                 </div>
               </div>
-            </b-field>
+            </b-field> -->
+
+            <div class="field">
+              <label class="label">Interval seconds</label>
+              <div class="columns">
+                <div class="column is-two-thirds">
+                  <b-slider :min="5" :max="120" :step="5" :tooltip="false" v-model="thumbInterval"></b-slider>
+                </div>
+                <div class="column">
+                  <div class="content">{{thumbInterval}}px</div>
+                </div>
+              </div>
+            </div>
 
             <div class="field">
               <label class="label">Thumbnail resolution</label>
