@@ -38,6 +38,15 @@ func GenerateThumnbnails(endTime *time.Time) {
 				// log.Infof("Thumbnail Rendering File_ID %v", strconv.FormatUint(uint64(file.ID), 10))
 				log.Infof("Thumbnail Rendering File_ID %v - Start", file.ID)
 				destFile := filepath.Join(common.VideoThumbnailDir, strconv.FormatUint(uint64(file.ID), 10)+".jpg")
+
+				// ファイル削除（存在しなければ無視）
+				rmerr := os.Remove(destFile)
+				if rmerr != nil {
+					if !os.IsNotExist(rmerr) {
+						log.Error("削除エラー:", rmerr)
+					}
+				}
+
 				err := RenderThumnbnails(
 					file.GetPath(),
 					destFile,
@@ -57,13 +66,14 @@ func GenerateThumnbnails(endTime *time.Time) {
 					file.ThumbnailParameters = jsonString
 					file.HasThumbnail = true
 					file.Save()
+					log.Infof("Thumnbnails generated File_ID %v - Start", file.ID)
 				} else {
 					log.Warn(err)
 				}
 			}
 		}
 	}
-	log.Infof("Thumnbnails generated")
+	log.Infof("Thumnbnails generate task finishd")
 }
 
 func RenderThumnbnails(inputFile string, destFile string, videoProjection string, startTime int, interval int, resolution int, useCUDA bool) error {
@@ -78,7 +88,7 @@ func RenderThumnbnails(inputFile string, destFile string, videoProjection string
 	vs := ffdata.GetFirstVideoStream()
 	dur := ffdata.Format.DurationSeconds
 
-	row := (int)((dur-5)/600) + 1
+	row := int((dur-float64(startTime))/(20*float64(interval))) + 1
 
 	crop := "iw/2:ih:iw/2:ih" // LR videos
 	if vs.Height == vs.Width {
@@ -90,7 +100,7 @@ func RenderThumnbnails(inputFile string, destFile string, videoProjection string
 	// Mono 360 crop args: (no way of accurately determining)
 	// "iw/2:ih:iw/4:ih"
 	// 動画ファイルからinterval秒ごとに1フレームを切り出し、それを横20枚・縦<row>枚のグリッド画像にして保存する
-	vfArgs := fmt.Sprintf("crop=%v,scale=%v:-1:flags=lanczos,fps=fps=1/%v:round=down,tile=20x%v", crop, resolution, interval, row)
+	vfArgs := fmt.Sprintf("crop=%v,scale=%v:-1:flags=lanczos,fps=1/%v:round=down,tile=20x%v", crop, resolution, interval, row)
 
 	var args []string
 	if isCUDAEnabled() && useCUDA{
