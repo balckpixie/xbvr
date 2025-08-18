@@ -447,6 +447,7 @@
                   <ThumbnailTab
                     ref="thumbnailRef"
                     :file=undefined
+                    :displayWidth="100"
                     @thumbnailClicked="onThumbnailClicked"
                     class="block-tab-content block container thumbnail-tab"
                     :style="{ maxHeight: computedMaxHeight() }" 

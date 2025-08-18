@@ -9,6 +9,10 @@ const props = defineProps({
   file: {
     type: Object,
     required: true
+  },
+  displayWidth: {
+    type: Number,
+    default: 120   // 表示用（thumbsImageのCSS幅）
   }
 })
 
@@ -29,25 +33,46 @@ function loadThumbnails() {
 }
 
 function fetchAndDisplayThumbnails(imageUrl, container, file) {
+  // ここで thumbnail_parameters をパースして値を取得
+  let parsed = {}
+  try {
+    parsed = JSON.parse(file.thumbnail_parameters || '{}')
+  } catch (e) {
+    console.error('Failed to parse thumbnail_parameters:', e)
+  }
+
+  const start = parsed.start ?? 5
+  const interval = parsed.interval ?? 30
+  const tileWidthSetting = parsed.resolution ?? 200
+
   loadImage(imageUrl)
     .then((img) => {
       const canvas = drawImageToCanvas(img)
-      const { tileWidth, tileHeight, rows, cols } = calculateTileGrid(canvas, file)
-      let duration = 5
+      const { tileWidth, tileHeight, rows, cols } = calculateTileGrid(canvas, file, tileWidthSetting)
+
+      let duration = start
 
       for (let row = 0; row < rows; row++) {
         for (let col = 0; col < cols; col++) {
-          duration += 30
-          const currentDuration = duration 
-          const thumbnailCanvas = createThumbnailCanvas(canvas, row, col, tileWidth, tileHeight, file.projection)
+          duration += interval
+          const currentDuration = duration
+          const thumbnailCanvas = createThumbnailCanvas(
+            canvas,
+            row,
+            col,
+            tileWidth,
+            tileHeight,
+            file.projection
+          )
           if (!thumbnailCanvas) continue
 
           const ctx = thumbnailCanvas.getContext('2d')
-          if (!ctx) {
-            continue
-          }
+          if (!ctx) continue
 
           if (!isImageBlack(ctx)) {
+            // displayWidth を適用
+            thumbnailCanvas.style.width = props.displayWidth + 'px'
+
             thumbnailCanvas.addEventListener('click', () => {
               emit('thumbnailClicked', currentDuration)
             })
@@ -80,9 +105,9 @@ function drawImageToCanvas(img) {
   return canvas
 }
 
-function calculateTileGrid(canvas, file) {
-  const tileWidth = 200
-  let tileHeight = 200
+function calculateTileGrid(canvas, file, tileWidthSetting) {
+  const tileWidth = tileWidthSetting
+  let tileHeight = tileWidthSetting
   if (file?.projection === 'flat') {
     tileHeight = (file.video_height / file.video_width) * tileWidth
   }
@@ -153,9 +178,8 @@ function isImageBlack(ctx) {
 
 function clearVideThumbnails() {
   const canvasContainer = thumbContainer.value
-
   if (canvasContainer) {
-      canvasContainer.innerHTML = '';
+    canvasContainer.innerHTML = ''
   }
   thumbnails.value = []
 }
@@ -182,6 +206,6 @@ defineExpose({
 }
 
 .thumbsImage {
-  width: 120px;
+  /* 幅は JS 側で displayWidth を設定する */
 }
 </style>
