@@ -33,7 +33,7 @@ function loadThumbnails() {
 }
 
 function fetchAndDisplayThumbnails(imageUrl, container, file) {
-  // ここで thumbnail_parameters をパースして値を取得
+  // thumbnail_parameters をパースして値を取得
   let parsed = {}
   try {
     parsed = JSON.parse(file.thumbnail_parameters || '{}')
@@ -72,11 +72,35 @@ function fetchAndDisplayThumbnails(imageUrl, container, file) {
           if (!isImageBlack(ctx)) {
             // displayWidth を適用
             thumbnailCanvas.style.width = props.displayWidth + 'px'
+            thumbnailCanvas.classList.add('thumb-wrapper')
+
+            // --- ホバーイベント追加 ---
+            const popup = document.createElement('div')
+            popup.className = 'thumb-popup'
+            popup.innerText = formatTime(currentDuration)
+            popup.style.display = 'none'
+            thumbnailCanvas.parentElement?.appendChild(popup)
+
+            thumbnailCanvas.addEventListener('mouseenter', () => {
+              thumbnailCanvas.classList.add('hovered')
+              popup.style.display = 'block'
+            })
+            thumbnailCanvas.addEventListener('mouseleave', () => {
+              thumbnailCanvas.classList.remove('hovered')
+              popup.style.display = 'none'
+            })
 
             thumbnailCanvas.addEventListener('click', () => {
               emit('thumbnailClicked', currentDuration)
             })
-            container.appendChild(thumbnailCanvas)
+
+            // サムネイルをラップする要素を作成して配置
+            const wrapper = document.createElement('div')
+            wrapper.className = 'thumb-container'
+            wrapper.appendChild(thumbnailCanvas)
+            wrapper.appendChild(popup)
+
+            container.appendChild(wrapper)
           }
         }
       }
@@ -84,6 +108,12 @@ function fetchAndDisplayThumbnails(imageUrl, container, file) {
     .catch((error) => {
       console.error('Failed to load image:', error)
     })
+}
+
+function formatTime(seconds) {
+  const m = Math.floor(seconds / 60)
+  const s = seconds % 60
+  return `${m}:${s.toString().padStart(2, '0')}`
 }
 
 function loadImage(url) {
@@ -192,20 +222,40 @@ defineExpose({
 </script>
 
 <style>
-.thumbnail-canvas {
-  width: 100%;
-  max-width: 800px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  margin-top: 10px;
-  cursor: pointer;
-}
-
 .thumbnail-container {
   margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.thumb-container {
+  position: relative;
+  display: inline-block;
 }
 
 .thumbsImage {
-  /* 幅は JS 側で displayWidth を設定する */
+  transition: transform 0.2s ease;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* ホバー時に拡大 */
+.thumbsImage.hovered {
+  transform: scale(1.3);
+  z-index: 2;
+}
+
+.thumb-popup {
+  position: absolute;
+  top: -10px;          /* 上寄せ */
+  right: -10px;        /* 右寄せ */
+  background: rgba(0,0,0,0.75);
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
 }
 </style>
