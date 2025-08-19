@@ -36,9 +36,13 @@ function fetchAndDisplayThumbnails(imageUrl, container, file) {
   // thumbnail_parameters をパースして値を取得
   let parsed = {}
   try {
-    parsed = JSON.parse(file.thumbnail_parameters || '{}')
+    // 文字列なら JSON.parse、すでにオブジェクトならそのまま
+    parsed = (typeof file.thumbnail_parameters === 'string')
+      ? JSON.parse(file.thumbnail_parameters || '{}')
+      : (file.thumbnail_parameters || {})
   } catch (e) {
     console.error('Failed to parse thumbnail_parameters:', e)
+    parsed = {}
   }
 
   const start = parsed.start ?? 5

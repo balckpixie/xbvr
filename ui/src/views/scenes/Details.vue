@@ -27,7 +27,7 @@
           <button rounded 
             class="button is-outlined is-small" 
             style="margin-left:auto"
-            @click="hidePane2 = !hidePane2" >{{ hidePane2 ? 'Show' : 'Hide' }} Pane 2</button>
+            @click="hidePane2 = !hidePane2" >{{ hidePane2 ? 'Show' : 'Hide' }} Detail</button>
         </div>
         <splitpanes class="default-theme"
           style="max-height: 88vh;"
@@ -909,14 +909,20 @@ export default {
         }
       });
     },
+
     thumbnailParams(file) {
       const thumbnailUrl = '/api_custom/thumbnail/image/' + file.id
-      const parsed = JSON.parse(file.thumbnail_parameters)
+
+      // thumbnail_parameters が文字列かオブジェクトかを安全に処理
+      const parsed = (typeof file.thumbnail_parameters === 'string')
+        ? JSON.parse(file.thumbnail_parameters)
+        : file.thumbnail_parameters
+
       let tileHeight = parsed.resolution
-      if (file.projection === 'flat')
-      {
-          tileHeight = (file.video_height / file.video_width) * parsed.resolution;
+      if (file.projection === 'flat') {
+        tileHeight = (file.video_height / file.video_width) * parsed.resolution
       }
+
       return {
         url: thumbnailUrl,
         duration: file.duration,
@@ -926,6 +932,7 @@ export default {
         height: tileHeight,
       }
     },
+    
     // サムネイルスプライトの設定＆再設定用メソッド
     setThumbnails(player, options) {
         // ThumbnailSprite クラスのコンストラクタを Video.js レジストリから取得

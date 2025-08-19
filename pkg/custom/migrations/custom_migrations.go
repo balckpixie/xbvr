@@ -111,43 +111,39 @@ func CustomMigrations() []*gormigrate.Migration {
 			ID: "bp_0006-file-add-thumbnail-params",
 			Migrate: func(tx *gorm.DB) error {
 				type File struct {
-					ThumbnailParameters string `json:"thumbnail_parameters"`
+					ThumbnailParameters json.RawMessage `json:"thumbnail_parameters" gorm:"type:jsonb"`
 				}
 				return tx.AutoMigrate(File{}).Error
 			},
 		},
-		
+
 		// No.7 HasThumbnail = true and ThumbnailParameters = null の Files に 規定の設定値を追加
 		{
 			ID: "bp_0007-file-set-thumbnailparameters-default",
 			Migrate: func(tx *gorm.DB) error {
 				var files []models.File
-				err := tx.Where("has_thumbnail=1 and thumbnail_parameters IS NULL").Find(&files).Error
+				err := tx.Where("has_thumbnail=1 AND thumbnail_parameters IS NULL").Find(&files).Error
 				if err != nil {
 					return err
 				}
 
 				for _, file := range files {
-					changed := false
-					if file.ThumbnailParameters == "" {
+					if len(file.ThumbnailParameters) == 0 {
 						params := customconfig.ThumbnailParams{
 							Start:         5,
-							Interval:     30,
-							Resolution:   200,
+							Interval:      30,
+							Resolution:    200,
 							UseCUDAEncode: true,
 						}
-						// Struct → JSON (byte配列)
+
 						jsonBytes, err := json.Marshal(params)
 						if err != nil {
-							panic(err)
+							return err
 						}
-						jsonString := string(jsonBytes)
-						file.ThumbnailParameters = jsonString
-						changed = true
-					}
-					if changed {
-						err = tx.Save(&file).Error
-						if err != nil {
+
+						file.ThumbnailParameters = json.RawMessage(jsonBytes)
+
+						if err := tx.Save(&file).Error; err != nil {
 							return err
 						}
 					}
