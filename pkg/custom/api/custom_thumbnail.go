@@ -1,11 +1,12 @@
 package api
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
-	"path/filepath"
 	"os"
-	"bytes"
+	"path/filepath"
 
 	restfulspec "github.com/emicklei/go-restful-openapi/v2"
 	"github.com/emicklei/go-restful/v3"
@@ -15,10 +16,10 @@ import (
 )
 
 type RequestThumbnailParameters struct {
-	ThumnailStartTime      int    `json:"thumbnailStartTime"`
-	ThumbnailInterval      int    `json:"thumbnailInterval"`
-	ThumbnailResolution    int    `json:"thumbnailResolution"`
-	ThumbnailUseCUDAEncode bool   `json:"thumbnailUseCUDAEncode"`
+	ThumnailStartTime      int    `json:"start"`
+	ThumbnailInterval      int    `json:"interval"`
+	ThumbnailResolution    int    `json:"resolution"`
+	ThumbnailUseCUDAEncode bool   `json:"useCUDAEncode"`
 }
 
 type ThumbnailResource struct{}
@@ -42,7 +43,7 @@ func (i ThumbnailResource) WebService() *restful.WebService {
 		ContentEncodingEnabled(false).
 		Metadata(restfulspec.KeyOpenAPITags, tags))
 
-	ws.Route(ws.DELETE("/cleanup").To(i.cleanupThumbnails).
+	ws.Route(ws.POST("/cleanup").To(i.cleanupThumbnails).
 		Metadata(restfulspec.KeyOpenAPITags, tags))
 	return ws
 }
@@ -73,38 +74,46 @@ func (i ThumbnailResource) headThumbnail(req *restful.Request, resp *restful.Res
 
 func (i ThumbnailResource) cleanupThumbnails(req *restful.Request, resp *restful.Response) {
 	var r RequestThumbnailParameters
-	readerr := req.ReadEntity(&r)
-	if readerr != nil {
+	if err := req.ReadEntity(&r); err != nil {
 		resp.WriteErrorString(http.StatusBadRequest, "params query required")
 		return
 	}
 
+	// JSONに変換
+	jsonBytes, err := json.Marshal(r)
+	if err != nil {
+		resp.WriteErrorString(http.StatusBadRequest, "invalid params")
+		return
+	}
+	targetParams := string(jsonBytes)
+
 	db, _ := models.GetDB()
 	defer db.Close()
 
-	// var files []models.File
-	// tx := db.Model(&files)
-	// tx = tx.Where("has_thumbnail = 1")
-	// tx = tx.Where("thumbnail_parameters <> ?", targetParams)
-	// tx.Find(&files)
+	var files []models.File
+	// jsonb 型の比較
+	if err := db.
+		Where("has_thumbnail = 1").
+		Where("thumbnail_parameters::jsonb != ?::jsonb", targetParams).
+		Find(&files).Error; err != nil {
+		resp.WriteErrorString(http.StatusInternalServerError, "query error")
+		return
+	}
 
-	// deleted := 0
-	// for _, f := range files {
-	// 	thumbPath := filepath.Join(common.VideoThumbnailDir, fmt.Sprintf("%d.jpg", f.ID))
-	// 	// ファイル削除（存在しなくてもエラー無視）
-	// 	_ = os.Remove(thumbPath)
+	deleted := 0
+	for _, f := range files {
+		thumbPath := filepath.Join(common.VideoThumbnailDir, fmt.Sprintf("%d.jpg", f.ID))
+		_ = os.Remove(thumbPath) // 存在しなくても無視
 
-	// 	// DB更新
-	// 	f.HasThumbnail = false
-	// 	f.ThumbnailParameters = nil
-	// 	if err := models.DB.Save(&f).Error; err == nil {
-	// 		deleted++
-	// 	}
-	// }
+		// DB更新
+		f.HasThumbnail = false
+		f.ThumbnailParameters = json.RawMessage("{}") // 空JSONにする
+		if err := db.Save(&f).Error; err == nil {
+			deleted++
+		}
+	}
 
-	// resp.WriteHeaderAndEntity(http.StatusOK, map[string]interface{}{
-	// 	"deleted_count": deleted,
-	// })
-
-
+	resp.WriteHeaderAndEntity(http.StatusOK, map[string]interface{}{
+		"deleted_count": deleted,
+	})
 }
