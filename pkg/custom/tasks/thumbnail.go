@@ -130,11 +130,13 @@ func RenderThumnbnails(inputFile string, destFile string, videoProjection string
 	} else {
 		args = []string{
 			"-y",
-			"-ss", strconv.Itoa(startTime),
 			// "-hwaccel", "cuda",
-			"-skip_frame",
-			"nokey",
+			// "-accurate_seek",
+			// "-skip_frame",
+			// "nokey",
 			"-i", inputFile,
+			"-ss", strconv.Itoa(startTime),
+			"-vframes", "1",
 			// "-t", "60",
 			"-vf", vfArgs,
 			// "-frame_pts", "true",
