@@ -61,7 +61,6 @@ function fetchAndDisplayThumbnails(imageUrl, container, file) {
 
       for (let row = 0; row < rows; row++) {
         for (let col = 0; col < cols; col++) {
-          duration += interval
           const currentDuration = duration
           const thumbnailCanvas = createThumbnailCanvas(
             canvas,
@@ -109,6 +108,7 @@ function fetchAndDisplayThumbnails(imageUrl, container, file) {
 
             container.appendChild(wrapper)
           }
+          duration += interval
         }
       }
     })
