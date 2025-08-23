@@ -27,7 +27,7 @@
           <button rounded 
             class="button is-outlined is-small" 
             style="margin-left:auto"
-            @click="hidePane2 = !hidePane2" >{{ hidePane2 ? 'Show' : 'Hide' }} Pane 2</button>
+            @click="hidePane2 = !hidePane2" >{{ hidePane2 ? 'Show' : 'Hide' }} Detail</button>
         </div>
         <splitpanes class="default-theme"
           style="max-height: 88vh;"
@@ -62,22 +62,24 @@
                 </div>
 
                 <div class="columns is-vcentered" style="max-width: 120px;">
-                  <div class="column pb-0 is-small">
-                    <!-- アスペクト比選択プルダウン -->
-                    <b-select v-model="aspectRatio" placeholder="Select Aspect Ratio">
-                      <option value="16:10">16:10</option>
-                      <option value="16:9">16:9</option>
-                      <option value="4:3">4:3</option>
-                      <option value="1:1">1:1</option>
-                      <option value="9:16">9:16</option>
-                    </b-select>
-                  </div>
                   <div class="column pb-0 is-small" style="max-width: 120px;">
                     <!-- プロジェクション比選択プルダウン -->
                     <b-select v-model="projectionMode" placeholder="Select Projection Mode">
                       <option value="NONE">Flat</option>
-                      <option value="180">180</option>
+                      <option value="180_LR">180_LR</option>
+                      <option value="180_MONO">180_MONO</option>
                       <option value="360_TB">360</option>
+                      <option value="AUTO">AUTO</option>
+                    </b-select>
+                  </div>
+                  <div class="column pb-0 is-small">
+                    <!-- アスペクト比選択プルダウン -->
+                    <b-select v-model="aspectRatio" placeholder="Select Aspect Ratio">
+                      <option value="16:9">16:9</option>
+                      <option value="16:10">16:10</option>
+                      <option value="4:3">4:3</option>
+                      <option value="1:1">1:1</option>
+                      <option value="9:16">9:16</option>
                     </b-select>
                   </div>
                   <div class="column pb-0">
@@ -445,6 +447,7 @@
                   <ThumbnailTab
                     ref="thumbnailRef"
                     :file=undefined
+                    :displayWidth="100"
                     @thumbnailClicked="onThumbnailClicked"
                     class="block-tab-content block container thumbnail-tab"
                     :style="{ maxHeight: computedMaxHeight() }" 
@@ -548,12 +551,15 @@ export default {
       alternateSources: [],
       waitingForQuickFind: false,
       // Custom Black
+      thumbStartTime:25,
+      thumbInterval :30,
+      thumbResolution: 200,
       marginBottom: 10,  //サムネイルコンポーネント高さ調整用
       currentFile: null,
       currentDuraiton: 0,
       aspectRatio: '4:3',
       splitSize: 60,
-      projectionMode: '180',
+      projectionMode: '180_LR',
       hidePane2:false,
       // Custom END
     }
@@ -742,8 +748,9 @@ export default {
       this.cuepointActTags.unshift("")
       this.cuepointPositionTags.unshift("")
       })    
-},
-watch:{
+  },
+  
+  watch:{
     // Custom Black
     projectionMode(newVal) {
       this.$nextTick(() => {
@@ -797,7 +804,7 @@ watch:{
 },
   methods: {
     // Custom Black
-    
+
     // Playerを再起動する（projection mode変更時に使用）
     async restartPlayer()
     {
@@ -885,32 +892,47 @@ watch:{
 
     // サムネイルスプライト読み込み
     setupSprite(file) {
-      let tileHeight = 200
-      if (file.projection === 'flat')
+      if (file.has_thumbnail == false)
       {
-          tileHeight = (file.video_height / file.video_width) * 200;
+        return;
       }
-      const thumbnailUrl = '/api_custom/thumbnail/image/' + file.id
+      const params = this.thumbnailParams(file)
       const videPlayer = this.player
-      this.checkImageExists(thumbnailUrl, (exists) =>{
+      this.checkImageExists(params.url, (exists) =>{
         if (exists) {
 
           this.setThumbnails(videPlayer, {
             sprites: [
-              {
-                url: thumbnailUrl,
-                duration: file.duration,
-                start: 25,
-                interval: 30,
-                width: 200,
-                height: tileHeight,
-              },
+             params
             ],
           });
         }
       });
     },
 
+    thumbnailParams(file) {
+      const thumbnailUrl = '/api_custom/thumbnail/image/' + file.id
+
+      // thumbnail_parameters が文字列かオブジェクトかを安全に処理
+      const parsed = (typeof file.thumbnail_parameters === 'string')
+        ? JSON.parse(file.thumbnail_parameters)
+        : file.thumbnail_parameters
+
+      let tileHeight = parsed.resolution
+      if (file.projection === 'flat') {
+        tileHeight = (file.video_height / file.video_width) * parsed.resolution
+      }
+
+      return {
+        url: thumbnailUrl,
+        duration: file.duration,
+        start: parsed.start,
+        interval: parsed.interval,
+        width: parsed.resolution,
+        height: tileHeight,
+      }
+    },
+    
     // サムネイルスプライトの設定＆再設定用メソッド
     setThumbnails(player, options) {
         // ThumbnailSprite クラスのコンストラクタを Video.js レジストリから取得
@@ -1648,6 +1670,7 @@ watch:{
     display: flex;
     flex-direction: column;
     height: 88vh;
+    padding: 0.5rem;
 }
 
 .vue-star-rating {

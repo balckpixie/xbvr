@@ -30,7 +30,7 @@ func DomainMatch(urlString, pattern string) bool {
 // DMM API呼び出し時のQueryパラメータを追加
 func AddAPIParam(originalURL string) (string, error) {
 
-	if config.Config.Custom.DmmApiId == "" || config.Config.Custom.DmmAffiliateId == "" {
+	if config.Config.Custom.DmmAPIKey.DmmApiId == "" || config.Config.Custom.DmmAPIKey.DmmAffiliateId == "" {
 		return "", errors.New("is not set DmmApiId and DmmAffiliateId param")
 	}
 
@@ -40,8 +40,8 @@ func AddAPIParam(originalURL string) (string, error) {
 	}
 
 	queryParams := parsedURL.Query()
-	queryParams.Set("api_id", config.Config.Custom.DmmApiId)
-	queryParams.Set("affiliate_id", config.Config.Custom.DmmAffiliateId)
+	queryParams.Set("api_id", config.Config.Custom.DmmAPIKey.DmmApiId)
+	queryParams.Set("affiliate_id", config.Config.Custom.DmmAPIKey.DmmAffiliateId)
 	queryParams.Set("offset", "1")
 	parsedURL.RawQuery = queryParams.Encode()
 
