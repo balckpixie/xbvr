@@ -1,7 +1,6 @@
 package models
 
 import (
-	"encoding/json"
 	"fmt"
 	"math"
 	"os"
@@ -49,7 +48,7 @@ type File struct {
 
 	// Custom black
 	HasThumbnail       bool   `json:"has_thumbnail" gorm:"default:false" xbvrbackup:"has_thumbnail"`
-	ThumbnailParameters json.RawMessage `json:"thumbnail_parameters" gorm:"type:jsonb" xbvrbackup:"thumbnail_parameters"`
+	ThumbnailParameters string `json:"thumbnail_parameters" xbvrbackup:"thumbnail_parameters"`
 	// Custom END
 	}
 

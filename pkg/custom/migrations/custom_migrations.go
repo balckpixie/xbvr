@@ -111,7 +111,7 @@ func CustomMigrations() []*gormigrate.Migration {
 			ID: "bp_0006-file-add-thumbnail-params",
 			Migrate: func(tx *gorm.DB) error {
 				type File struct {
-					ThumbnailParameters json.RawMessage `json:"thumbnail_parameters" gorm:"type:jsonb"`
+					ThumbnailParameters string `json:"thumbnail_parameters"`
 				}
 				return tx.AutoMigrate(File{}).Error
 			},
@@ -141,7 +141,8 @@ func CustomMigrations() []*gormigrate.Migration {
 							return err
 						}
 
-						file.ThumbnailParameters = json.RawMessage(jsonBytes)
+						jsonString := string(jsonBytes)
+						file.ThumbnailParameters = jsonString
 
 						if err := tx.Save(&file).Error; err != nil {
 							return err

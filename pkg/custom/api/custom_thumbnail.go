@@ -79,35 +79,50 @@ func (i ThumbnailResource) cleanupThumbnails(req *restful.Request, resp *restful
 		return
 	}
 
-	// JSONに変換
-	jsonBytes, err := json.Marshal(r)
-	if err != nil {
-		resp.WriteErrorString(http.StatusBadRequest, "invalid params")
-		return
-	}
-	targetParams := string(jsonBytes)
-
 	db, _ := models.GetDB()
 	defer db.Close()
-
+	
+	// File構造体はstring型に修正されているため、直接データを読み込む
 	var files []models.File
-	// jsonb 型の比較
-	if err := db.
-		Where("has_thumbnail = 1").
-		Where("thumbnail_parameters::jsonb != ?::jsonb", targetParams).
-		Find(&files).Error; err != nil {
+	if err := db.Where("has_thumbnail = 1").Find(&files).Error; err != nil {
 		resp.WriteErrorString(http.StatusInternalServerError, "query error")
 		return
 	}
 
 	deleted := 0
+	var filesToDelete []models.File
+
+	// ターゲットとなるJSONを正規化し、比較に備える
+	targetBytes, err := json.Marshal(r)
+	if err != nil {
+		resp.WriteErrorString(http.StatusInternalServerError, "invalid params for comparison")
+		return
+	}
+	var targetMap map[string]interface{}
+	json.Unmarshal(targetBytes, &targetMap)
+
 	for _, f := range files {
+		var dbMap map[string]interface{}
+		
+		// stringとして取得したJSONデータをマップにアンマーシャル
+		if err := json.Unmarshal([]byte(f.ThumbnailParameters), &dbMap); err != nil {
+			// JSONが不正なレコードはスキップ
+			continue
+		}
+
+		// Go側でJSONを比較するヘルパー関数
+		if !jsonMapsEqual(targetMap, dbMap) {
+			filesToDelete = append(filesToDelete, f)
+		}
+	}
+
+	for _, f := range filesToDelete {
 		thumbPath := filepath.Join(common.VideoThumbnailDir, fmt.Sprintf("%d.jpg", f.ID))
 		_ = os.Remove(thumbPath) // 存在しなくても無視
 
 		// DB更新
 		f.HasThumbnail = false
-		f.ThumbnailParameters = json.RawMessage("{}") // 空JSONにする
+		f.ThumbnailParameters = "" // string型なので空文字列にする
 		if err := db.Save(&f).Error; err == nil {
 			deleted++
 		}
@@ -116,4 +131,38 @@ func (i ThumbnailResource) cleanupThumbnails(req *restful.Request, resp *restful
 	resp.WriteHeaderAndEntity(http.StatusOK, map[string]interface{}{
 		"deleted_count": deleted,
 	})
+}
+
+// jsonMapsEqualは、キーと値が完全に一致するかを比較するヘルパー関数です。
+// JSONのキーの順序は考慮しません。
+func jsonMapsEqual(a, b map[string]interface{}) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for k, v := range a {
+		if v2, ok := b[k]; !ok || !interfaceEqual(v, v2) {
+			return false
+		}
+	}
+	return true
+}
+
+// interfaceEqualは、map内のinterface{}を比較するヘルパー関数です。
+func interfaceEqual(a, b interface{}) bool {
+	// 型アサーションを行って、対応する型で比較
+	switch a.(type) {
+	case float64:
+		if v, ok := b.(float64); ok {
+			return a.(float64) == v
+		}
+	case bool:
+		if v, ok := b.(bool); ok {
+			return a.(bool) == v
+		}
+	case string:
+		if v, ok := b.(string); ok {
+			return a.(string) == v
+		}
+	}
+	return false
 }

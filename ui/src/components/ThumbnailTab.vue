@@ -26,9 +26,12 @@ function loadThumbnails() {
     console.warn('Container not ready.')
     return
   }
-
-  const thumbnailUrl = '/api_custom/thumbnail/image/' + props.file.id
   clearVideThumbnails()
+  if (!props.file.has_thumbnail)
+  {
+    return
+  }
+  const thumbnailUrl = '/api_custom/thumbnail/image/' + props.file.id
   fetchAndDisplayThumbnails(thumbnailUrl, canvasContainer, props.file)
 }
 

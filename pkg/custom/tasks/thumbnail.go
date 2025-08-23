@@ -62,13 +62,14 @@ func GenerateThumnbnails(endTime *time.Time) {
 					if err != nil {
 						log.Warn(err)
 					} else {
-						file.ThumbnailParameters = json.RawMessage(jsonBytes) 
+						jsonString := string(jsonBytes)
+						file.ThumbnailParameters = jsonString
 						file.HasThumbnail = true
 
 						if err := file.Save(); err != nil {
 							log.Warnf("failed to save file %v: %v", file.ID, err)
 						} else {
-							log.Infof("Thumbnails generated File_ID %v - Start", file.ID)
+							log.Infof("Thumbnails generated File_ID %v - Saved", file.ID)
 						}
 					}
 				} else {

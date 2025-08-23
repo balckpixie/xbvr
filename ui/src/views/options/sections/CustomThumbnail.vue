@@ -7,12 +7,13 @@
       <b-tabs v-model="activeTab" size="medium" type="is-boxed" style="margin-left: 0px" id="importexporttab">
             <b-tab-item label="Schedules"/>
             <b-tab-item label="Settings"/>
+            <b-tab-item label="Clean"/>
       </b-tabs>
       <div class="columns">
         <div class="column">
 
           <section>
-          <!-- Actor Related Settings -->
+          <!-- Thumbnail Related Settings -->
           <div v-if="activeTab == 0">
               <b-field>
                 <b-switch v-model="thumbnailEnabled">Enable schedule</b-switch>
@@ -112,7 +113,17 @@
             </b-field>
 
           </div>
-            <hr/>
+          <div v-if="activeTab == 2">
+              <p><strong>Clean Thumbnails</strong></p>
+              <p>
+                Clean thumbnails created with different settings.
+              </p>
+              <b-field>
+                <b-button type="is-small" @click="cleanThumbnails" style="margin-right:1em">Clean</b-button>
+              </b-field>
+          </div>
+            
+          <hr/>
               <b-field grouped>
                 <b-button type="is-primary" @click="saveSettings" style="margin-right:1em">Save settings</b-button>
               </b-field>
@@ -157,6 +168,11 @@ export default {
       thumbInterval :30,
       thumbResolution: 200,
       useCUDAEncode: true,
+
+      savedThumbStartTime:25,
+      savedThumbInterval :30,
+      savedThumbResolution: 200,
+      savedUseCUDAEncode: true,
       
     }
   },
@@ -166,6 +182,31 @@ export default {
   computed: {
   },
   methods: {
+    async cleanThumbnails() {
+      await ky.post('/api_custom/thumbnail/cleanup', {
+        json: { 
+          start: this.savedThumbStartTime,
+          interval: this.savedThumbInterval,
+          resolution: this.savedThumbResolution,
+          useCUDAEncode: this.savedUseCUDAEncode
+        }
+      })
+        .json()
+        .then(data => {
+          console.log('Cleanup result:', data)
+          this.$buefy.toast.open({
+            message: `削除件数: ${data.deleted_count}`,
+            type: 'is-success'
+          })
+        })
+        .catch(err => {
+          console.error('Cleanup API error:', err)
+          this.$buefy.toast.open({
+            message: 'サムネイル削除に失敗しました',
+            type: 'is-danger'
+          })
+        })
+    },
     async loadState () {
       this.isLoading = true
       await ky.get('/api_custom/options/state')
@@ -188,6 +229,11 @@ export default {
           this.thumbResolution = data.config.custom.thumbnailParams.resolution
           this.useCUDAEncode = data.config.custom.thumbnailParams.useCUDAEncode
 
+          this.savedThumbStartTime = data.config.custom.thumbnailParams.start
+          this.savedThumbInterval = data.config.custom.thumbnailParams.interval
+          this.savedThumbResolution = data.config.custom.thumbnailParams.resolution
+          this.savedUseCUDAEncode = data.config.custom.thumbnailParams.useCUDAEncode
+
           this.isLoading = false
         })
     },
@@ -208,10 +254,17 @@ export default {
           thumbnailInterval: this.thumbInterval,
           thumbnailResolution: this.thumbResolution,
           thumbnailUseCUDAEncode:this.useCUDAEncode
+          
         }
       })
         .json()
         .then(data => {
+          
+          this.savedThumbStartTime = this.thumbStartTime
+          this.savedThumbInterval = this.thumbInterval
+          this.savedThumbResolution = this.thumbResolution
+          this.savedUseCUDAEncode = this.useCUDAEncode
+
           this.isLoading = false
         })
     },
