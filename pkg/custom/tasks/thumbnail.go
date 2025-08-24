@@ -95,7 +95,8 @@ func RenderThumnbnails(inputFile string, destFile string, videoProjection string
 
 	row := int((dur-float64(startTime))/(20*float64(interval))) + 1
 
-	crop := "iw/2:ih:iw/2:ih" // LR videos
+	//crop := "iw/2:ih:iw/2:ih" // LR videos
+	crop := "iw/2:ih:0:ih" // LR videos
 	if vs.Height == vs.Width {
 		crop = "iw/2:ih/2:iw/4:ih/2" // TB videos
 	}
@@ -106,18 +107,19 @@ func RenderThumnbnails(inputFile string, destFile string, videoProjection string
 	// "iw/2:ih:iw/4:ih"
 	// 動画ファイルからinterval秒ごとに1フレームを切り出し、それを横20枚・縦<row>枚のグリッド画像にして保存する
 	vfArgs := fmt.Sprintf("crop=%v,scale=%v:-1:flags=lanczos,fps=1/%v:round=down,tile=20x%v", crop, resolution, interval, row)
+	// vfArgs := fmt.Sprintf("select='not(mod(t+%v,%v))',crop=%v,scale=%v:-1:flags=lanczos,tile=20x%v", startTime, interval, crop, resolution, row)
 
 	var args []string
 	if isCUDAEnabled() && useCUDA{
 		args = []string{
 			"-y",
-			"-ss", strconv.Itoa(startTime),
 			"-hwaccel", "cuda",
+			"-ss", strconv.Itoa(startTime),
 			"-skip_frame",
 			"nokey",
 			"-i", inputFile,
-			// "-t", "60",
 			"-vf", vfArgs,
+			"-vframes", "1",
 			// "-frame_pts", "true",
 			"-q:v", "3",
 			// "-pix_fmt", "rgb24",
@@ -131,14 +133,12 @@ func RenderThumnbnails(inputFile string, destFile string, videoProjection string
 		args = []string{
 			"-y",
 			// "-hwaccel", "cuda",
-			// "-accurate_seek",
-			// "-skip_frame",
-			// "nokey",
-			"-i", inputFile,
 			"-ss", strconv.Itoa(startTime),
-			"-vframes", "1",
-			// "-t", "60",
+			"-skip_frame",
+			"nokey",
+			"-i", inputFile,
 			"-vf", vfArgs,
+			"-vframes", "1",
 			// "-frame_pts", "true",
 			"-q:v", "3",
 			// "-pix_fmt", "rgb24",
@@ -149,6 +149,7 @@ func RenderThumnbnails(inputFile string, destFile string, videoProjection string
 		}
 	}
 
+	fmt.Printf("Args: %s\n", args) 
 	cmd := tasks.BuildCmdEx(tasks.GetBinPath("ffmpeg"), args...)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
