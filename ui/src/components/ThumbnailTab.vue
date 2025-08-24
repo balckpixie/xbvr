@@ -48,8 +48,8 @@ function fetchAndDisplayThumbnails(imageUrl, container, file) {
     parsed = {}
   }
 
-  const start = parsed.start ?? 5
-  const interval = parsed.interval ?? 30
+  const start = parsed.start ?? 15
+  const interval = parsed.interval ?? 15
   const tileWidthSetting = parsed.resolution ?? 200
 
   loadImage(imageUrl)

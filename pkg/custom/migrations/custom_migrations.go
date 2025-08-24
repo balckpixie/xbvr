@@ -130,8 +130,8 @@ func CustomMigrations() []*gormigrate.Migration {
 				for _, file := range files {
 					if len(file.ThumbnailParameters) == 0 {
 						params := customconfig.ThumbnailParams{
-							Start:         5,
-							Interval:      30,
+							Start:         15,
+							Interval:      15,
 							Resolution:    200,
 							UseCUDAEncode: true,
 						}
