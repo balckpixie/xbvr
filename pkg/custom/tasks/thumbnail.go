@@ -55,7 +55,7 @@ func GenerateThumnbnails(endTime *time.Time) {
 				}
 
 				projection := file.VideoProjection
-				if vrType, err := shared.DetectVRType(file.Path,time.Second*5); err == nil {
+				if vrType, err := shared.DetectVRType(file.GetPath(),time.Second*5); err == nil {
 					projection = vrType
 				}
 
