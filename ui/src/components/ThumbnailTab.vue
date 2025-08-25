@@ -109,6 +109,9 @@ function fetchAndDisplayThumbnails(imageUrl, container, file) {
             container.appendChild(wrapper)
           }
           duration += interval
+          if (duration > file.duration) {
+            return  
+          }
         }
       }
     })
@@ -144,12 +147,44 @@ function drawImageToCanvas(img) {
 
 function calculateTileGrid(canvas, file, tileWidthSetting) {
   const tileWidth = tileWidthSetting
-  let tileHeight = tileWidthSetting
-  if (file?.projection === 'flat') {
-    tileHeight = (file.video_height / file.video_width) * tileWidth
+
+  // デフォルトはオリジナルサイズ
+  let croppedWidth = file.video_width
+  let croppedHeight = file.video_height
+
+  switch (file?.projection) {
+    case 'flat':
+    case '180_mono':
+    case '360_mono':
+      croppedWidth = file.video_width
+      croppedHeight = file.video_height
+      break
+
+    case '180_sbs':
+    case '360_sbs':
+      croppedWidth = file.video_width / 2
+      croppedHeight = file.video_height
+      break
+
+    case '180_tb':
+    case '360_tb':
+      croppedWidth = file.video_width
+      croppedHeight = file.video_height / 2
+      break
+
+    default:
+      // 不明なタイプはそのまま
+      croppedWidth = file.video_width
+      croppedHeight = file.video_height
+      break
   }
+
+  // FFmpegの scale=tileWidth:-1 と同じ処理
+  const tileHeight = Math.round((croppedHeight / croppedWidth) * tileWidth)
+
   const rows = Math.floor(canvas.height / tileHeight)
   const cols = Math.floor(canvas.width / tileWidth)
+
   return {
     tileWidth,
     tileHeight,
@@ -157,6 +192,7 @@ function calculateTileGrid(canvas, file, tileWidthSetting) {
     cols
   }
 }
+
 
 function createThumbnailCanvas(canvas, row, col, tileWidth, tileHeight, projection) {
   try {
@@ -202,16 +238,36 @@ function createThumbnailCanvas(canvas, row, col, tileWidth, tileHeight, projecti
 }
 
 function isImageBlack(ctx) {
-  const imageData = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height)
+  const width = ctx.canvas.width
+  const height = ctx.canvas.height
+  const imageData = ctx.getImageData(0, 0, width, height)
   const data = imageData.data
 
-  for (let i = 0; i < data.length; i += 4) {
-    if (data[i] > 10 || data[i + 1] > 10 || data[i + 2] > 10) {
-      return false
+  // 除外領域（右上 1/6 の矩形）
+  const excludeXStart = width * (5 / 6)  // 右端から1/6の位置
+  const excludeYEnd = height * (1 / 6)   // 上端から1/6の位置
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      // 除外領域ならスキップ
+      if (x >= excludeXStart && y < excludeYEnd) {
+        continue
+      }
+
+      const index = (y * width + x) * 4
+      const r = data[index]
+      const g = data[index + 1]
+      const b = data[index + 2]
+      const brightness = (r + g + b) / 3
+      if (brightness > 20) return false
+      // if (r > 10 || g > 10 || b > 10) {
+      //   return false
+      // }
     }
   }
   return true
 }
+
 
 function clearVideThumbnails() {
   const canvasContainer = thumbContainer.value
