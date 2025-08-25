@@ -149,7 +149,11 @@
                     <div class="is-flex is-pulled-left" style="gap: 0.25rem">
                     <!--<div class="content" style="display: flex; flex-wrap: wrap;">-->
                       <div class="" v-for="(f, idx) in filesByType" :key="idx" style="margin-top: 3px;">
-                        <button rounded class="button is-success is-small" @click='playFile(f)' v-show="f.type === 'video'">
+                        <button rounded
+                          class="button is-small"
+                          :class="f.has_thumbnail ? 'is-success' : 'is-danger'"
+                          @click='playFile(f)'
+                          v-show="f.type === 'video'">
                         {{idx+1}}
                         </button>
                       </div>
