@@ -324,7 +324,7 @@ defineExpose({
 
 .thumb-popup {
   position: absolute;
-  top: -10px;          /* 上寄せ */
+  top: -5px;          /* 上寄せ */
   right: -10px;        /* 右寄せ */
   background: rgba(0,0,0,0.75);
   color: #fff;
@@ -333,5 +333,6 @@ defineExpose({
   font-size: 12px;
   white-space: nowrap;
   pointer-events: none;
+  z-index: 999
 }
 </style>
