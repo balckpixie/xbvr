@@ -232,6 +232,8 @@ export default {
       this.isLoading = true
       await ky.post('/api_custom/options/save', {
         json: { 
+          saveDMMSettings: false,
+          saveThumbnailSettings: true,
 
           thumbnailEnabled: this.thumbnailEnabled,
           thumbnailHourInterval: this.thumbnailHourInterval,
