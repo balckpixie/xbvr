@@ -3,7 +3,7 @@
 </template>
 
 <script setup>
-import { ref, defineExpose, defineEmits } from 'vue'
+import { ref, defineExpose, defineEmits, watch } from 'vue'
 
 const props = defineProps({
   file: {
@@ -19,6 +19,19 @@ const props = defineProps({
 const emit = defineEmits(['thumbnailClicked'])
 const thumbContainer = ref(null)
 const thumbnails = ref([])
+
+watch(
+  () => props.displayWidth,
+  (newWidth) => {
+    const container = thumbContainer.value
+    if (!container) return
+    // 既存のサムネイル（canvas.thumbsImage）の幅を更新
+    const thumbs = container.querySelectorAll('canvas.thumbsImage')
+    thumbs.forEach(canvas => {
+      canvas.style.width = newWidth + 'px'
+    })
+  }
+)
 
 function loadThumbnails() {
   const canvasContainer = thumbContainer.value
@@ -289,12 +302,12 @@ defineExpose({
   margin-top: 10px;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 4px;
 }
 
 .thumb-container {
   position: relative;
-  display: inline-block;
+  display: flex;
 }
 
 .thumbsImage {

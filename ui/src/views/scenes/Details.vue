@@ -435,23 +435,21 @@
                   </div>
                 </b-tab-item>
 
-                <!--
-                <b-tab-item label="Thumbnail">
-                  <div ref="thumbContainer" id="thumbContainer" :style="{ maxHeight: computedMaxHeight() }" class="block-tab-content block container">
-                  </div>
-                </b-tab-item>
-              -->
-
                 <b-tab-item label="Thumbnails" name="thumbnails">
                   <div ref="thumbnailTabRef">
                   <ThumbnailTab
                     ref="thumbnailRef"
                     :file=undefined
-                    :displayWidth="100"
+                    :displayWidth=displayWidth
                     @thumbnailClicked="onThumbnailClicked"
                     class="block-tab-content block container thumbnail-tab"
                     :style="{ maxHeight: computedMaxHeight() }" 
                   />
+                  </div>
+                  <div class="thumb-controls" style="display: flex; justify-content: flex-end; align-items: center; gap: 4px;">
+                    <span>-</span>
+                    <input type="range" v-model="displayWidth" :min="50" :max="300" />
+                    <span>+</span>
                   </div>
                 </b-tab-item>
 
@@ -561,6 +559,7 @@ export default {
       splitSize: 60,
       projectionMode: '180_LR',
       hidePane2:false,
+      displayWidth:100
       // Custom END
     }
   },
@@ -805,6 +804,16 @@ export default {
   methods: {
     // Custom Black
 
+    decreaseSize() {
+      if (this.displayWidth > 50) {
+        this.displayWidth -= 10;
+      }
+    },
+    increaseSize() {
+      if (this.displayWidth < 300) {
+        this.displayWidth += 10;
+      }
+    },
     // Playerを再起動する（projection mode変更時に使用）
     async restartPlayer()
     {
@@ -1847,4 +1856,83 @@ span.is-active img {
   margin-left: auto;
   margin-right: auto;
 }
+
+
+/* スライダー */
+/* 親コンテナのスタイル */
+.thumb-controls {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center; /* 子要素を垂直方向の中央に揃える最も重要なプロパティ */
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* +-ボタンのスタイル */
+.thumb-controls span {
+  font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 1.5rem;
+  font-weight: bold; /* 文字を太くして視認性を高めます */
+  color: #555;
+  cursor: pointer;
+  user-select: none;
+  /* 文字の位置を微調整 */
+  transform: translateY(-2px); /* わずかに上に移動させて中央に揃えます */
+  transition: color 0.2s ease-in-out;
+}
+
+.thumb-controls span:hover {
+  color: #007bff;
+}
+
+/* input type="range" の基本スタイル */
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 150px;
+  height: 6px;
+  background: #e0e0e0;
+  border-radius: 3px;
+  outline: none;
+  accent-color: #007bff;
+  vertical-align: middle;
+}
+
+/* スライダーのつまみ（thumb）のスタイル */
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 16px;
+  width: 16px;
+  background: #007bff;
+  border-radius: 50%;
+  cursor: grab;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.2s ease-in-out, transform 0.2s ease-in-out;
+  margin-top: calc((6px - 16px) / 2);
+}
+
+/* スライダーのトラック（track）のスタイル */
+input[type="range"]::-webkit-slider-runnable-track {
+  background: #e0e0e0;
+  height: 6px;
+  border-radius: 3px;
+}
+
+/* Firefox用 */
+input[type="range"]::-moz-range-thumb {
+  height: 16px;
+  width: 16px;
+  background: #007bff;
+  border-radius: 50%;
+  border: none;
+  cursor: grab;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.2s ease-in-out;
+}
+
+input[type="range"]::-moz-range-track {
+  background: #e0e0e0;
+  height: 6px;
+  border-radius: 3px;
+}
+
 </style>
