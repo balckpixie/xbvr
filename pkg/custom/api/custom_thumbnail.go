@@ -86,6 +86,7 @@ func (i ThumbnailResource) cleanupThumbnails(req *restful.Request, resp *restful
 	var files []models.File
 	if err := db.Where("has_thumbnail = 1").Find(&files).Error; err != nil {
 		resp.WriteErrorString(http.StatusInternalServerError, "query error")
+		log.Info("[cleanupThumbnails] No found record has thumbnails")
 		return
 	}
 
@@ -96,6 +97,7 @@ func (i ThumbnailResource) cleanupThumbnails(req *restful.Request, resp *restful
 	targetBytes, err := json.Marshal(r)
 	if err != nil {
 		resp.WriteErrorString(http.StatusInternalServerError, "invalid params for comparison")
+		log.Info("[cleanupThumbnails] invalid params for comparison")
 		return
 	}
 	var targetMap map[string]interface{}
@@ -103,14 +105,9 @@ func (i ThumbnailResource) cleanupThumbnails(req *restful.Request, resp *restful
 
 	for _, f := range files {
 		var dbMap map[string]interface{}
-		
-		// stringとして取得したJSONデータをマップにアンマーシャル
 		if err := json.Unmarshal([]byte(f.ThumbnailParameters), &dbMap); err != nil {
-			// JSONが不正なレコードはスキップ
 			continue
 		}
-
-		// Go側でJSONを比較するヘルパー関数
 		if !jsonMapsEqual(targetMap, dbMap) {
 			filesToDelete = append(filesToDelete, f)
 		}
@@ -118,16 +115,16 @@ func (i ThumbnailResource) cleanupThumbnails(req *restful.Request, resp *restful
 
 	for _, f := range filesToDelete {
 		thumbPath := filepath.Join(common.VideoThumbnailDir, fmt.Sprintf("%d.jpg", f.ID))
-		_ = os.Remove(thumbPath) // 存在しなくても無視
+		_ = os.Remove(thumbPath) 
 
-		// DB更新
 		f.HasThumbnail = false
-		f.ThumbnailParameters = "" // string型なので空文字列にする
+		f.ThumbnailParameters = "" 
 		if err := db.Save(&f).Error; err == nil {
 			deleted++
 		}
 	}
 
+	log.Infof("[cleanupThumbnails] deleted count %d", deleted)
 	resp.WriteHeaderAndEntity(http.StatusOK, map[string]interface{}{
 		"deleted_count": deleted,
 	})
