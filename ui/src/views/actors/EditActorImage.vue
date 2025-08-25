@@ -39,7 +39,7 @@
               </div>
               
               <!-- サイドバー（固定） -->
-              <div class="column is-2" style="background-color: #f5f5f5;">
+              <div class="column is-2" style="background-color: rgb(147 134 134 / 14%);">
                 <div class="p-4">
                   <div class="columns is-mobile is-multiline">
                     <div class="column is-half card-container">
