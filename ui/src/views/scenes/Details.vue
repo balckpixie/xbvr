@@ -560,7 +560,7 @@ export default {
       currentFile: null,
       currentDuraiton: 0,
       aspectRatio: '4:3',
-      splitSize: 60,
+      splitSize: 58,
       projectionMode: '180_LR',
       hidePane2:false,
       displayWidth:100
