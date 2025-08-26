@@ -181,7 +181,7 @@
                       <wishlist-button :item="item" v-if="!displayingAlternateSource"/>
                       <watched-button :item="item" v-if="!displayingAlternateSource"/>
                       <edit-button :item="item"/>
-                      <delete-button :item="item"/>
+                      <delete-button :item="item" @deleted="disposePlayer" />
                       <refresh-button :item="item" v-if="!displayingAlternateSource"/>
                       <rescrape-button :item="item" v-if="!displayingAlternateSource"/>
                       <link-stashdb-button :item="item" objectType="scene" />
@@ -807,7 +807,11 @@ export default {
 },
   methods: {
     // Custom Black
-
+    disposePlayer() {
+      if (this.player) {
+        this.player.dispose()
+      }
+    },
     decreaseSize() {
       if (this.displayWidth > 50) {
         this.displayWidth -= 10;
