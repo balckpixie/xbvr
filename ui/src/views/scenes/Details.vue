@@ -23,11 +23,17 @@
       <section class="modal-card-body">
 
         <!-- <div class="columns"> -->
-        <div style="display:flex">
+        <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
           <button rounded 
-            class="button is-outlined is-small" 
-            style="margin-left:auto"
-            @click="hidePane2 = !hidePane2" >{{ hidePane2 ? 'Show' : 'Hide' }} Detail</button>
+            class="button is-outlined is-small"
+            @click="onHideClick()">
+            {{ hidePane2 ? 'Show' : 'Hide' }} Detail
+          </button>
+          <button rounded
+            class="button is-outlined is-small"
+            @click="isDetailOpen = !isDetailOpen">
+            {{ isDetailOpen ? 'Hide' : 'Show'}} Info
+          </button>
         </div>
         <splitpanes class="default-theme"
           style="max-height: 88vh;"
@@ -108,8 +114,13 @@
 
           </div>
         </pane>
-        <Pane v-if="!hidePane2" min-size="27" max-size="100">
+        <Pane v-show="!hidePane2" min-size="27" max-size="100">
+
           <div class="panel-parent">
+          <b-collapse :open.sync="isDetailOpen">
+          <div class="box">
+          <p>
+
             <div class="block-info block">
               <div class="content">
                 <h3>
@@ -242,6 +253,10 @@
                 </span>
               </b-taglist>              
             </div>
+
+           </p>
+          </div>
+          </b-collapse>
 
             <div class="block-tags block" v-if="activeTab == 1">
              <b-taglist>
@@ -447,7 +462,7 @@
                     :displayWidth=displayWidth
                     @thumbnailClicked="onThumbnailClicked"
                     class="block-tab-content block container thumbnail-tab"
-                    :style="{ maxHeight: computedMaxHeight() }" 
+                    :style="{ maxHeight: maxHeight }" 
                   />
                   </div>
                   <div class="thumb-controls" style="display: flex; justify-content: flex-end; align-items: center; gap: 4px;">
@@ -556,19 +571,32 @@ export default {
       thumbStartTime:25,
       thumbInterval :30,
       thumbResolution: 200,
-      marginBottom: 10,  //サムネイルコンポーネント高さ調整用
+
+      isDetailOpen: true,
+      maxHeight: 'calc(92vh - 20px)', //サムネイルコンポーネント高さ調整用
+
       currentFile: null,
       currentDuraiton: 0,
       aspectRatio: '4:3',
       splitSize: 58,
+      splitSizePre: 58,
       projectionMode: '180_LR',
       hidePane2:false,
-      displayWidth:100
+      displayWidth:100,
       // Custom END
     }
   },
   computed: {
     // Custom Black
+    // splitSize() {
+    //   if (this.hidePane2) {
+    //     return 100
+    //   }
+    //   else
+    //   {
+    //    return 58
+    //   }
+    // },
     aspectClass() {
       if (this.aspectRatio === 'original') return '';
       const value = this.aspectRatio.replace(':', '_');
@@ -751,10 +779,33 @@ export default {
       this.cuepointActTags.unshift("")
       this.cuepointPositionTags.unshift("")
       })    
+    
+    //サムネイル領域の高さ調整用
+    this.$nextTick(() => {
+        const targetEl = this.$refs.tabBar
+        if (targetEl) {
+          let resizeTimer = null
+          this._resizeObserver = new ResizeObserver(() => {
+            clearTimeout(resizeTimer)
+            resizeTimer = setTimeout(() => {
+              this.updateMaxHeight()
+            }, 30) 
+          })
+          this._resizeObserver.observe(targetEl)
+        }
+      })
   },
   
   watch:{
     // Custom Black
+    isDetailOpen() {
+      this.$forceUpdate()
+      // this.$nextTick(() => {
+
+      //   setTimeout(() => {this.updateMaxHeight()}, 10) 
+      //   setTimeout(() => {this.updateMaxHeight()}, 100) 
+      // })
+    },
     projectionMode(newVal) {
       this.$nextTick(() => {
         this.restartPlayer()
@@ -805,8 +856,32 @@ export default {
     this.$store.commit('overlay/changeDetailsTab', { tab: -1 })
   }
 },
+beforeDestroy() {
+  if (this._resizeObserver) {
+  this._resizeObserver.disconnect()
+  }},
+
   methods: {
     // Custom Black
+    onHideClick() {
+      this.hidePane2 = !this.hidePane2
+      if (this.hidePane2){
+        this.splitSizePre = this.splitSize
+        this.splitSize = 100
+      } else {
+        this.splitSize = this.splitSizePre
+      }
+
+    },  
+    updateMaxHeight() {
+      const element = this.$refs.thumbnailTabRef
+      if (element) {
+        const rect = element.getBoundingClientRect()
+        const adjustedTop = rect.top
+        this.maxHeight = `calc(88vh - ${adjustedTop}px)`
+      }
+    },
+
     disposePlayer() {
       if (this.player) {
         this.player.dispose()
@@ -890,21 +965,6 @@ export default {
         }
         this.currentDuraiton = seconds
       }, 0);
-    },
-
-    // Player表示のMax高さ設定値を取得
-    computedMaxHeight() {
-      const element = this.$refs.tabBar;
-      if (element) {
-        const rect = this.$refs.tabBar.getBoundingClientRect()
-        const y = rect.top
-        const adjustedTop = element.offsetTop + 200;
-        return `calc(100vh - ${adjustedTop}px - ${this.marginBottom}px)`;
-      }
-      else
-      {
-        return 'calc(100vh - 20px)';
-      }
     },
 
     // サムネイルスプライト読み込み
