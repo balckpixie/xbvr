@@ -23,18 +23,34 @@
       <section class="modal-card-body">
 
         <!-- <div class="columns"> -->
-        <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+        <div style="display: flex; justify-content: flex-end; align-items: center; gap: 0.5rem;">
+          
+          <div class="is-flex is-pulled-left" style="gap: 0.25rem;">
+            <div v-for="(f, idx) in filesByType" :key="idx">
+              <button rounded
+                class="button is-small"
+                :class="f.has_thumbnail ? 'is-success' : 'is-danger'"
+                @click='playFile(f)'
+                v-show="f.type === 'video'">
+                {{idx+1}}
+              </button>
+            </div>
+          </div>
+
           <button rounded 
             class="button is-outlined is-small"
             @click="onHideClick()">
             {{ hidePane2 ? 'Show' : 'Hide' }} Detail
           </button>
+
           <button rounded
             class="button is-outlined is-small"
             @click="isDetailOpen = !isDetailOpen">
             {{ isDetailOpen ? 'Hide' : 'Show'}} Info
           </button>
         </div>
+
+
         <splitpanes class="default-theme"
           style="max-height: 88vh;"
           :gutter-size="10" :min-pane-size="27" :max-pane-size="100" :split="splitDirection"
@@ -156,9 +172,8 @@
                     </b-field>
                   </div>
 
-                  <div class="column pt-0">
+                  <!-- <div class="column pt-0">
                     <div class="is-flex is-pulled-left" style="gap: 0.25rem">
-                    <!--<div class="content" style="display: flex; flex-wrap: wrap;">-->
                       <div class="" v-for="(f, idx) in filesByType" :key="idx" style="margin-top: 3px;">
                         <button rounded
                           class="button is-small"
@@ -169,7 +184,7 @@
                         </button>
                       </div>
                     </div>
-                  </div>
+                  </div> -->
 
                   <div class="column pt-0">
                     <div class="is-flex is-pulled-right" style="gap: 0.25rem">
