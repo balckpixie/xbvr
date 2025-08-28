@@ -815,11 +815,6 @@ export default {
     // Custom Black
     isDetailOpen() {
       this.$forceUpdate()
-      // this.$nextTick(() => {
-
-      //   setTimeout(() => {this.updateMaxHeight()}, 10) 
-      //   setTimeout(() => {this.updateMaxHeight()}, 100) 
-      // })
     },
     projectionMode(newVal) {
       this.$nextTick(() => {
@@ -924,14 +919,11 @@ beforeDestroy() {
       const wasPlaying = !this.player.paused()
 
       this.recreateVideoPlayer()
-      //this.playFile (this.currentFile)
-      // this.updatePlayerWithCheckPaused(this.currentFile, this.projectionMode, !wasPlaying)
       this.updatePlayer(currentSrc, this.projectionMode)
 
       // if (wasPlaying) {
         this.player.ready(() => {
           if (wasPlaying) {
-              //this.loadVideThumbnails()
               this.player.load();     // 動画を読み込む（バッファ開始）
               this.player.play();
               this.setCurrentTime(currentTime);
@@ -947,9 +939,6 @@ beforeDestroy() {
               this.player.play(); // `playing` イベントを発火させる
           }
         })  
-      // } 
-
-
       //this.player.volume(volume);
       //this.player.muted(wasMuted);
 
@@ -984,16 +973,23 @@ beforeDestroy() {
 
     // サムネイルスプライト読み込み
     setupSprite(file) {
+      const videPlayer = this.player
+      if (file === null) {
+        this.setSprites(videPlayer, {
+          sprites: []
+        });
+        return;
+      }
+
       if (file.has_thumbnail == false)
       {
         return;
       }
-      const params = this.thumbnailParams(file)
-      const videPlayer = this.player
+      const params = this.spriteParams(file)
       this.checkImageExists(params.url, (exists) =>{
         if (exists) {
 
-          this.setThumbnails(videPlayer, {
+          this.setSprites(videPlayer, {
             sprites: [
              params
             ],
@@ -1002,7 +998,7 @@ beforeDestroy() {
       });
     },
 
-    thumbnailParams(file) {
+    spriteParams(file) {
       const thumbnailUrl = '/api_custom/thumbnail/image/' + file.id
 
       // thumbnail_parameters が文字列かオブジェクトかを安全に処理
@@ -1026,19 +1022,16 @@ beforeDestroy() {
     },
     
     // サムネイルスプライトの設定＆再設定用メソッド
-    setThumbnails(player, options) {
+    setSprites(player, options) {
         // ThumbnailSprite クラスのコンストラクタを Video.js レジストリから取得
         const ThumbnailSpriteClass = videojs.getPlugin('thumbnailSprite');
         if (!ThumbnailSpriteClass) {
-            //console.error("ThumbnailSprite plugin is not registered with Video.js. Cannot set thumbnails.");
             return;
         }
         const pluginInstance = player.thumbnailSprite();
         if (pluginInstance instanceof ThumbnailSpriteClass) {
-            //console.log("Plugin already initialized. Calling updateSprites.");
             pluginInstance.updateSprites(options);
         } else {
-            //console.log("Plugin not yet initialized or instance type mismatch. Initializing with options.");
             player.thumbnailSprite(options);
         }
     },
@@ -1457,6 +1450,7 @@ beforeDestroy() {
         this.carouselSlide = 0
         this.clearThumbnails();
         this.updatePlayer(undefined, '180')
+        this.setupSprite(null)
       }
     },
     prevScene () {
@@ -1467,6 +1461,7 @@ beforeDestroy() {
         this.carouselSlide = 0
         this.clearThumbnails();
         this.updatePlayer(undefined, '180')
+        this.setupSprite(null)
       }
     },
     playerStepBack (interval) {
