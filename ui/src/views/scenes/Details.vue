@@ -974,17 +974,21 @@ beforeDestroy() {
     // サムネイルスプライト読み込み
     setupSprite(file) {
       const videPlayer = this.player
-      if (file === null) {
+      if (file === null || file.has_thumbnail == false) {
         this.setSprites(videPlayer, {
           sprites: []
         });
         return;
       }
 
-      if (file.has_thumbnail == false)
-      {
-        return;
-      }
+      // if (file.has_thumbnail == false)
+      // {
+      //   this.setSprites(videPlayer, {
+      //     sprites: []
+      //   });
+      //   return;
+      // }
+
       const params = this.spriteParams(file)
       this.checkImageExists(params.url, (exists) =>{
         if (exists) {
