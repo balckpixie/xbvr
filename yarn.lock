@@ -7772,7 +7772,7 @@ videojs-hotkeys@0.2.30:
   resolved "https://registry.npmjs.org/videojs-hotkeys/-/videojs-hotkeys-0.2.30.tgz"
   integrity sha512-G8kEQZPapoWDoEajh2Nroy4bCN1qVEul5AuzZqBS7ZCG45K7hqTYKgf1+fmYvG8m8u84sZmVMUvSWZBjaFW66Q==
 
-"videojs-thumbnail-sprite-custom@file:../libs/videojs-thumbnail-sprite-custom":
+videojs-thumbnail-sprite-custom@../libs/videojs-thumbnail-sprite-custom/:
   version "0.1.1"
   dependencies:
     "@babel/runtime" "^7.11.2"

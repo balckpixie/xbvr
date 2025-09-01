@@ -50,8 +50,13 @@
     <div class="is-clearfix"></div>
 
     <div class="columns is-multiline">
-      <div :class="['column', 'is-multiline', cardSizeClass]"
+      <!-- <div :class="['column', 'is-multiline', cardSizeClass]"
            v-for="item in items" :key="item.id">
+        <SceneCard v-if="!item.is_deleted" :item="item"/>
+      </div> -->
+      <div v-if="!item.is_deleted"
+          :class="['column', 'is-multiline', cardSizeClass]"
+          v-for="item in items" :key="item.id">
         <SceneCard :item="item"/>
       </div>
     </div>

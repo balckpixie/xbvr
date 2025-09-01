@@ -18,6 +18,8 @@ type GetStateResponse struct {
 }
 
 type RequestSaveOptions struct {
+	SaveDMMSettings	  		bool   `json:"saveDMMSettings"`
+	SaveThumbnailSettings 	bool   `json:"saveThumbnailSettings"`
 	DmmApiId               string `json:"dmmApiId"`
 	DmmAffiliateId         string `json:"dmmAffiliateId"`
 	ThumbnailEnabled       bool   `json:"thumbnailEnabled"`
@@ -72,24 +74,34 @@ func (i ConfigResource) saveOptionsTaskSchedule(req *restful.Request, resp *rest
 		return
 	}
 
-	config.Config.Custom.DmmAPIKey.DmmAffiliateId = r.DmmAffiliateId
-	config.Config.Custom.DmmAPIKey.DmmApiId = r.DmmApiId
-
-	if r.ThumbnailHourEnd > 23 {
-		r.ThumbnailHourEnd -= 24
+	if r.SaveDMMSettings {
+		if r.DmmApiId == "" || r.DmmAffiliateId == "" {
+			log.Error("DMM API ID and Affiliate ID must be set")
+			resp.WriteHeaderAndEntity(http.StatusBadRequest, "DMM API ID and Affiliate ID must be set")
+			return
+		} else {
+			config.Config.Custom.DmmAPIKey.DmmAffiliateId = r.DmmAffiliateId
+			config.Config.Custom.DmmAPIKey.DmmApiId = r.DmmApiId
+		}
 	}
-	config.Config.Custom.ThumbnailSchedule.Enabled = r.ThumbnailEnabled
-	config.Config.Custom.ThumbnailSchedule.HourInterval = r.ThumbnailHourInterval
-	config.Config.Custom.ThumbnailSchedule.UseRange = r.ThumbnailUseRange
-	config.Config.Custom.ThumbnailSchedule.MinuteStart = r.ThumbnailMinuteStart
-	config.Config.Custom.ThumbnailSchedule.HourStart = r.ThumbnailHourStart
-	config.Config.Custom.ThumbnailSchedule.HourEnd = r.ThumbnailHourEnd
-	config.Config.Custom.ThumbnailSchedule.RunAtStartDelay = r.ThumbnailStartDelay
+	
+	if r.SaveThumbnailSettings {
+		if r.ThumbnailHourEnd > 23 {
+			r.ThumbnailHourEnd -= 24
+		}
+		config.Config.Custom.ThumbnailSchedule.Enabled = r.ThumbnailEnabled
+		config.Config.Custom.ThumbnailSchedule.HourInterval = r.ThumbnailHourInterval
+		config.Config.Custom.ThumbnailSchedule.UseRange = r.ThumbnailUseRange
+		config.Config.Custom.ThumbnailSchedule.MinuteStart = r.ThumbnailMinuteStart
+		config.Config.Custom.ThumbnailSchedule.HourStart = r.ThumbnailHourStart
+		config.Config.Custom.ThumbnailSchedule.HourEnd = r.ThumbnailHourEnd
+		config.Config.Custom.ThumbnailSchedule.RunAtStartDelay = r.ThumbnailStartDelay
 
-	config.Config.Custom.ThumbnailParams.Start = r.ThumnailStartTime
-	config.Config.Custom.ThumbnailParams.Interval = r.ThumbnailInterval
-	config.Config.Custom.ThumbnailParams.Resolution = r.ThumbnailResolution
-	config.Config.Custom.ThumbnailParams.UseCUDAEncode = r.ThumbnailUseCUDAEncode
+		config.Config.Custom.ThumbnailParams.Start = r.ThumnailStartTime
+		config.Config.Custom.ThumbnailParams.Interval = r.ThumbnailInterval
+		config.Config.Custom.ThumbnailParams.Resolution = r.ThumbnailResolution
+		config.Config.Custom.ThumbnailParams.UseCUDAEncode = r.ThumbnailUseCUDAEncode
+	}
 
 	config.SaveConfig()
 

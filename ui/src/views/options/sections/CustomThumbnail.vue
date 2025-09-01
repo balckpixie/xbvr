@@ -54,7 +54,7 @@
                   <div class="column is-one-third" style="margin-left:.75em">{{ delayStartMsg(thumbnailStartDelay) }}</div>
               </b-field>
               <p>
-                BETA NOTE: Please note this is CPU-heavy process, if approriate limit the Time of Day the task runs                  
+                BETA NOTE: Please note this is CPU-heavy process, if approriate limit the Time of Day the task runs  
               </p>                  
               
           </div>
@@ -65,24 +65,13 @@
             <b-field label="Start time">
               <div class="columns">
                 <div class="column is-two-thirds">
-                  <b-slider :min="5" :max="60" :step="5" :tooltip="false" v-model="thumbStartTime"></b-slider>
+                  <b-slider :min="0" :max="60" :step="5" :tooltip="false" v-model="thumbStartTime"></b-slider>
                 </div>
                 <div class="column">
                   <div class="content">{{thumbStartTime}}sec</div>
                 </div>
               </div>
             </b-field>
-
-            <!-- <b-field label="Interval seconds">
-              <div class="columns">
-                <div class="column is-two-thirds">
-                  <b-slider :min="5" :max="120" :step="5" :tooltip="false" v-model="thumbInterval"></b-slider>
-                </div>
-                <div class="column">
-                  <div class="content">{{thumbInterval}}sec</div>
-                </div>
-              </div>
-            </b-field> -->
 
             <div class="field">
               <label class="label">Interval seconds</label>
@@ -111,7 +100,9 @@
             <b-field>
               <b-checkbox v-model="useCUDAEncode">Use HW Encode (CUDA)</b-checkbox>
             </b-field>
-
+            <p>
+                NOTE: The time accuracy of thumbnails varies depending on the keyframe acquisition.
+            </p>    
           </div>
           <div v-if="activeTab == 2">
               <p><strong>Clean Thumbnails</strong></p>
@@ -241,6 +232,8 @@ export default {
       this.isLoading = true
       await ky.post('/api_custom/options/save', {
         json: { 
+          saveDMMSettings: false,
+          saveThumbnailSettings: true,
 
           thumbnailEnabled: this.thumbnailEnabled,
           thumbnailHourInterval: this.thumbnailHourInterval,

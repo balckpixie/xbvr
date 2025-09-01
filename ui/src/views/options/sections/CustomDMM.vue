@@ -73,7 +73,9 @@ export default {
     async saveSettings () {
       this.isLoading = true
       await ky.post('/api_custom/options/save', {
-        json: {          
+        json: {
+          saveDMMSettings: true,
+          saveThumbnailSettings: false,
           dmmAffiliateId: this.dmmAffiliateId,
           dmmApiId: this.dmmApiId,
         }

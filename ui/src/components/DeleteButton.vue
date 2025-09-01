@@ -25,8 +25,9 @@ export default {
       const result = await this.$store.dispatch('sceneList/deleteScene', { scene });
       if (result) {
         this.item.is_deleted = !currentToggle;
+        this.$emit('deleted')
+        this.$store.commit('overlay/hideDetails');
       }
-      this.$store.commit('overlay/hideDetails')
     }
   }
 }
