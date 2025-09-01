@@ -1,3 +1,4 @@
+import { min } from 'date-fns'
 import ky from 'ky'
 import Vue from 'vue'
 
@@ -24,7 +25,9 @@ const defaultFilterState = {
   cuepoint: [],
   attributes: [],
   volume: 0,
-  sort: 'release_desc'
+  sort: 'release_desc',
+  max_count: 30,
+  min_count: 0,
 }
 
 const state = {

@@ -667,6 +667,8 @@ type RequestSceneList struct {
 	Volume       optional.Int      `json:"volume"`
 	Released     optional.String   `json:"releaseMonth"`
 	Sort         optional.String   `json:"sort"`
+	MaxFileCount optional.Int      `json:"max_count"`	
+	MinFileCount optional.Int      `json:"min_count"`
 }
 
 type ResponseSceneList struct {
@@ -793,7 +795,14 @@ func queryScenes(db *gorm.DB, r RequestSceneList) (*gorm.DB, *gorm.DB) {
 		}
 	}
 
+	
+	// Custom Black
+	if r.MinFileCount.Present() && r.MinFileCount.OrElse(0) != 0 {
+		tx = tx.
+		Where("exists (select 1 from files where files.scene_id = scenes.id and files.type = 'video' group by files.scene_id having count(*) >= ?)", r.MinFileCount.OrElse(0))
+	}
 	// handle Attribute selections
+
 	var orAttribute []string
 	var andAttribute []string
 	combinedWhere := ""

@@ -1893,27 +1893,27 @@ span.is-active img {
 
 .aspect-16_10 {
   aspect-ratio: 16 / 10;
-  max-height: 75vh;
+  max-height: 78vh;
 }
 
 .aspect-16_9 {
   aspect-ratio: 16 / 9;
-  max-height: 75vh;
+  max-height: 78vh;
 }
 
 .aspect-4_3 {
   aspect-ratio: 4 / 3;
-  max-height: 75vh;
+  max-height: 78vh;
 }
 
 .aspect-1_1 {
   aspect-ratio: 1 / 1;
-  max-height: 75vh;
+  max-height: 78vh;
 }
 
 .aspect-9_16 {
   aspect-ratio: 9 / 16;
-  max-height: 75vh;
+  max-height: 78vh;
 }
 
 .video-custom {
