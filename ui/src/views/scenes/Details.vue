@@ -975,19 +975,9 @@ beforeDestroy() {
     setupSprite(file) {
       const videPlayer = this.player
       if (file === null || file.has_thumbnail == false) {
-        this.setSprites(videPlayer, {
-          sprites: []
-        });
+        this.resetSprites(videPlayer)
         return;
       }
-
-      // if (file.has_thumbnail == false)
-      // {
-      //   this.setSprites(videPlayer, {
-      //     sprites: []
-      //   });
-      //   return;
-      // }
 
       const params = this.spriteParams(file)
       this.checkImageExists(params.url, (exists) =>{
@@ -1037,6 +1027,18 @@ beforeDestroy() {
             pluginInstance.updateSprites(options);
         } else {
             player.thumbnailSprite(options);
+        }
+    },
+
+    resetSprites(player) {
+        // ThumbnailSprite クラスのコンストラクタを Video.js レジストリから取得
+        const ThumbnailSpriteClass = videojs.getPlugin('thumbnailSprite');
+        if (!ThumbnailSpriteClass) {
+            return;
+        }
+        const pluginInstance = player.thumbnailSprite();
+        if (pluginInstance instanceof ThumbnailSpriteClass) {
+            pluginInstance.resetSprites();
         }
     },
 
