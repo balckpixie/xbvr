@@ -154,6 +154,21 @@ func (i *Actor) CountActorTags() {
 			actor.Save()
 		}
 	}
+
+
+	// Scene が存在しない Actor を拾って更新
+	var orphanActors []Actor
+	commonDb.Model(&Actor{}).
+		Where("NOT EXISTS (SELECT 1 FROM scene_cast sc JOIN scenes s ON s.id = sc.scene_id AND s.deleted_at IS NULL WHERE sc.actor_id = actors.id)").
+		Find(&orphanActors)
+
+	for _, actor := range orphanActors {
+		if actor.Count != 0 || actor.AvailCount != 0 {
+			actor.Count = 0
+			actor.AvailCount = 0
+			actor.Save()
+		}
+	}
 }
 func QueryActorFull(r RequestActorList) ResponseActorList {
 	var actors []Actor
