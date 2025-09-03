@@ -103,12 +103,15 @@ func DetectVRType(filePath string, timeout time.Duration) (string, error) {
 		{5760, 2880}: "180_sbs",
 		{4096, 2048}: "180_sbs",
 		{3840, 1920}: "180_sbs",
-		{1920, 1080}: "180_mono",
+		{1920, 960}: "180_sbs",
 	}
 	if val, ok := specialCases[[2]int{w, h}]; ok {
 		return val, nil
 	}
-
+	// 16:9 → flat に固定
+	if ratio > 1.75 && ratio < 1.79 {
+		return "flat", nil
+	}
 	// --- 4. 解像度ヒューリスティック ---
 	switch {
 	case ratio > 3.5 && ratio < 4.1:
