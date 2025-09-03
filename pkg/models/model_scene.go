@@ -801,6 +801,10 @@ func queryScenes(db *gorm.DB, r RequestSceneList) (*gorm.DB, *gorm.DB) {
 		tx = tx.
 		Where("exists (select 1 from files where files.scene_id = scenes.id and files.type = 'video' group by files.scene_id having count(*) >= ?)", r.MinFileCount.OrElse(0))
 	}
+	if r.MaxFileCount.Present() && r.MaxFileCount.OrElse(0) != 30 {
+		tx = tx.
+		Where("exists (select 1 from files where files.scene_id = scenes.id and files.type = 'video' group by files.scene_id having count(*) <= ?)", r.MaxFileCount.OrElse(0))
+	}
 	// handle Attribute selections
 
 	var orAttribute []string

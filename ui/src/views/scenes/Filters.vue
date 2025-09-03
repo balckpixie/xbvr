@@ -207,7 +207,7 @@
 
       <b-field>
         <strong><small>{{ $t("Files") }}:</small></strong>
-        <b-slider :min="0" :max="30" :step="1" :tooltip="true" v-model="filecounts" lazy class="slider" ></b-slider>
+        <b-slider :min="0" :max="30" :step="1" :tooltip="true" v-model="filecounts" lazy class="slider" style="margin: 0.5em 1em 0em 2em;"></b-slider>
       </b-field>
 
     </div>
