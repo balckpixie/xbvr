@@ -363,6 +363,10 @@
                         <button class="button is-dark is-small is-outlined" title="Unmatch file from scene" @click='unmatchFile(f)'>
                           <b-icon pack="fas" icon="unlink" size="is-small"></b-icon>
                         </button>&nbsp;
+                        <button class="button is-dark is-small is-outlined" title="Delete thumbnail for this file" @click='deleteThumbnail(f)'>
+                            <b-icon pack="fas" icon="image" size="is-small"></b-icon>
+                            <b-icon pack="fas" icon="trash" size="is-small"></b-icon>
+                        </button>&nbsp;
                         <button class="button is-danger is-small is-outlined" title="reset filename" @click='resetFileName(f)'>
                           <b-icon pack="fas" icon="redo-alt" size="is-small"></b-icon>
                         </button>&nbsp;
@@ -1281,6 +1285,20 @@ beforeDestroy() {
         hasIcon: true,
         onConfirm: () => {
           ky.delete(`/api/files/file/${file.id}`).json().then(data => {
+            this.$store.commit('overlay/showDetails', { scene: data })
+          })
+        }
+      })
+    },
+
+    deleteThumbnail (file) {
+      this.$buefy.dialog.confirm({
+        title: 'Delete thumbnail',
+        message: `You're about to remove thumbnail <strong>${file.filename}</strong> from <strong>disk</strong>.`,
+        type: 'is-danger',
+        hasIcon: true,
+        onConfirm: () => {
+          ky.delete(`/api_custom/thumbnail/image/${file.id}`).json().then(data => {
             this.$store.commit('overlay/showDetails', { scene: data })
           })
         }

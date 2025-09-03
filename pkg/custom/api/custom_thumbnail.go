@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	restfulspec "github.com/emicklei/go-restful-openapi/v2"
 	"github.com/emicklei/go-restful/v3"
@@ -45,6 +46,12 @@ func (i ThumbnailResource) WebService() *restful.WebService {
 
 	ws.Route(ws.POST("/cleanup").To(i.cleanupThumbnails).
 		Metadata(restfulspec.KeyOpenAPITags, tags))
+
+	ws.Route(ws.DELETE("/image/{file-id}").To(i.deleteThumbnails).
+		Param(ws.PathParameter("file-id", "File ID").DataType("int")).
+		ContentEncodingEnabled(false).
+		Metadata(restfulspec.KeyOpenAPITags, tags))
+
 	return ws
 }
 func (i ThumbnailResource) getThumbnail(req *restful.Request, resp *restful.Response) {
@@ -70,6 +77,45 @@ func (i ThumbnailResource) headThumbnail(req *restful.Request, resp *restful.Res
 	// 空の ReadSeeker を渡すことで ServeContent を正しく動作させる
 	emptyBody := bytes.NewReader([]byte{})
 	http.ServeContent(resp.ResponseWriter, req.Request, filepath.Base(path), info.ModTime(), emptyBody)
+}
+
+func (i ThumbnailResource) deleteThumbnails(req *restful.Request, resp *restful.Response) {
+	fileID := req.PathParameter("file-id")
+	idUint, err := strconv.ParseUint(fileID, 10, 64)
+	if err != nil {
+		resp.WriteErrorString(http.StatusBadRequest, "Invalid file ID")
+		return
+	}
+
+	var scene models.Scene
+	var file models.File
+	db, _ := models.GetDB()
+	defer db.Close()
+	err = db.Preload("Volume").Where(&models.File{ID: uint(idUint)}).First(&file).Error
+	
+	if err == nil {
+		if file.HasThumbnail {
+			thumbFile := filepath.Join(common.VideoThumbnailDir, strconv.FormatUint(uint64(file.ID), 10)+".jpg")
+			err := os.Remove(thumbFile)
+			if err == nil {
+				file.HasThumbnail = false
+				file.ThumbnailParameters = ""
+				if err := file.Save(); err != nil {
+					log.Warnf("failed to save file %v: %v", file.ID, err)
+				} else {
+					log.Infof("Thumbnails deleted File_ID %v - Saved", file.ID)
+				}
+			} else {
+				log.Errorf("error deleting thumbnail file: %v", err)
+			}
+			
+			if file.SceneID != 0 {
+				scene.GetIfExistByPK(file.SceneID)
+				scene.UpdateStatus()
+			}
+		}
+	}
+	resp.WriteHeaderAndEntity(http.StatusOK,scene)
 }
 
 func (i ThumbnailResource) cleanupThumbnails(req *restful.Request, resp *restful.Response) {
