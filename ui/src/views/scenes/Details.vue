@@ -363,6 +363,10 @@
                         <button class="button is-dark is-small is-outlined" title="Unmatch file from scene" @click='unmatchFile(f)'>
                           <b-icon pack="fas" icon="unlink" size="is-small"></b-icon>
                         </button>&nbsp;
+                        <button class="button is-dark is-small is-outlined" title="Delete thumbnail for this file" @click='deleteThumbnail(f)'>
+                            <b-icon pack="fas" icon="image" size="is-small"></b-icon>
+                            <b-icon pack="fas" icon="trash" size="is-small"></b-icon>
+                        </button>&nbsp;
                         <button class="button is-danger is-small is-outlined" title="reset filename" @click='resetFileName(f)'>
                           <b-icon pack="fas" icon="redo-alt" size="is-small"></b-icon>
                         </button>&nbsp;
@@ -1287,6 +1291,20 @@ beforeDestroy() {
       })
     },
 
+    deleteThumbnail (file) {
+      this.$buefy.dialog.confirm({
+        title: 'Delete thumbnail',
+        message: `You're about to remove thumbnail <strong>${file.filename}</strong> from <strong>disk</strong>.`,
+        type: 'is-danger',
+        hasIcon: true,
+        onConfirm: () => {
+          ky.delete(`/api_custom/thumbnail/image/${file.id}`).json().then(data => {
+            this.$store.commit('overlay/showDetails', { scene: data })
+          })
+        }
+      })
+    },
+
     // Custom Black
     // resetFileName (file) {
     //       this.activeMedia = 0
@@ -1893,27 +1911,27 @@ span.is-active img {
 
 .aspect-16_10 {
   aspect-ratio: 16 / 10;
-  max-height: 75vh;
+  max-height: 78vh;
 }
 
 .aspect-16_9 {
   aspect-ratio: 16 / 9;
-  max-height: 75vh;
+  max-height: 78vh;
 }
 
 .aspect-4_3 {
   aspect-ratio: 4 / 3;
-  max-height: 75vh;
+  max-height: 78vh;
 }
 
 .aspect-1_1 {
   aspect-ratio: 1 / 1;
-  max-height: 75vh;
+  max-height: 78vh;
 }
 
 .aspect-9_16 {
   aspect-ratio: 9 / 16;
-  max-height: 75vh;
+  max-height: 78vh;
 }
 
 .video-custom {

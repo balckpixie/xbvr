@@ -204,6 +204,12 @@
           </b-taginput>
         </b-field>
       </b-tooltip>
+
+      <b-field>
+        <strong><small>{{ $t("Files") }}:</small></strong>
+        <b-slider :min="0" :max="30" :step="1" :tooltip="true" v-model="filecounts" lazy class="slider" style="margin: 0.5em 1em 0em 2em;"></b-slider>
+      </b-field>
+
     </div>
     <div class="is-divider" data-content="Actor Also Known As groups"></div>
     <b-field>
@@ -584,6 +590,19 @@ export default {
     }
   },
   computed: {
+    filecounts: {
+      get () {
+        return [this.$store.state.sceneList.filters.min_count, this.$store.state.sceneList.filters.max_count]
+      },
+      set (value) {
+        if (this.$store.state.sceneList.filters.min_count != value[0] || this.$store.state.sceneList.filters.max_count != value[1]){
+          this.$store.state.sceneList.filters.min_count = value[0]
+          this.$store.state.sceneList.filters.max_count = value[1]
+          this.reloadList()
+        }
+      }
+    },
+
     filters () {
       return this.$store.state.sceneList.filterOpts
     },
