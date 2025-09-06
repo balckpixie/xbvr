@@ -14,13 +14,15 @@ import (
 
 	"github.com/xbapps/xbvr/pkg/common"
 	"github.com/xbapps/xbvr/pkg/models"
+
+	customcommon "github.com/xbapps/xbvr/pkg/custom/common"
 )
 
 type RequestThumbnailParameters struct {
-	ThumnailStartTime      int    `json:"start"`
-	ThumbnailInterval      int    `json:"interval"`
-	ThumbnailResolution    int    `json:"resolution"`
-	ThumbnailUseCUDAEncode bool   `json:"useCUDAEncode"`
+	ThumnailStartTime      int  `json:"start"`
+	ThumbnailInterval      int  `json:"interval"`
+	ThumbnailResolution    int  `json:"resolution"`
+	ThumbnailUseCUDAEncode bool `json:"useCUDAEncode"`
 }
 
 type ThumbnailResource struct{}
@@ -79,6 +81,45 @@ func (i ThumbnailResource) headThumbnail(req *restful.Request, resp *restful.Res
 	http.ServeContent(resp.ResponseWriter, req.Request, filepath.Base(path), info.ModTime(), emptyBody)
 }
 
+// func (i ThumbnailResource) deleteThumbnails(req *restful.Request, resp *restful.Response) {
+// 	fileID := req.PathParameter("file-id")
+// 	idUint, err := strconv.ParseUint(fileID, 10, 64)
+// 	if err != nil {
+// 		resp.WriteErrorString(http.StatusBadRequest, "Invalid file ID")
+// 		return
+// 	}
+
+// 	var scene models.Scene
+// 	var file models.File
+// 	db, _ := models.GetDB()
+// 	defer db.Close()
+// 	err = db.Preload("Volume").Where(&models.File{ID: uint(idUint)}).First(&file).Error
+
+// 	if err == nil {
+// 		if file.HasThumbnail {
+// 			thumbFile := filepath.Join(common.VideoThumbnailDir, strconv.FormatUint(uint64(file.ID), 10)+".jpg")
+// 			err := os.Remove(thumbFile)
+// 			if err == nil {
+// 				file.HasThumbnail = false
+// 				file.ThumbnailParameters = ""
+// 				if err := file.Save(); err != nil {
+// 					log.Warnf("failed to save file %v: %v", file.ID, err)
+// 				} else {
+// 					log.Infof("Thumbnails deleted File_ID %v - Saved", file.ID)
+// 				}
+// 			} else {
+// 				log.Errorf("error deleting thumbnail file: %v", err)
+// 			}
+
+// 			if file.SceneID != 0 {
+// 				scene.GetIfExistByPK(file.SceneID)
+// 				scene.UpdateStatus()
+// 			}
+// 		}
+// 	}
+// 	resp.WriteHeaderAndEntity(http.StatusOK,scene)
+// }
+
 func (i ThumbnailResource) deleteThumbnails(req *restful.Request, resp *restful.Response) {
 	fileID := req.PathParameter("file-id")
 	idUint, err := strconv.ParseUint(fileID, 10, 64)
@@ -91,31 +132,17 @@ func (i ThumbnailResource) deleteThumbnails(req *restful.Request, resp *restful.
 	var file models.File
 	db, _ := models.GetDB()
 	defer db.Close()
+
 	err = db.Preload("Volume").Where(&models.File{ID: uint(idUint)}).First(&file).Error
-	
 	if err == nil {
-		if file.HasThumbnail {
-			thumbFile := filepath.Join(common.VideoThumbnailDir, strconv.FormatUint(uint64(file.ID), 10)+".jpg")
-			err := os.Remove(thumbFile)
-			if err == nil {
-				file.HasThumbnail = false
-				file.ThumbnailParameters = ""
-				if err := file.Save(); err != nil {
-					log.Warnf("failed to save file %v: %v", file.ID, err)
-				} else {
-					log.Infof("Thumbnails deleted File_ID %v - Saved", file.ID)
-				}
-			} else {
-				log.Errorf("error deleting thumbnail file: %v", err)
-			}
-			
-			if file.SceneID != 0 {
-				scene.GetIfExistByPK(file.SceneID)
-				scene.UpdateStatus()
-			}
+		_ = customcommon.DeleteThumbnail(&file)
+		if file.SceneID != 0 {
+			scene.GetIfExistByPK(file.SceneID)
+			scene.UpdateStatus()
 		}
 	}
-	resp.WriteHeaderAndEntity(http.StatusOK,scene)
+
+	resp.WriteHeaderAndEntity(http.StatusOK, scene)
 }
 
 func (i ThumbnailResource) cleanupThumbnails(req *restful.Request, resp *restful.Response) {
@@ -127,7 +154,7 @@ func (i ThumbnailResource) cleanupThumbnails(req *restful.Request, resp *restful
 
 	db, _ := models.GetDB()
 	defer db.Close()
-	
+
 	// File構造体はstring型に修正されているため、直接データを読み込む
 	var files []models.File
 	if err := db.Where("has_thumbnail = 1").Find(&files).Error; err != nil {
@@ -161,10 +188,10 @@ func (i ThumbnailResource) cleanupThumbnails(req *restful.Request, resp *restful
 
 	for _, f := range filesToDelete {
 		thumbPath := filepath.Join(common.VideoThumbnailDir, fmt.Sprintf("%d.jpg", f.ID))
-		_ = os.Remove(thumbPath) 
+		_ = os.Remove(thumbPath)
 
 		f.HasThumbnail = false
-		f.ThumbnailParameters = "" 
+		f.ThumbnailParameters = ""
 		if err := db.Save(&f).Error; err == nil {
 			deleted++
 		}
