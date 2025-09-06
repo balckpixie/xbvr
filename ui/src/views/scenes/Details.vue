@@ -1760,7 +1760,7 @@ beforeDestroy() {
 }
 
 .modal-card {
-  width: 90%;
+  width: 95%;
 }
 
 .missing {
