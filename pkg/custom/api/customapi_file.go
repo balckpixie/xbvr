@@ -21,6 +21,11 @@ type RequestResetFilename struct {
 	SceneID string `json:"scene_id"`
 }
 
+type RequestResetProjection struct {
+	FileID      uint   `json:"file_id"`
+	Projection string `json:"projection"`
+}
+
 type FilesResource struct{}
 
 func (i FilesResource) WebService() *restful.WebService {
@@ -38,6 +43,8 @@ func (i FilesResource) WebService() *restful.WebService {
 	ws.Route(ws.POST("/resetname").To(i.resetFilename).
 		Metadata(restfulspec.KeyOpenAPITags, tags))
 
+	ws.Route(ws.POST("/resetprojection").To(i.resetProjection).
+		Metadata(restfulspec.KeyOpenAPITags, tags))
 	return ws
 }
 
@@ -80,5 +87,16 @@ func (i FilesResource) renameFile(req *restful.Request, resp *restful.Response) 
 		return
 	}
 	scene := customcommon.RenameFileByFileId(uint(r.FileID), "", r.NewFilename)
+	resp.WriteHeaderAndEntity(http.StatusOK, scene)
+}
+
+func (i FilesResource) resetProjection(req *restful.Request, resp *restful.Response) {
+	var r RequestResetProjection
+	err := req.ReadEntity(&r)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	scene := customcommon.ResetProjection(uint(r.FileID), r.Projection)
 	resp.WriteHeaderAndEntity(http.StatusOK, scene)
 }

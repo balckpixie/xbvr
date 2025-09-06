@@ -367,6 +367,10 @@
                             <b-icon pack="fas" icon="image" size="is-small"></b-icon>
                             <b-icon pack="fas" icon="trash" size="is-small"></b-icon>
                         </button>&nbsp;
+                        <button class="button is-dark is-small is-outlined" title="Reset projection and delete thumbnail" @click='resetProjection(f)'>
+                            <b-icon pack="fas" icon="window-restore" size="is-small"></b-icon>
+                        </button>&nbsp;
+
                         <button class="button is-danger is-small is-outlined" title="reset filename" @click='resetFileName(f)'>
                           <b-icon pack="fas" icon="redo-alt" size="is-small"></b-icon>
                         </button>&nbsp;
@@ -1306,14 +1310,22 @@ beforeDestroy() {
     },
 
     // Custom Black
-    // resetFileName (file) {
-    //       this.activeMedia = 0
-    //       this.updatePlayer(undefined, this.projectionMode)
-    //       ky.post(`/api_custom/files/resetname`, {json:{file_id: file.id, scene_id: this.item.scene_id }}).json().then(data => {
-    //         this.$store.commit('sceneList/updateScene', data)
-    //         this.$store.commit('overlay/showDetails', { scene: data })
-    //       })
-    // },
+    resetProjection (file) {
+      this.$buefy.dialog.confirm({
+        title: 'Reset projection',
+        message: 'Reset projection?',
+        confirmText: 'OK',
+        cancelText: 'Cancel',
+        type: 'is-danger', 
+        hasIcon: true,
+        onConfirm: () => {
+          ky.post(`/api_custom/files/resetprojection`, {json:{file_id: file.id, projection:''}}).json().then(data => {
+            this.$store.commit('sceneList/updateScene', data)
+            this.$store.commit('overlay/showDetails', { scene: data })
+          })
+        }
+      })
+    },
     resetFileName (file) {
       this.$buefy.dialog.confirm({
         title: 'Reset filename',
@@ -1748,7 +1760,7 @@ beforeDestroy() {
 }
 
 .modal-card {
-  width: 90%;
+  width: 95%;
 }
 
 .missing {
