@@ -368,7 +368,7 @@
                             <b-icon pack="fas" icon="trash" size="is-small"></b-icon>
                         </button>&nbsp;
                         <button class="button is-dark is-small is-outlined" title="Reset projection and delete thumbnail" @click='resetProjection(f)'>
-                            <b-icon pack="fas" icon="ayout-wtf" size="is-small"></b-icon>
+                            <b-icon pack="fas" icon="window-restore" size="is-small"></b-icon>
                         </button>&nbsp;
 
                         <button class="button is-danger is-small is-outlined" title="reset filename" @click='resetFileName(f)'>
