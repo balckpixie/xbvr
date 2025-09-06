@@ -36,6 +36,9 @@ func ResetProjection(fileId uint, projection string) models.Scene {
 			scene.GetIfExistByPK(file.SceneID)
 			scene.UpdateStatus()
 		}
+		
+		log.Infof("Reset projection %v - %s", file.ID, projection)
+
 	} else {
 		log.Errorf("error renaming file %v", err)
 	}
