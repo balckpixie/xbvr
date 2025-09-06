@@ -47,9 +47,10 @@ type File struct {
 	RefreshHeatmapCache bool `json:"refresh_heatmap_cache" xbvrbackup:"-"`
 
 	// Custom black
-	HasThumbnail bool `json:"has_thumbnail" gorm:"default:false" xbvrbackup:"-"`
+	HasThumbnail       bool   `json:"has_thumbnail" gorm:"default:false" xbvrbackup:"has_thumbnail"`
+	ThumbnailParameters string `json:"thumbnail_parameters" xbvrbackup:"thumbnail_parameters"`
 	// Custom END
-}
+	}
 
 func (f *File) GetPath() string {
 	return filepath.Join(f.Path, f.Filename)

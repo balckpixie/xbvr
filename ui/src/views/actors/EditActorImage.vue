@@ -16,28 +16,7 @@
           <b-tab-item :label="$t('Actor')">
             <div class="columns is-gapless" style="height: 64vh;overflow: hidden;">
 
-              <!-- 左カラム：サイドバー（固定） -->
-              <div class="column is-2" style="background-color: #f5f5f5;">
-                <div class="p-4">
-                  <div class="columns is-mobile is-multiline">
-                    <div class="column is-full card-container">
-                      <b-button @click="changeActorImage()" class="is-primary is-fullwidth" style="display:flex; justify-content:center; margin-bottom:5px;">{{ $t('Set Main') }}</b-button>
-                    </div>
-                    <div class="column is-full card-container">
-                      <b-button @click="changeActorFaceImage()" class="is-primary is-fullwidth" style="display:flex; justify-content:center; margin-bottom:5px;">{{ $t('Set Face') }}</b-button>
-                    </div>
-                    <div class="column is-full card-container">
-                      <b-button @click="deleteActorImage()" class="is-primary is-fullwidth" style="display:flex; justify-content:center; margin-bottom:5px;">{{ $t('Delete')}}</b-button></div>
-                  </div>
-                  <span style="display: flex; justify-content: center;">{{ $t('Face Image')}}</span>
-
-                  <div class="vue-load-image">
-                    <img :src="actor.face_image_url" style="width: 100%; height: auto;">
-                  </div>
-                </div>
-              </div>
-
-              <!-- 右カラム：スクロール可能 -->
+              <!-- カルーセル：スクロール可能 -->
               <div class="column" style="overflow-y: auto; padding: 1rem;">
                 <b-carousel v-model="carouselSlide" @change="scrollToActiveIndicator" :autoplay="false"
                   :indicator-inside="false">
@@ -58,14 +37,53 @@
                   </template>
                 </b-carousel>
               </div>
+              
+              <!-- サイドバー（固定） -->
+              <div class="column is-2" style="background-color: rgb(147 134 134 / 14%);">
+                <div class="p-4">
+                  <div class="columns is-mobile is-multiline">
+                    <div class="column is-half card-container">
+                      <b-button @click="changeActorImage()" class="is-primary is-fullwidth"
+                        style="display:flex; justify-content:center; margin-bottom:5px;">{{ $t('Set Main') }}</b-button>
+                    </div>
+                    <div class="column is-half card-container">
+                      <b-button @click="changeActorFaceImage()" class="is-primary is-fullwidth"
+                        style="display:flex; justify-content:center; margin-bottom:5px;">{{ $t('Set Face') }}</b-button>
+                    </div>
+                    <div class="column is-full card-container">
+                      <b-button @click="deleteActorImage()" class="is-danger is-fullwidth"
+                        style="display:flex; justify-content:center; margin-bottom:5px;">{{ $t('Delete') }}</b-button>
+                    </div>
+                  </div>
+                  <span style="display: flex; justify-content: center;">{{ $t('Main Image') }}</span>
+                  <div class="vue-load-image" style="display: flex; justify-content: center;">
+                    <img :src="actor.image_url" style="max-height: 23vh">
+                  </div>
+                  <span style="display: flex; justify-content: center;">{{ $t('Face Image') }}</span>
+                  <div class="vue-load-image" style="display: flex; justify-content: center;">
+                    <img :src="actor.face_image_url" style="max-height: 23vh">
+                  </div>
+                </div>
+              </div>
+
             </div>
+
           </b-tab-item>
 
           <b-tab-item :label="$t('Search')">
             <div class="columns is-gapless" style="height: 66vh;overflow: hidden;">
 
-              <!-- 左カラム：サイドバー（固定） -->
-              <div class="column is-2" style="background-color: #f5f5f5;">
+
+              <!-- カルーセル：スクロール可能 -->
+              <div class="column" style="overflow-y: auto; padding: 1rem;">
+                <div>
+                  <vue-select-image ref="vueSelectImage" :data-images="getImages" :is-multiple="true"
+                    :selected-images="initialSelected" @onselectmultipleimage="onSelectMultipleImage" />
+                </div>
+              </div>
+              
+              <!-- サイドバー（固定） -->
+              <div class="column is-2" style="background-color: rgb(147 134 134 / 14%);;">
                 <div class="p-4">
                   <div class="columns is-mobile is-multiline">
                     <div class="column is-half card-container"><b-button :disabled="SelectMultipleImage.length != 1"
@@ -82,7 +100,7 @@
                         }}</b-button></div>
                     <div class="column is-half card-container"><b-button @click="resetSelection"
                         class="button is-fullwidth" style="display:flex; justify-content:center; margin-bottom:5px;">{{
-                        $t('Clear') }}</b-button></div>
+                          $t('Clear') }}</b-button></div>
                   </div>
                   <span style="display: flex; justify-content: center;">Scrape</span>
 
@@ -95,32 +113,49 @@
                   </div>
 
                   <div>
-                    <div class="columns is-multiline is-mobile">
-                      <div v-for="category in categories" :key="category" class="column is-half card-container">
+                    <div class="columns is-multiline is-mobile" style="margin-inline: -2px;">
+                      <div v-for="category in categories" :key="category" class="column card-container" :class="{
+                        'is-half': $t(category).length >= 7,
+                        'is-4': $t(category).length < 7
+                      }">
                         <div class="card selectable-card"
                           :class="{ 'is-selected': selectedKeywords.includes(category) }"
-                          @click="toggleKeyword(category)">
-                          <div class="card-content" style="text-align: center;">
+                          @click="toggleKeyword(category)" role="button" tabindex="0"
+                          @keydown.space.prevent="toggleKeyword(category)"
+                          @keydown.enter.prevent="toggleKeyword(category)"
+                          :aria-pressed="selectedKeywords.includes(category).toString()">
+                          <div class="card-content">
                             {{ $t(category) }}
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    <b-button class="is-primary is-fullwidth" style="margin-top: 10px;"
-                      :disabled="selectedKeywords.length === 1000" @click="searchWithSelectedKeywords">
-                      {{ $t('Search') }}
-                    </b-button>
+                    <div class="columns is-mobile is-multiline">
+                      <div class="column is-half card-container"><b-button :disabled="selectedKeywords.length === 1000"
+                          @click="searchWithSelectedKeywords()" class="is-primary is-fullwidth"
+                          style="display:flex; justify-content:center; margin-bottom:5px;">{{ $t('Search') }}</b-button>
+                      </div>
+                      <div class="column is-half card-container"><b-button :disabled="selectedKeywords.length === 0"
+                          @click="clearSelection()" class="is-fullwidth"
+                          style="display:flex; justify-content:center; margin-bottom:5px;">{{ $t('Clear All')
+                          }}</b-button>
+                      </div>
+                    </div>
+
+                    <!-- 追加キーワード入力 -->
+                    <div class="field has-addons" style="margin-bottom: 10px;">
+                      <div class="control is-expanded">
+                        <input v-model.trim="newKeyword" class="input" type="text" placeholder="キーワードを追加"
+                          @keyup.enter="addKeyword" />
+                      </div>
+                      <div class="control">
+                        <button class="button is-primary" @click="addKeyword">
+                          追加
+                        </button>
+                      </div>
+                    </div>
                   </div>
-
-                </div>
-              </div>
-
-              <!-- 右カラム：スクロール可能 -->
-              <div class="column" style="overflow-y: auto; padding: 1rem;">
-                <div>
-                  <vue-select-image ref="vueSelectImage" :data-images="getImages" :is-multiple="true"
-                    :selected-images="initialSelected" @onselectmultipleimage="onSelectMultipleImage" />
                 </div>
               </div>
 
@@ -198,7 +233,7 @@ export default {
 
       SiteEnum,
       selectedSite: SiteEnum.GOOGLE,
-      categories: ['AV', 'PORN', 'SEXY', 'GRAVURE', 'ERO', 'NAKED', 'CUTE', 'NIPPLE', 'BOOBS', 'FACE', 'FULL BODY', 'CLOSE UP', 'BODY SHOT', 'FANZA'],
+      categories: ['AV', 'PORN', 'SEXY', 'ERO', 'NAKED', 'CUTE', 'NIPPLE', 'OPPAI', 'BOOBS', 'BUSTY', 'FACE', 'FANZA', 'GRAVURE', 'FULL BODY', 'CLOSE UP', 'BODY SHOT'],
       selectedKeywords: [],
 
       carouselSlide: 0,
@@ -258,6 +293,12 @@ export default {
 
   methods: {
     // Custom Black
+    addKeyword() {
+      if (this.newKeyword && !this.categories.includes(this.newKeyword)) {
+        this.categories.push(this.newKeyword)
+      }
+      this.newKeyword = ''
+    },
     toggleKeyword(category) {
       const index = this.selectedKeywords.indexOf(category);
       if (index === -1) {
@@ -267,45 +308,52 @@ export default {
       }
     },
     searchWithSelectedKeywords() {
-      const keywordString = this.selectedKeywords.join(' ');
+      const keywordString = this.selectedKeywords
+        .map(kw => (kw.includes(' ') ? `"${kw}"` : kw))
+        .join(' ');
       this.scrapeActorImage(this.selectedSite, keywordString);
     },
-    
-    changeActorImage (val) {
+    clearSelection() {
+      this.selectedKeywords = []
+    },
+    changeActorImage(val) {
       ky.post('/api/actor/setimage', {
-      json: {
-        actor_id: this.actor.id,
-        url: this.images[this.carouselSlide]
-      }}).json().then(data => {    
+        json: {
+          actor_id: this.actor.id,
+          url: this.images[this.carouselSlide]
+        }
+      }).json().then(data => {
         this.actor = data
         this.$store.state.overlay.actoreditimage.actor = data
         this.$store.state.overlay.actordetails.actor = data
         this.carouselSlide = 0
-      })    
+      })
     },
-    changeActorFaceImage (val) {
+    changeActorFaceImage(val) {
       ky.post('/api_custom/actor/setfaceimage', {
-      json: {
-        actor_id: this.actor.id,
-        url: this.images[this.carouselSlide]
-      }}).json().then(data => {
+        json: {
+          actor_id: this.actor.id,
+          url: this.images[this.carouselSlide]
+        }
+      }).json().then(data => {
         this.actor = data
         this.$store.state.overlay.actoreditimage.actor = data
         this.$store.state.overlay.actordetails.actor = data
         // this.carouselSlide = 0
-      })    
+      })
     },
-    deleteActorImage (val) {
+    deleteActorImage(val) {
       ky.delete('/api/actor/delimage', {
-      json: {
-        actor_id: this.actor.id,
-        url: this.images[this.carouselSlide]
-      }}).json().then(data => {
+        json: {
+          actor_id: this.actor.id,
+          url: this.images[this.carouselSlide]
+        }
+      }).json().then(data => {
         this.actor = data
         this.$store.state.overlay.actoreditimage.actor = data
         this.$store.state.overlay.actordetails.actor = data
         // this.carouselSlide = 0
-      })    
+      })
     },
 
     setActorImage(val) {
@@ -548,7 +596,7 @@ export default {
   border-color: #42b983;
 }
 
-.card-container {
+/* .card-container {
   padding: 0.25rem;
 }
 
@@ -571,6 +619,45 @@ export default {
 .selectable-card.is-selected {
   border-color: #3273dc;
   background-color: #f0f8ff;
+} */
+.card-container {
+  padding: 0.25rem;
+}
+
+.selectable-card {
+  border-radius: 999px;
+  /* 角丸 */
+  border: 1px solid #e6e6e6;
+  background: #fff;
+  cursor: pointer;
+  user-select: none;
+  transition: box-shadow 0.16s ease, transform 0.12s ease, background-color 0.12s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+}
+
+.selectable-card .card-content {
+  width: 100%;
+  text-align: center;
+  padding: 0.5rem 0.75rem;
+  font-weight: 600;
+  font-size: smaller;
+}
+
+.selectable-card.is-selected {
+  /* background: #3273dc22;
+  border-color: #3273dc; */
+  background: #0044ff29;
+  border-color: #3273dc;
+  box-shadow: 0 2px 6px rgba(50, 115, 220, 0.12);
+  transform: translateY(-1px);
+}
+
+.selectable-card:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(50, 115, 220, 0.12);
 }
 </style>
 

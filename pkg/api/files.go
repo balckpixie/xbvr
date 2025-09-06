@@ -267,6 +267,8 @@ func (i FilesResource) matchFile(req *restful.Request, resp *restful.Response) {
 
 	// Custom Black（ファイル名を自動付与する）
 	customcommon.RenameFileBySceneID(scene, f)
+	var actor models.Actor
+	actor.CountActorTags()
 	// Custom END
 
 	resp.WriteHeaderAndEntity(http.StatusOK, nil)
@@ -329,6 +331,11 @@ func (i FilesResource) unmatchFile(req *restful.Request, resp *restful.Response)
 		// Finally, update scene available/accessible status
 		scene.UpdateStatus()
 	}
+
+	//Custom Black（Tagの更新）
+	var actor models.Actor
+	actor.CountActorTags()
+	//Custom END
 
 	resp.WriteHeaderAndEntity(http.StatusOK, scene)
 }

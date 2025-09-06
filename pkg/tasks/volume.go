@@ -24,7 +24,7 @@ import (
 	"github.com/xbapps/xbvr/pkg/models"
 	"github.com/xbapps/xbvr/pkg/scrape"
 
-	customcommon "github.com/xbapps/xbvr/pkg/custom/common"
+	shared "github.com/xbapps/xbvr/pkg/custom/shared"
 )
 
 var allowedVideoExt = []string{".mp4", ".avi", ".wmv", ".mpeg4", ".mov", ".mkv"}
@@ -92,7 +92,7 @@ func RescanVolumes(id int) {
 
 			// Custom Black
 			if len(scenes) == 0 {
-				queryString := customcommon.ExtractDVDIDLogic(unescapedFilename)
+				queryString := shared.ExtractDVDIDLogic(unescapedFilename)
 				if queryString != "" {
 					err = db.Where("scene_id = ?", queryString).Find(&scenes_for_search).Error
 					if len(scenes_for_search) == 0 || err != nil {
@@ -314,31 +314,45 @@ func scanLocalVolume(vol models.Volume, db *gorm.DB, tlog *logrus.Entry) {
 					}
 					fl.HasAlpha = false
 
-					if vs.Height*2 == vs.Width || vs.Width > vs.Height {
-						fl.VideoProjection = "180_sbs"
+					//Custom Black
+					if projection, err := shared.DetectVRType(path,time.Second*5); err == nil {
+						fl.VideoProjection = projection
+					} else {
+					// if vs.Height*2 == vs.Width || vs.Width > vs.Height {
+					// 	fl.VideoProjection = "180_sbs"
+					// 	nameparts := filenameSeparator.Split(strings.ToLower(filepath.Base(path)), -1)
+					// 	for i, part := range nameparts {
+					// 		if part == "mkx200" || part == "mkx220" || part == "rf52" || part == "fisheye190" || part == "vrca220" || part == "flat" {
+					// 			fl.VideoProjection = part
+					// 			break
+					// 		} else if part == "fisheye" || part == "f180" || part == "180f" {
+					// 			fl.VideoProjection = "fisheye"
+					// 			break
+					// 		} else if i < len(nameparts)-1 && (part+"_"+nameparts[i+1] == "mono_360" || part+"_"+nameparts[i+1] == "mono_180") {
+					// 			fl.VideoProjection = nameparts[i+1] + "_mono"
+					// 			break
+					// 		} else if i < len(nameparts)-1 && (part+"_"+nameparts[i+1] == "360_mono" || part+"_"+nameparts[i+1] == "180_mono") {
+					// 			fl.VideoProjection = part + "_mono"
+					// 			break
+					// 		}
+					// 	}
+					// 	if fl.VideoProjection == "mkx200" || fl.VideoProjection == "mkx220" || fl.VideoProjection == "rf52" || fl.VideoProjection == "fisheye190" || fl.VideoProjection == "vrca220" {
+					// 		// alpha passthrough only works with fisheye projections
+					// 		for _, part := range nameparts {
+					// 			if part == "alpha" {
+					// 				fl.HasAlpha = true
+					// 				break
+					// 			}
+					// 		}
+					// 	}
+					// }
+					if fl.VideoProjection == "mkx200" || fl.VideoProjection == "mkx220" || fl.VideoProjection == "rf52" || fl.VideoProjection == "fisheye190" || fl.VideoProjection == "vrca220" {
 						nameparts := filenameSeparator.Split(strings.ToLower(filepath.Base(path)), -1)
-						for i, part := range nameparts {
-							if part == "mkx200" || part == "mkx220" || part == "rf52" || part == "fisheye190" || part == "vrca220" || part == "flat" {
-								fl.VideoProjection = part
+						// alpha passthrough only works with fisheye projections
+						for _, part := range nameparts {
+							if part == "alpha" {
+								fl.HasAlpha = true
 								break
-							} else if part == "fisheye" || part == "f180" || part == "180f" {
-								fl.VideoProjection = "fisheye"
-								break
-							} else if i < len(nameparts)-1 && (part+"_"+nameparts[i+1] == "mono_360" || part+"_"+nameparts[i+1] == "mono_180") {
-								fl.VideoProjection = nameparts[i+1] + "_mono"
-								break
-							} else if i < len(nameparts)-1 && (part+"_"+nameparts[i+1] == "360_mono" || part+"_"+nameparts[i+1] == "180_mono") {
-								fl.VideoProjection = part + "_mono"
-								break
-							}
-						}
-						if fl.VideoProjection == "mkx200" || fl.VideoProjection == "mkx220" || fl.VideoProjection == "rf52" || fl.VideoProjection == "fisheye190" || fl.VideoProjection == "vrca220" {
-							// alpha passthrough only works with fisheye projections
-							for _, part := range nameparts {
-								if part == "alpha" {
-									fl.HasAlpha = true
-									break
-								}
 							}
 						}
 					}
@@ -346,6 +360,9 @@ func scanLocalVolume(vol models.Volume, db *gorm.DB, tlog *logrus.Entry) {
 					if vs.Height == vs.Width {
 						fl.VideoProjection = "360_tb"
 					}
+
+					}
+					//Custom END
 
 					fl.CalculateFramerate()
 				}

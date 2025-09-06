@@ -40,9 +40,9 @@ func SetupCron() {
 		previewTask, _ = cronInstance.AddFunc(ps, generatePreviewCron)
 	}
 	// Custom Black
-	if config.Config.Cron.ThumbnailSchedule.Enabled {
-		log.Println(fmt.Sprintf("Setup Thumbnail Generation Task %v", formatCronSchedule(config.CronSchedule(config.Config.Cron.ThumbnailSchedule))))
-		ps := formatCronSchedule(config.CronSchedule(config.Config.Cron.ThumbnailSchedule))
+	if config.Config.Custom.ThumbnailSchedule.Enabled {
+		log.Println(fmt.Sprintf("Setup Thumbnail Generation Task %v", formatCronSchedule(config.CronSchedule(config.Config.Custom.ThumbnailSchedule))))
+		ps := formatCronSchedule(config.CronSchedule(config.Config.Custom.ThumbnailSchedule))
 		thumbTask, _ = cronInstance.AddFunc(ps, generateThumbnailCron)
 	}
 	// Custom END
@@ -71,8 +71,8 @@ func SetupCron() {
 	if config.Config.Cron.PreviewSchedule.RunAtStartDelay > 0 {
 		time.AfterFunc(time.Duration(config.Config.Cron.PreviewSchedule.RunAtStartDelay)*time.Minute, generatePreviewCron)
 	}
-	if config.Config.Cron.ThumbnailSchedule.RunAtStartDelay > 0 {
-		time.AfterFunc(time.Duration(config.Config.Cron.ThumbnailSchedule.RunAtStartDelay)*time.Minute, generateThumbnailCron)
+	if config.Config.Custom.ThumbnailSchedule.RunAtStartDelay > 0 {
+		time.AfterFunc(time.Duration(config.Config.Custom.ThumbnailSchedule.RunAtStartDelay)*time.Minute, generateThumbnailCron)
 	}
 	if config.Config.Cron.ActorRescrapeSchedule.RunAtStartDelay > 0 {
 		time.AfterFunc(time.Duration(config.Config.Cron.ActorRescrapeSchedule.RunAtStartDelay)*time.Minute, actorRescrapeCron)
@@ -135,10 +135,10 @@ func generateThumbnailCron() {
 			thumbnailGenerateInProgress = false
 		}()
 
-		if !config.Config.Cron.ThumbnailSchedule.UseRange {
+		if !config.Config.Custom.ThumbnailSchedule.UseRange {
 			customtasks.GenerateThumnbnails(nil)
 		} else {
-			endTime := calcEndTime(config.Config.Cron.ThumbnailSchedule.HourStart, config.Config.Cron.ThumbnailSchedule.HourEnd, config.Config.Cron.ThumbnailSchedule.MinuteStart)
+			endTime := calcEndTime(config.Config.Custom.ThumbnailSchedule.HourStart, config.Config.Custom.ThumbnailSchedule.HourEnd, config.Config.Custom.ThumbnailSchedule.MinuteStart)
 			log.Infof("Thumbnail Generation will stop at %v", endTime)
 			customtasks.GenerateThumnbnails(&endTime)
 		}

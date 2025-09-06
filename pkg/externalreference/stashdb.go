@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/xbapps/xbvr/pkg/custom/shared"
 	"github.com/xbapps/xbvr/pkg/models"
 )
 
@@ -377,6 +378,24 @@ func UpdateXbvrActor(performer models.StashPerformer, xbvrActorID uint) {
 			actor.ImageUrl = performer.Images[0].URL
 		}
 	}
+
+// Custom Black
+	if actor.Furigana == "" && len(performer.Aliases) > 0 {
+		// []string → JSON文字列に変換
+		aliasesJSON, err := json.Marshal(performer.Aliases)
+		if err != nil {
+			// エラー時はスキップ
+			log.Println("aliases marshal error:", err)
+		} else {
+			furiganaList := shared.FilterHiraganaOnly(string(aliasesJSON))
+			if len(furiganaList) > 0 {
+				actor.Furigana = furiganaList[0]
+				changed = true
+			}
+		}
+	}
+// Custom END
+
 	for _, alias := range performer.Aliases {
 		changed = actor.AddToAliases(alias) || changed
 	}

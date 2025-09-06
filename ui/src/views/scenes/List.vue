@@ -30,6 +30,9 @@
         <div class="is-pulled-right">
           <b-field>
             <span class="list-header-label">{{$t('Card size')}}</span>
+            <b-radio-button v-model="cardSize" native-value="0" size="is-small">
+              SS
+            </b-radio-button>
             <b-radio-button v-model="cardSize" native-value="1" size="is-small">
               S
             </b-radio-button>
@@ -47,8 +50,13 @@
     <div class="is-clearfix"></div>
 
     <div class="columns is-multiline">
-      <div :class="['column', 'is-multiline', cardSizeClass]"
+      <!-- <div :class="['column', 'is-multiline', cardSizeClass]"
            v-for="item in items" :key="item.id">
+        <SceneCard v-if="!item.is_deleted" :item="item"/>
+      </div> -->
+      <div v-if="!item.is_deleted"
+          :class="['column', 'is-multiline', cardSizeClass]"
+          v-for="item in items" :key="item.id">
         <SceneCard :item="item"/>
       </div>
     </div>
@@ -78,6 +86,8 @@ export default {
     },
     cardSizeClass () {
       switch (this.$store.state.sceneList.filters.cardSize) {
+        case '0':
+          return 'is-1-5' 
         case '1':
           return 'is-one-fifth'
         case '2':
@@ -171,5 +181,10 @@ export default {
 <style scoped>
   .list-header-label {
     padding-right: 1em;
+  }
+  
+  .column.is-1-5 {
+    flex: none;
+   width: 12.5%; /* 1.5/12カラム相当 */
   }
 </style>

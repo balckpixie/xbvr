@@ -3,12 +3,16 @@
 </template>
 
 <script setup>
-import { ref, defineExpose, defineEmits } from 'vue'
+import { ref, defineExpose, defineEmits, watch } from 'vue'
 
 const props = defineProps({
   file: {
     type: Object,
     required: true
+  },
+  displayWidth: {
+    type: Number,
+    default: 120   // 表示用（thumbsImageのCSS幅）
   }
 })
 
@@ -16,42 +20,110 @@ const emit = defineEmits(['thumbnailClicked'])
 const thumbContainer = ref(null)
 const thumbnails = ref([])
 
+watch(
+  () => props.displayWidth,
+  (newWidth) => {
+    const container = thumbContainer.value
+    if (!container) return
+    // 既存のサムネイル（canvas.thumbsImage）の幅を更新
+    const thumbs = container.querySelectorAll('canvas.thumbsImage')
+    thumbs.forEach(canvas => {
+      canvas.style.width = newWidth + 'px'
+    })
+  }
+)
+
 function loadThumbnails() {
   const canvasContainer = thumbContainer.value
   if (!canvasContainer) {
     console.warn('Container not ready.')
     return
   }
-
-  const thumbnailUrl = '/api_custom/thumbnail/image/' + props.file.id
   clearVideThumbnails()
+  if (!props.file.has_thumbnail)
+  {
+    return
+  }
+  const thumbnailUrl = '/api_custom/thumbnail/image/' + props.file.id
   fetchAndDisplayThumbnails(thumbnailUrl, canvasContainer, props.file)
 }
 
 function fetchAndDisplayThumbnails(imageUrl, container, file) {
+  // thumbnail_parameters をパースして値を取得
+  let parsed = {}
+  try {
+    // 文字列なら JSON.parse、すでにオブジェクトならそのまま
+    parsed = (typeof file.thumbnail_parameters === 'string')
+      ? JSON.parse(file.thumbnail_parameters || '{}')
+      : (file.thumbnail_parameters || {})
+  } catch (e) {
+    console.error('Failed to parse thumbnail_parameters:', e)
+    parsed = {}
+  }
+
+  const start = parsed.start ?? 15
+  const interval = parsed.interval ?? 15
+  const tileWidthSetting = parsed.resolution ?? 200
+
   loadImage(imageUrl)
     .then((img) => {
       const canvas = drawImageToCanvas(img)
-      const { tileWidth, tileHeight, rows, cols } = calculateTileGrid(canvas, file)
-      let duration = 5
+      const { tileWidth, tileHeight, rows, cols } = calculateTileGrid(canvas, file, tileWidthSetting)
+
+      let duration = start
 
       for (let row = 0; row < rows; row++) {
         for (let col = 0; col < cols; col++) {
-          duration += 30
-          const currentDuration = duration 
-          const thumbnailCanvas = createThumbnailCanvas(canvas, row, col, tileWidth, tileHeight, file.projection)
+          const currentDuration = duration
+          const thumbnailCanvas = createThumbnailCanvas(
+            canvas,
+            row,
+            col,
+            tileWidth,
+            tileHeight,
+            file.projection
+          )
           if (!thumbnailCanvas) continue
 
           const ctx = thumbnailCanvas.getContext('2d')
-          if (!ctx) {
-            continue
-          }
+          if (!ctx) continue
 
           if (!isImageBlack(ctx)) {
+            // displayWidth を適用
+            thumbnailCanvas.style.width = props.displayWidth + 'px'
+            thumbnailCanvas.classList.add('thumb-wrapper')
+
+            // --- ホバーイベント追加 ---
+            const popup = document.createElement('div')
+            popup.className = 'thumb-popup'
+            popup.innerText = formatTime(currentDuration)
+            popup.style.display = 'none'
+            thumbnailCanvas.parentElement?.appendChild(popup)
+
+            thumbnailCanvas.addEventListener('mouseenter', () => {
+              thumbnailCanvas.classList.add('hovered')
+              popup.style.display = 'block'
+            })
+            thumbnailCanvas.addEventListener('mouseleave', () => {
+              thumbnailCanvas.classList.remove('hovered')
+              popup.style.display = 'none'
+            })
+
             thumbnailCanvas.addEventListener('click', () => {
               emit('thumbnailClicked', currentDuration)
             })
-            container.appendChild(thumbnailCanvas)
+
+            // サムネイルをラップする要素を作成して配置
+            const wrapper = document.createElement('div')
+            wrapper.className = 'thumb-container'
+            wrapper.appendChild(thumbnailCanvas)
+            wrapper.appendChild(popup)
+
+            container.appendChild(wrapper)
+          }
+          duration += interval
+          if (duration > file.duration) {
+            return  
           }
         }
       }
@@ -59,6 +131,12 @@ function fetchAndDisplayThumbnails(imageUrl, container, file) {
     .catch((error) => {
       console.error('Failed to load image:', error)
     })
+}
+
+function formatTime(seconds) {
+  const m = Math.floor(seconds / 60)
+  const s = seconds % 60
+  return `${m}:${s.toString().padStart(2, '0')}`
 }
 
 function loadImage(url) {
@@ -80,14 +158,46 @@ function drawImageToCanvas(img) {
   return canvas
 }
 
-function calculateTileGrid(canvas, file) {
-  const tileWidth = 200
-  let tileHeight = 200
-  if (file?.projection === 'flat') {
-    tileHeight = (file.video_height / file.video_width) * tileWidth
+function calculateTileGrid(canvas, file, tileWidthSetting) {
+  const tileWidth = tileWidthSetting
+
+  // デフォルトはオリジナルサイズ
+  let croppedWidth = file.video_width
+  let croppedHeight = file.video_height
+
+  switch (file?.projection) {
+    case 'flat':
+    case '180_mono':
+    case '360_mono':
+      croppedWidth = file.video_width
+      croppedHeight = file.video_height
+      break
+
+    case '180_sbs':
+    case '360_sbs':
+      croppedWidth = file.video_width / 2
+      croppedHeight = file.video_height
+      break
+
+    case '180_tb':
+    case '360_tb':
+      croppedWidth = file.video_width
+      croppedHeight = file.video_height / 2
+      break
+
+    default:
+      // 不明なタイプはそのまま
+      croppedWidth = file.video_width
+      croppedHeight = file.video_height
+      break
   }
+
+  // FFmpegの scale=tileWidth:-1 と同じ処理
+  const tileHeight = Math.round((croppedHeight / croppedWidth) * tileWidth)
+
   const rows = Math.floor(canvas.height / tileHeight)
   const cols = Math.floor(canvas.width / tileWidth)
+
   return {
     tileWidth,
     tileHeight,
@@ -95,6 +205,7 @@ function calculateTileGrid(canvas, file) {
     cols
   }
 }
+
 
 function createThumbnailCanvas(canvas, row, col, tileWidth, tileHeight, projection) {
   try {
@@ -140,22 +251,41 @@ function createThumbnailCanvas(canvas, row, col, tileWidth, tileHeight, projecti
 }
 
 function isImageBlack(ctx) {
-  const imageData = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height)
+  const width = ctx.canvas.width
+  const height = ctx.canvas.height
+  const imageData = ctx.getImageData(0, 0, width, height)
   const data = imageData.data
 
-  for (let i = 0; i < data.length; i += 4) {
-    if (data[i] > 10 || data[i + 1] > 10 || data[i + 2] > 10) {
-      return false
+  // 除外領域（右上 1/6 の矩形）
+  const excludeXStart = width * (5 / 6)  // 右端から1/6の位置
+  const excludeYEnd = height * (1 / 6)   // 上端から1/6の位置
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      // 除外領域ならスキップ
+      if (x >= excludeXStart && y < excludeYEnd) {
+        continue
+      }
+
+      const index = (y * width + x) * 4
+      const r = data[index]
+      const g = data[index + 1]
+      const b = data[index + 2]
+      const brightness = (r + g + b) / 3
+      if (brightness > 20) return false
+      // if (r > 10 || g > 10 || b > 10) {
+      //   return false
+      // }
     }
   }
   return true
 }
 
+
 function clearVideThumbnails() {
   const canvasContainer = thumbContainer.value
-
   if (canvasContainer) {
-      canvasContainer.innerHTML = '';
+    canvasContainer.innerHTML = ''
   }
   thumbnails.value = []
 }
@@ -168,20 +298,41 @@ defineExpose({
 </script>
 
 <style>
-.thumbnail-canvas {
-  width: 100%;
-  max-width: 800px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  margin-top: 10px;
-  cursor: pointer;
-}
-
 .thumbnail-container {
   margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.thumb-container {
+  position: relative;
+  display: flex;
 }
 
 .thumbsImage {
-  width: 120px;
+  transition: transform 0.2s ease;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* ホバー時に拡大 */
+.thumbsImage.hovered {
+  transform: scale(1.3);
+  z-index: 2;
+}
+
+.thumb-popup {
+  position: absolute;
+  top: -5px;          /* 上寄せ */
+  right: -10px;        /* 右寄せ */
+  background: rgba(0,0,0,0.75);
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 999
 }
 </style>

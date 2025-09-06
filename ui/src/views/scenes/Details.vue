@@ -23,15 +23,40 @@
       <section class="modal-card-body">
 
         <!-- <div class="columns"> -->
-        <div style="display:flex">
+        <div style="display: flex; justify-content: flex-end; align-items: center; gap: 0.5rem;">
+          
+          <div class="is-flex is-pulled-left" style="gap: 0.25rem;">
+            <div v-for="(f, idx) in filesByType" :key="idx">
+              <button rounded
+                class="button is-small"
+                :class="f.has_thumbnail ? 'is-success' : 'is-danger'"
+                @click='playFile(f)'
+                v-show="f.type === 'video'">
+                {{idx+1}}
+              </button>
+            </div>
+          </div>
+
           <button rounded 
-            class="button is-outlined is-small" 
-            style="margin-left:auto"
-            @click="hidePane2 = !hidePane2" >{{ hidePane2 ? 'Show' : 'Hide' }} Pane 2</button>
+            class="button is-outlined is-small"
+            @click="onHideClick()">
+            {{ hidePane2 ? 'Show' : 'Hide' }} Detail
+          </button>
+
+          <button rounded
+            class="button is-outlined is-small"
+            @click="isDetailOpen = !isDetailOpen">
+            {{ isDetailOpen ? 'Hide' : 'Show'}} Info
+          </button>
         </div>
-        <splitpanes class="default-theme">
-        <pane min-size="27" max-size="100">
-          <div class="">
+
+
+        <splitpanes class="default-theme"
+          style="max-height: 88vh;"
+          :gutter-size="10" :min-pane-size="27" :max-pane-size="100" :split="splitDirection"
+          @resize="onResize" ref="splitpanesRef">
+        <pane min-size="27" max-size="100" :size="splitSize">
+          <div>
             <b-tabs v-model="activeMedia" position="is-centered" :animated="false">
 
               <b-tab-item label="Gallery">
@@ -59,22 +84,24 @@
                 </div>
 
                 <div class="columns is-vcentered" style="max-width: 120px;">
-                  <div class="column pb-0 is-small">
-                    <!-- アスペクト比選択プルダウン -->
-                    <b-select v-model="aspectRatio" placeholder="Select Aspect Ratio">
-                      <option value="16:10">16:10</option>
-                      <option value="16:9">16:9</option>
-                      <option value="4:3">4:3</option>
-                      <option value="1:1">1:1</option>
-                      <option value="9:16">9:16</option>
-                    </b-select>
-                  </div>
                   <div class="column pb-0 is-small" style="max-width: 120px;">
                     <!-- プロジェクション比選択プルダウン -->
                     <b-select v-model="projectionMode" placeholder="Select Projection Mode">
                       <option value="NONE">Flat</option>
-                      <option value="180">180</option>
+                      <option value="180_LR">180_LR</option>
+                      <option value="180_MONO">180_MONO</option>
                       <option value="360_TB">360</option>
+                      <option value="AUTO">AUTO</option>
+                    </b-select>
+                  </div>
+                  <div class="column pb-0 is-small">
+                    <!-- アスペクト比選択プルダウン -->
+                    <b-select v-model="aspectRatio" placeholder="Select Aspect Ratio">
+                      <option value="16:9">16:9</option>
+                      <option value="16:10">16:10</option>
+                      <option value="4:3">4:3</option>
+                      <option value="1:1">1:1</option>
+                      <option value="9:16">9:16</option>
                     </b-select>
                   </div>
                   <div class="column pb-0">
@@ -103,8 +130,13 @@
 
           </div>
         </pane>
-        <Pane v-if="!hidePane2" min-size="27" max-size="100">
-          <div class="">
+        <Pane v-show="!hidePane2" min-size="27" max-size="100">
+
+          <div class="panel-parent">
+          <b-collapse :open.sync="isDetailOpen">
+          <div class="box">
+          <p>
+
             <div class="block-info block">
               <div class="content">
                 <h3>
@@ -140,16 +172,19 @@
                     </b-field>
                   </div>
 
-                  <div class="column pt-0">
+                  <!-- <div class="column pt-0">
                     <div class="is-flex is-pulled-left" style="gap: 0.25rem">
-                    <!--<div class="content" style="display: flex; flex-wrap: wrap;">-->
                       <div class="" v-for="(f, idx) in filesByType" :key="idx" style="margin-top: 3px;">
-                        <button rounded class="button is-success is-small" @click='playFile(f)' v-show="f.type === 'video'">
+                        <button rounded
+                          class="button is-small"
+                          :class="f.has_thumbnail ? 'is-success' : 'is-danger'"
+                          @click='playFile(f)'
+                          v-show="f.type === 'video'">
                         {{idx+1}}
                         </button>
                       </div>
                     </div>
-                  </div>
+                  </div> -->
 
                   <div class="column pt-0">
                     <div class="is-flex is-pulled-right" style="gap: 0.25rem">
@@ -172,7 +207,7 @@
                       <wishlist-button :item="item" v-if="!displayingAlternateSource"/>
                       <watched-button :item="item" v-if="!displayingAlternateSource"/>
                       <edit-button :item="item"/>
-                      <delete-button :item="item"/>
+                      <delete-button :item="item" @deleted="disposePlayer" />
                       <refresh-button :item="item" v-if="!displayingAlternateSource"/>
                       <rescrape-button :item="item" v-if="!displayingAlternateSource"/>
                       <link-stashdb-button :item="item" objectType="scene" />
@@ -194,9 +229,9 @@
 
             <div class="image-row" v-if="activeTab != 1 && !displayingAlternateSource">
               <div v-for="(image, idx) in castimages" :key="idx" class="image-wrapper">
-                <b-tooltip  type="is-light" :label="image.actor_label"  :delay=100>
+                <b-tooltip  type="is-light" :label="image.actor_label"  :delay=100 position="is-right" >
                   <vue-load-image>
-                    <img slot="image" :src="getImageURL(image.src)" alt="Image" class="thumbnail" @mouseover="showTooltip(idx)" @mouseout="hideTooltip(idx)" @click='showActorDetail([image.actor_id])' />
+                    <img slot="image" :src="getImageURL(image.facesrc)" alt="Image" class="thumbnail" @mouseover="showTooltip(idx)" @mouseout="hideTooltip(idx)" @click='showActorDetail([image.actor_id])' />
                     <img slot="preloader" :src="getImageURL('https://i.stack.imgur.com/kOnzy.gif')" style="height: 50px;display: block;margin-left:auto;margin-right: auto;" @click='showCastScenes([image.actor_name])' />
                     <img slot="error" src="/ui/images/blank_female_profile.png" width="80" @click='showActorDetail([image.actor_id])' />
                   </vue-load-image>
@@ -205,6 +240,15 @@
                 <div v-if="image.visible" class="tooltip">
                   <img :src="getImageURL(image.src)" alt="Tooltip Image" />
                 </div>
+              </div>
+            </div>
+            <div v-if="castimages.length == 0 && !displayingAlternateSource" class="content is-small">
+              <div v-for="(c, idx) in item.cast" :key="'cast' + idx" class="image-wrapper">
+                <b-tooltip  type="is-light" :label="c.name" :delay=100 position="is-right" >
+                  <vue-load-image>
+                    <img slot="image" src="/ui/images/blank_female_profile.png" width="80" @click='showActorDetail([c.id])' />
+                  </vue-load-image>
+                </b-tooltip>
               </div>
             </div>
 
@@ -224,6 +268,10 @@
                 </span>
               </b-taglist>              
             </div>
+
+           </p>
+          </div>
+          </b-collapse>
 
             <div class="block-tags block" v-if="activeTab == 1">
              <b-taglist>
@@ -275,7 +323,7 @@
               <b-tabs v-model="activeTab" :animated="false">
 
                 <b-tab-item :label="`Files (${fileCount})`" v-if="!displayingAlternateSource">
-                  <div class="block-tab-content block">
+                  <div class="block-tab-content block" style="overflow: auto;">
                     <div class="content media is-small" v-for="(f, idx) in filesByType" :key="idx">
                       <div class="media-left">
                         <button rounded class="button is-success is-small" @click='playFile(f)'
@@ -315,6 +363,14 @@
                         <button class="button is-dark is-small is-outlined" title="Unmatch file from scene" @click='unmatchFile(f)'>
                           <b-icon pack="fas" icon="unlink" size="is-small"></b-icon>
                         </button>&nbsp;
+                        <button class="button is-dark is-small is-outlined" title="Delete thumbnail for this file" @click='deleteThumbnail(f)'>
+                            <b-icon pack="fas" icon="image" size="is-small"></b-icon>
+                            <b-icon pack="fas" icon="trash" size="is-small"></b-icon>
+                        </button>&nbsp;
+                        <button class="button is-dark is-small is-outlined" title="Reset projection and delete thumbnail" @click='resetProjection(f)'>
+                            <b-icon pack="fas" icon="window-restore" size="is-small"></b-icon>
+                        </button>&nbsp;
+
                         <button class="button is-danger is-small is-outlined" title="reset filename" @click='resetFileName(f)'>
                           <b-icon pack="fas" icon="redo-alt" size="is-small"></b-icon>
                         </button>&nbsp;
@@ -421,22 +477,21 @@
                   </div>
                 </b-tab-item>
 
-                <!--
-                <b-tab-item label="Thumbnail">
-                  <div ref="thumbContainer" id="thumbContainer" :style="{ maxHeight: computedMaxHeight() }" class="block-tab-content block container">
-                  </div>
-                </b-tab-item>
-              -->
-
                 <b-tab-item label="Thumbnails" name="thumbnails">
                   <div ref="thumbnailTabRef">
                   <ThumbnailTab
                     ref="thumbnailRef"
                     :file=undefined
+                    :displayWidth=displayWidth
                     @thumbnailClicked="onThumbnailClicked"
                     class="block-tab-content block container thumbnail-tab"
-                    :style="{ maxHeight: computedMaxHeight() }" 
+                    :style="{ maxHeight: maxHeight }" 
                   />
+                  </div>
+                  <div class="thumb-controls" style="display: flex; justify-content: flex-end; align-items: center; gap: 4px;">
+                    <span>-</span>
+                    <input type="range" v-model="displayWidth" :min="50" :max="300" />
+                    <span>+</span>
                   </div>
                 </b-tab-item>
 
@@ -536,17 +591,35 @@ export default {
       alternateSources: [],
       waitingForQuickFind: false,
       // Custom Black
-      marginBottom: 10,  //サムネイルコンポーネント高さ調整用
+      thumbStartTime:25,
+      thumbInterval :30,
+      thumbResolution: 200,
+
+      isDetailOpen: true,
+      maxHeight: 'calc(92vh - 20px)', //サムネイルコンポーネント高さ調整用
+
       currentFile: null,
       currentDuraiton: 0,
-      aspectRatio: '1:1',
-      projectionMode: '180',
+      aspectRatio: '4:3',
+      splitSize: 58,
+      splitSizePre: 58,
+      projectionMode: '180_LR',
       hidePane2:false,
+      displayWidth:100,
       // Custom END
     }
   },
   computed: {
     // Custom Black
+    // splitSize() {
+    //   if (this.hidePane2) {
+    //     return 100
+    //   }
+    //   else
+    //   {
+    //    return 58
+    //   }
+    // },
     aspectClass() {
       if (this.aspectRatio === 'original') return '';
       const value = this.aspectRatio.replace(':', '_');
@@ -570,17 +643,18 @@ export default {
           label += `, ${age} in scene`
         }
         let img = actor.image_url
+        let face = actor.face_image_url
         if (img == "" ){
           img = "blank"  // forces an error image to load, blank won't display an image
         }
         if (actor.name.startsWith("aka:")) {
           img = ""
         }
-        return {src: img, visible: false, actor_name: actor.name, actor_label: label, actor_id: actor.id};
+        return {src: img, facesrc: face, visible: false, actor_name: actor.name, actor_label: label, actor_id: actor.id};
       });
 
       this.castimages =  imgs.filter((img) => {
-        return img.src !== '';
+        return img.facesrc !== '';
         });
       this.getSearchFields(item.id)
       return item
@@ -728,9 +802,28 @@ export default {
       this.cuepointActTags.unshift("")
       this.cuepointPositionTags.unshift("")
       })    
-},
-watch:{
+    
+    //サムネイル領域の高さ調整用
+    this.$nextTick(() => {
+        const targetEl = this.$refs.tabBar
+        if (targetEl) {
+          let resizeTimer = null
+          this._resizeObserver = new ResizeObserver(() => {
+            clearTimeout(resizeTimer)
+            resizeTimer = setTimeout(() => {
+              this.updateMaxHeight()
+            }, 30) 
+          })
+          this._resizeObserver.observe(targetEl)
+        }
+      })
+  },
+  
+  watch:{
     // Custom Black
+    isDetailOpen() {
+      this.$forceUpdate()
+    },
     projectionMode(newVal) {
       this.$nextTick(() => {
         this.restartPlayer()
@@ -781,9 +874,47 @@ watch:{
     this.$store.commit('overlay/changeDetailsTab', { tab: -1 })
   }
 },
+beforeDestroy() {
+  if (this._resizeObserver) {
+  this._resizeObserver.disconnect()
+  }},
+
   methods: {
     // Custom Black
-    
+    onHideClick() {
+      this.hidePane2 = !this.hidePane2
+      if (this.hidePane2){
+        this.splitSizePre = this.splitSize
+        this.splitSize = 100
+      } else {
+        this.splitSize = this.splitSizePre
+      }
+
+    },  
+    updateMaxHeight() {
+      const element = this.$refs.thumbnailTabRef
+      if (element) {
+        const rect = element.getBoundingClientRect()
+        const adjustedTop = rect.top
+        this.maxHeight = `calc(88vh - ${adjustedTop}px)`
+      }
+    },
+
+    disposePlayer() {
+      if (this.player) {
+        this.player.dispose()
+      }
+    },
+    decreaseSize() {
+      if (this.displayWidth > 50) {
+        this.displayWidth -= 10;
+      }
+    },
+    increaseSize() {
+      if (this.displayWidth < 300) {
+        this.displayWidth += 10;
+      }
+    },
     // Playerを再起動する（projection mode変更時に使用）
     async restartPlayer()
     {
@@ -796,14 +927,11 @@ watch:{
       const wasPlaying = !this.player.paused()
 
       this.recreateVideoPlayer()
-      //this.playFile (this.currentFile)
-      // this.updatePlayerWithCheckPaused(this.currentFile, this.projectionMode, !wasPlaying)
       this.updatePlayer(currentSrc, this.projectionMode)
 
       // if (wasPlaying) {
         this.player.ready(() => {
           if (wasPlaying) {
-              //this.loadVideThumbnails()
               this.player.load();     // 動画を読み込む（バッファ開始）
               this.player.play();
               this.setCurrentTime(currentTime);
@@ -819,9 +947,6 @@ watch:{
               this.player.play(); // `playing` イベントを発火させる
           }
         })  
-      // } 
-
-
       //this.player.volume(volume);
       //this.player.muted(wasMuted);
 
@@ -854,64 +979,74 @@ watch:{
       }, 0);
     },
 
-    // Player表示のMax高さ設定値を取得
-    computedMaxHeight() {
-      const element = this.$refs.tabBar;
-      if (element) {
-        const rect = this.$refs.tabBar.getBoundingClientRect()
-        const y = rect.top
-        const adjustedTop = element.offsetTop + 200;
-        return `calc(100vh - ${adjustedTop}px - ${this.marginBottom}px)`;
-      }
-      else
-      {
-        return 'calc(100vh - 20px)';
-      }
-    },
-
     // サムネイルスプライト読み込み
     setupSprite(file) {
-      let tileHeight = 200
-      if (file.projection === 'flat')
-      {
-          tileHeight = (file.video_height / file.video_width) * 200;
-      }
-      const thumbnailUrl = '/api_custom/thumbnail/image/' + file.id
       const videPlayer = this.player
-      this.checkImageExists(thumbnailUrl, (exists) =>{
+      if (file === null || file.has_thumbnail == false) {
+        this.resetSprites(videPlayer)
+        return;
+      }
+
+      const params = this.spriteParams(file)
+      this.checkImageExists(params.url, (exists) =>{
         if (exists) {
 
-          this.setThumbnails(videPlayer, {
+          this.setSprites(videPlayer, {
             sprites: [
-              {
-                url: thumbnailUrl,
-                duration: file.duration,
-                start: 25,
-                interval: 30,
-                width: 200,
-                height: tileHeight,
-              },
+             params
             ],
           });
         }
       });
     },
 
+    spriteParams(file) {
+      const thumbnailUrl = '/api_custom/thumbnail/image/' + file.id
+
+      // thumbnail_parameters が文字列かオブジェクトかを安全に処理
+      const parsed = (typeof file.thumbnail_parameters === 'string')
+        ? JSON.parse(file.thumbnail_parameters)
+        : file.thumbnail_parameters
+
+      let tileHeight = parsed.resolution
+      if (file.projection === 'flat') {
+        tileHeight = (file.video_height / file.video_width) * parsed.resolution
+      }
+
+      return {
+        url: thumbnailUrl,
+        duration: file.duration,
+        start: parsed.start,
+        interval: parsed.interval,
+        width: parsed.resolution,
+        height: tileHeight,
+      }
+    },
+    
     // サムネイルスプライトの設定＆再設定用メソッド
-    setThumbnails(player, options) {
+    setSprites(player, options) {
         // ThumbnailSprite クラスのコンストラクタを Video.js レジストリから取得
         const ThumbnailSpriteClass = videojs.getPlugin('thumbnailSprite');
         if (!ThumbnailSpriteClass) {
-            //console.error("ThumbnailSprite plugin is not registered with Video.js. Cannot set thumbnails.");
             return;
         }
         const pluginInstance = player.thumbnailSprite();
         if (pluginInstance instanceof ThumbnailSpriteClass) {
-            //console.log("Plugin already initialized. Calling updateSprites.");
             pluginInstance.updateSprites(options);
         } else {
-            //console.log("Plugin not yet initialized or instance type mismatch. Initializing with options.");
             player.thumbnailSprite(options);
+        }
+    },
+
+    resetSprites(player) {
+        // ThumbnailSprite クラスのコンストラクタを Video.js レジストリから取得
+        const ThumbnailSpriteClass = videojs.getPlugin('thumbnailSprite');
+        if (!ThumbnailSpriteClass) {
+            return;
+        }
+        const pluginInstance = player.thumbnailSprite();
+        if (pluginInstance instanceof ThumbnailSpriteClass) {
+            pluginInstance.resetSprites();
         }
     },
 
@@ -931,6 +1066,12 @@ watch:{
       if (this.$refs.thumbnailRef) {
         this.$refs.thumbnailRef.file = this.currentFile
         this.$refs.thumbnailRef.loadThumbnails()
+      }
+    },
+
+    clearThumbnails() {
+      if (this.$refs.thumbnailRef) {
+        this.$refs.thumbnailRef.clearVideThumbnails()
       }
     },
 
@@ -1154,15 +1295,37 @@ watch:{
       })
     },
 
+    deleteThumbnail (file) {
+      this.$buefy.dialog.confirm({
+        title: 'Delete thumbnail',
+        message: `You're about to remove thumbnail <strong>${file.filename}</strong> from <strong>disk</strong>.`,
+        type: 'is-danger',
+        hasIcon: true,
+        onConfirm: () => {
+          ky.delete(`/api_custom/thumbnail/image/${file.id}`).json().then(data => {
+            this.$store.commit('overlay/showDetails', { scene: data })
+          })
+        }
+      })
+    },
+
     // Custom Black
-    // resetFileName (file) {
-    //       this.activeMedia = 0
-    //       this.updatePlayer(undefined, this.projectionMode)
-    //       ky.post(`/api_custom/files/resetname`, {json:{file_id: file.id, scene_id: this.item.scene_id }}).json().then(data => {
-    //         this.$store.commit('sceneList/updateScene', data)
-    //         this.$store.commit('overlay/showDetails', { scene: data })
-    //       })
-    // },
+    resetProjection (file) {
+      this.$buefy.dialog.confirm({
+        title: 'Reset projection',
+        message: 'Reset projection?',
+        confirmText: 'OK',
+        cancelText: 'Cancel',
+        type: 'is-danger', 
+        hasIcon: true,
+        onConfirm: () => {
+          ky.post(`/api_custom/files/resetprojection`, {json:{file_id: file.id, projection:''}}).json().then(data => {
+            this.$store.commit('sceneList/updateScene', data)
+            this.$store.commit('overlay/showDetails', { scene: data })
+          })
+        }
+      })
+    },
     resetFileName (file) {
       this.$buefy.dialog.confirm({
         title: 'Reset filename',
@@ -1321,7 +1484,9 @@ watch:{
         this.$store.commit('overlay/showDetails', { scene: data })
         this.activeMedia = 0
         this.carouselSlide = 0
+        this.clearThumbnails();
         this.updatePlayer(undefined, '180')
+        this.setupSprite(null)
       }
     },
     prevScene () {
@@ -1330,7 +1495,9 @@ watch:{
         this.$store.commit('overlay/showDetails', { scene: data })
         this.activeMedia = 0
         this.carouselSlide = 0
+        this.clearThumbnails();
         this.updatePlayer(undefined, '180')
+        this.setupSprite(null)
       }
     },
     playerStepBack (interval) {
@@ -1593,7 +1760,7 @@ watch:{
 }
 
 .modal-card {
-  width: 90%;
+  width: 95%;
 }
 
 .missing {
@@ -1618,6 +1785,15 @@ watch:{
 }
 
 .block-opts {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.panel-parent {
+    display: flex;
+    flex-direction: column;
+    height: 88vh;
+    padding: 0.5rem;
 }
 
 .vue-star-rating {
@@ -1711,10 +1887,10 @@ span.is-active img {
 .tooltip {
   position: absolute;
   z-index: 1;
-  top: 50px;
-  right: 100%;
-  width: 400px;
-  height: 400px;
+  //top: 50px;
+  //right: 100%;
+  width: 300px;
+  //height: 400px;
   background-color: white;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
   display: flex;
@@ -1747,27 +1923,27 @@ span.is-active img {
 
 .aspect-16_10 {
   aspect-ratio: 16 / 10;
-  max-height: 75vh;
+  max-height: 78vh;
 }
 
 .aspect-16_9 {
   aspect-ratio: 16 / 9;
-  max-height: 75vh;
+  max-height: 78vh;
 }
 
 .aspect-4_3 {
   aspect-ratio: 4 / 3;
-  max-height: 75vh;
+  max-height: 78vh;
 }
 
 .aspect-1_1 {
   aspect-ratio: 1 / 1;
-  max-height: 75vh;
+  max-height: 78vh;
 }
 
 .aspect-9_16 {
   aspect-ratio: 9 / 16;
-  max-height: 75vh;
+  max-height: 78vh;
 }
 
 .video-custom {
@@ -1790,8 +1966,87 @@ span.is-active img {
 
 .carousel {
   aspect-ratio: 1 / 1;
-  max-height: 82vh;
+  max-height: 80vh;
   margin-left: auto;
   margin-right: auto;
 }
+
+
+/* スライダー */
+/* 親コンテナのスタイル */
+.thumb-controls {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center; /* 子要素を垂直方向の中央に揃える最も重要なプロパティ */
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* +-ボタンのスタイル */
+.thumb-controls span {
+  font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 1.5rem;
+  font-weight: bold; /* 文字を太くして視認性を高めます */
+  color: #555;
+  cursor: pointer;
+  user-select: none;
+  /* 文字の位置を微調整 */
+  transform: translateY(-2px); /* わずかに上に移動させて中央に揃えます */
+  transition: color 0.2s ease-in-out;
+}
+
+.thumb-controls span:hover {
+  color: #007bff;
+}
+
+/* input type="range" の基本スタイル */
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 150px;
+  height: 6px;
+  background: #e0e0e0;
+  border-radius: 3px;
+  outline: none;
+  accent-color: #007bff;
+  vertical-align: middle;
+}
+
+/* スライダーのつまみ（thumb）のスタイル */
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 16px;
+  width: 16px;
+  background: #007bff;
+  border-radius: 50%;
+  cursor: grab;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.2s ease-in-out, transform 0.2s ease-in-out;
+  margin-top: calc((6px - 16px) / 2);
+}
+
+/* スライダーのトラック（track）のスタイル */
+input[type="range"]::-webkit-slider-runnable-track {
+  background: #e0e0e0;
+  height: 6px;
+  border-radius: 3px;
+}
+
+/* Firefox用 */
+input[type="range"]::-moz-range-thumb {
+  height: 16px;
+  width: 16px;
+  background: #007bff;
+  border-radius: 50%;
+  border: none;
+  cursor: grab;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.2s ease-in-out;
+}
+
+input[type="range"]::-moz-range-track {
+  background: #e0e0e0;
+  height: 6px;
+  border-radius: 3px;
+}
+
 </style>

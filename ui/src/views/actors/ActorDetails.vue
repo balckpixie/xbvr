@@ -72,6 +72,9 @@
                   </div>
                 </div>
                 <div class="columns is-vcentered">
+                  <div class="vue-load-image">
+                    <img :src="actor.face_image_url" style="width: 160px; height: auto;">
+                  </div>
                   <div class="column pt-0">
                     <b-field>
                       <strong style="width: 8em;">{{ $t('Your Rating') }}</strong>
@@ -142,6 +145,9 @@
                     </b-field>
                     <b-field v-if="actor.aliases != '' && actor.aliases != '[]'">
                       <strong class="attribute-heading">{{ $t('Aliases') }}:</strong> <small class="attribute-long-data">{{ joinArray(actor.aliases) }}</small>
+                    </b-field>
+                    <b-field v-if="actor.furigana != ''">
+                      <strong class="attribute-heading">{{ $t('Furigana') }}:</strong> <small class="attribute-long-data">{{ actor.furigana }}</small>
                     </b-field>
                     <b-field v-if="actor.tattoos != '' && actor.tattoos != '[]'">
                       <strong class="attribute-heading">{{ $t('Tattoos') }}:</strong> <small class="attribute-long-data">{{ joinArray(actor.tattoos) }}</small>

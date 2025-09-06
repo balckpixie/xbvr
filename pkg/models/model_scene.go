@@ -486,12 +486,17 @@ func SceneCreateUpdateFromExternal(db *gorm.DB, ext ScrapedScene) error {
 			}
 		}
 
-		// Custom Black add Aliases Parameter
-		if ext.Aliases != nil && ext.Aliases[cnt] != "" {
+		// Custom Black add Aliases and Furigana Parameter
+		if ext.Rubys != nil && ext.Rubys[cnt] != "" {
 			if tmpActor.Aliases == "" {
-				tmpActor.Aliases = "[\"" + ext.Aliases[cnt] + "\"]"
+				tmpActor.Aliases = "[\"" + ext.Rubys[cnt] + "\"]"
 				saveActor = true
 			}
+			if tmpActor.Furigana == "" {
+				tmpActor.Furigana = ext.Rubys[cnt]
+				saveActor = true
+			}
+
 		}
 		cnt++
 		// Custom END
@@ -662,6 +667,8 @@ type RequestSceneList struct {
 	Volume       optional.Int      `json:"volume"`
 	Released     optional.String   `json:"releaseMonth"`
 	Sort         optional.String   `json:"sort"`
+	MaxFileCount optional.Int      `json:"max_count"`	
+	MinFileCount optional.Int      `json:"min_count"`
 }
 
 type ResponseSceneList struct {
@@ -788,7 +795,18 @@ func queryScenes(db *gorm.DB, r RequestSceneList) (*gorm.DB, *gorm.DB) {
 		}
 	}
 
+	
+	// Custom Black
+	if r.MinFileCount.Present() && r.MinFileCount.OrElse(0) != 0 {
+		tx = tx.
+		Where("exists (select 1 from files where files.scene_id = scenes.id and files.type = 'video' group by files.scene_id having count(*) >= ?)", r.MinFileCount.OrElse(0))
+	}
+	if r.MaxFileCount.Present() && r.MaxFileCount.OrElse(0) != 30 {
+		tx = tx.
+		Where("exists (select 1 from files where files.scene_id = scenes.id and files.type = 'video' group by files.scene_id having count(*) <= ?)", r.MaxFileCount.OrElse(0))
+	}
 	// handle Attribute selections
+
 	var orAttribute []string
 	var andAttribute []string
 	combinedWhere := ""

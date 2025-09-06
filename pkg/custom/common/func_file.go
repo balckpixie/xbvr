@@ -8,10 +8,42 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 	"unicode/utf8"
 
+	"github.com/xbapps/xbvr/pkg/custom/shared"
 	"github.com/xbapps/xbvr/pkg/models"
 )
+
+func ResetProjection(fileId uint, projection string) models.Scene {
+
+	var scene models.Scene
+	var file models.File
+	db, _ := models.GetDB()
+	defer db.Close()
+
+	err := db.Preload("Volume").Where(&models.File{ID: fileId}).First(&file).Error
+	if err == nil {
+		if (projection == "") {
+			if vrType, err := shared.DetectVRType(file.GetPath(),time.Second*5); err == nil {
+					projection = vrType
+			}
+		}
+		db.Model(&file).Where("id = ?", fileId).Update("video_projection", projection)
+		
+		_ = DeleteThumbnail(&file)
+		if file.SceneID != 0 {
+			scene.GetIfExistByPK(file.SceneID)
+			scene.UpdateStatus()
+		}
+		
+		log.Infof("Reset projection %v - %s", file.ID, projection)
+
+	} else {
+		log.Errorf("error renaming file %v", err)
+	}
+	return scene
+}
 
 func RenameFileBySceneID(scene models.Scene, file models.File) models.Scene {
 
