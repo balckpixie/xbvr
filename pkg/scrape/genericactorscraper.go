@@ -294,7 +294,7 @@ func applyRules(actorPage string, source string, rules models.GenericScraperRule
 
 	// Custom Black
 	// 上のBlockでDMMパラメータ付与された状態になるため、後続のログ出力等を考慮して元に戻しておく
-	actorPage := actorPageBuf
+	actorPage = actorPageBuf
 	// Custom END
 
 	var extref models.ExternalReference
