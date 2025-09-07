@@ -1484,6 +1484,24 @@ export default {
       this.item.star_rating = val
       this.$store.commit('sceneList/updateScene', updatedScene)
     },
+    // Custom Black（projection modeリセット関数を追加）
+    resetProjectionMode () {
+      if (this.item.file !== null && this.item.file.length > 0) {
+        const videoFile = this.item.file.find(f => f.type === 'video')
+        if (videoFile) {
+          switch (videoFile.projection) {
+            case '180_sbs':
+              this.projectionMode = '180_LR'
+              break
+            case 'flat':
+            default:
+              this.projectionMode = 'NONE'
+              break
+          }
+        }
+      }
+    },
+    // Custom END
     nextScene () {
       const data = this.$store.getters['sceneList/nextScene'](this.item)
       if (data !== null && !this.displayingAlternateSource) {
@@ -1491,6 +1509,7 @@ export default {
         this.activeMedia = 0
         this.carouselSlide = 0
 // Custom Black（サムネイルクリア＆スプライト再設定）
+        this.resetProjectionMode();
         this.clearThumbnails();
         this.updatePlayer(undefined, '180')
         this.setupSprite(null)
@@ -1504,6 +1523,7 @@ export default {
         this.activeMedia = 0
         this.carouselSlide = 0
 // Custom Black（サムネイルクリア＆スプライト再設定）
+        this.resetProjectionMode();
         this.clearThumbnails();
         this.updatePlayer(undefined, '180')
         this.setupSprite(null)
