@@ -882,17 +882,17 @@ export default {
     this.activeTab = newVal
     this.$store.commit('overlay/changeDetailsTab', { tab: -1 })
   },
-  activeMedia(newVal, oldVal) {
-    // Auto-load first video when Player tab is opened (without auto-playing)
-    // The webUI video player doesn't work for some users without autoloading
-    if (newVal === 1 && !this.displayingAlternateSource) {
-      const videoFiles = this.filesByType.filter(f => f.type === 'video')
-      if (videoFiles.length > 0) {
-        this.activeMedia = 1
-        this.updatePlayer('/api/dms/file/' + videoFiles[0].id + '?dnt=true', (videoFiles[0].projection == 'flat' ? 'NONE' : '180'))
-      }
-    }
-  }
+  // activeMedia(newVal, oldVal) {
+  //   // Auto-load first video when Player tab is opened (without auto-playing)
+  //   // The webUI video player doesn't work for some users without autoloading
+  //   if (newVal === 1 && !this.displayingAlternateSource) {
+  //     const videoFiles = this.filesByType.filter(f => f.type === 'video')
+  //     if (videoFiles.length > 0) {
+  //       this.activeMedia = 1
+  //       this.updatePlayer('/api/dms/file/' + videoFiles[0].id + '?dnt=true', (videoFiles[0].projection == 'flat' ? 'NONE' : '180'))
+  //     }
+  //   }
+  // }
 },
 
 // Custom Black（サムネイル領域の高さ調整用オブジェクトの廃棄）
