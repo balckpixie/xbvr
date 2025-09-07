@@ -121,10 +121,10 @@ type StreamTags struct {
 	Title        string `json:"title,omitempty"`
 	Encoder      string `json:"encoder,omitempty"`
 	Location     string `json:"location,omitempty"`
-
-	// VR判定用フィールド
+	//Custom Black(VR判定用フィールド)
 	Projection string `json:"projection,omitempty"` // equirectangular / rectilinear など
 	StereoMode string `json:"stereo_mode,omitempty"` // top_bottom / left_right など
+	//Custom END
 }
 
 // StartTime returns the start time of the media file as a time.Duration

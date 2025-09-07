@@ -333,7 +333,7 @@ func (scrapeRules ActorScraperConfig) buildGenericActorScraperRules() {
 	commonDb, _ := GetCommonDB()
 	var sites []Site
 
-	// Custom Black
+	// Custom Black(DMMサイトからの情報取得設定を呼び出し)
 	dmmDetails := buildDmmSiteDetail()
 	scrapeRules.GenericActorScrapingConfig["dmm scrape"] = dmmDetails
 	// Custom END
@@ -1237,7 +1237,7 @@ func (scrapeRules ActorScraperConfig) getSiteUrlMatchingRules() {
 	}
 }
 
-
+//Custom Black(DMM) site details scraper
 func buildDmmSiteDetail() GenericScraperRuleSet {
 	siteDetails := GenericScraperRuleSet{
 		Domain: "api.dmm.com",
@@ -1285,3 +1285,4 @@ func buildDmmSiteDetail() GenericScraperRuleSet {
 
 	return siteDetails
 }
+//Custom END

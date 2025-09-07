@@ -2,9 +2,11 @@
   <div class="modal is-active">
     <div class="modal-background"></div>
     <div class="modal-content">
+      <!-- Custom Black（デフォルトMuteに設定） -->
       <video ref="player"
              width="640" height="640" class="video-js vjs-default-skin"
              controls playsinline autoplay muted>
+      <!-- Custom End -->
         <source :src="sourceUrl" type="video/mp4">
       </video>
     </div>

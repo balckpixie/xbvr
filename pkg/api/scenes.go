@@ -635,7 +635,7 @@ func (i SceneResource) searchSceneIndex(req *restful.Request, resp *restful.Resp
 		var scene models.Scene
 		scene.GetIfExistByPK(file.SceneID)
 		if scene.ID != 0 {
-			// Custom Black
+			// Custom Black(シーンマッチング時に同じシーンが複数表示される不具合修正)
 			exists := func(target models.Scene) bool {
             	for _, s := range scenes {
                 	if s.ID == target.ID {
@@ -648,8 +648,8 @@ func (i SceneResource) searchSceneIndex(req *restful.Request, resp *restful.Resp
 				scene.Score = 1
 				scenes = append(scenes, scene)
 			}
-			// Custom END
 			//scenes = append(scenes, scene)
+			// Custom END
 		}
 	}
 

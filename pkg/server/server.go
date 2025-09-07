@@ -30,8 +30,9 @@ import (
 	"github.com/xbapps/xbvr/pkg/session"
 	"github.com/xbapps/xbvr/pkg/tasks"
 	"github.com/xbapps/xbvr/ui"
-
+	// Custom Black
 	customapi "github.com/xbapps/xbvr/pkg/custom/api"
+	// Custom END
 )
 
 var (
@@ -89,7 +90,7 @@ func StartServer(version, commit, branch, date string) {
 	restful.Add(api.TagGroupResource{}.WebService())
 	restful.Add(api.ExternalReference{}.WebService())
 
-	// Custom black
+	// Custom black（追加したカスタムAPIを起動）
 	restful.Add(customapi.ConfigResource{}.WebService())
 	restful.Add(customapi.FilesResource{}.WebService())
 	restful.Add(customapi.TaskResource{}.WebService())

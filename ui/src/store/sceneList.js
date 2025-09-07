@@ -1,4 +1,3 @@
-import { min } from 'date-fns'
 import ky from 'ky'
 import Vue from 'vue'
 
@@ -11,7 +10,7 @@ function defaultValue (v, d) {
 
 const defaultFilterState = {
   dlState: 'available',
-  cardSize: '1',
+  cardSize: '2',  // 1 is now XS and 2 is now S
 
   lists: [],
   isAvailable: true,
@@ -25,9 +24,11 @@ const defaultFilterState = {
   cuepoint: [],
   attributes: [],
   volume: 0,
-  sort: 'release_desc',
+  // Custom Black(Scene検索用パラメータ追加：動画件数)
   max_count: 30,
   min_count: 0,
+  // Custom End
+  sort: 'release_desc'
 }
 
 const state = {
@@ -149,8 +150,10 @@ const mutations = {
     } catch (err) {
     }
   },
+  // Custom Black（Scene削除機能追加）
   removeScene(state, sceneId) {
     state.items = state.items.filter(scene => scene.scene_id !== sceneId);
+  // Custom End
   }
 }
 
@@ -195,6 +198,7 @@ const actions = {
     state.counts.hidden = data.count_hidden
   },
 
+  // Custom Black（Scene削除機能追加）
   async deleteScene ({ commit }, payload) {
     const confirmDelete = window.confirm(
       `Do you really want to delete the scene "${payload.scene.title}" from "${payload.scene.studio}"?\n` +
@@ -215,6 +219,7 @@ const actions = {
       return false;
     }
   }
+  // Custom End
 }
 
 export default {

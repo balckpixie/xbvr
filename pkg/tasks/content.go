@@ -23,8 +23,10 @@ import (
 	"github.com/xbapps/xbvr/pkg/externalreference"
 	"github.com/xbapps/xbvr/pkg/models"
 	"github.com/xbapps/xbvr/pkg/scrape"
-
+	
+	// Custom Black
 	customscrape "github.com/xbapps/xbvr/pkg/custom/scraper"
+	// Custom END
 )
 
 type ContentBundle struct {
@@ -395,10 +397,13 @@ func ScrapeJAVR(queryString string, scraper string) {
 		// Start scraping
 		var collectedScenes []models.ScrapedScene
 
+		// Custom Black
 		if scraper == "dmm" {
 			tlog.Info("Scraping dmm")
 			customscrape.ScrapeDMMapi(&collectedScenes, queryString)
 		} else if scraper == "javlibrary" {
+		//if scraper == "javlibrary" {
+		// Custom END			
 			tlog.Infof("Scraping JavLibrary")
 			scrape.ScrapeJavLibrary(&collectedScenes, queryString)
 		} else if scraper == "r18d" {

@@ -26,8 +26,9 @@ import (
 	"github.com/xbapps/xbvr/pkg/models"
 	"github.com/xbapps/xbvr/pkg/scrape"
 	"github.com/xbapps/xbvr/pkg/tasks"
-
+	// Custom Black
 	custommigrations "github.com/xbapps/xbvr/pkg/custom/migrations"
+	// Custom END
 )
 
 type RequestSceneList struct {
@@ -60,8 +61,10 @@ func Migrate() {
 	var retryMigration []string
 	db, _ := models.GetDB()
 
+	//Custom Black（追加マイグレーションを登録）
 	//m := gormigrate.New(db, gormigrate.DefaultOptions, []*gormigrate.Migration{
 	allMigrations := append([]*gormigrate.Migration{
+	// Custom END
 		{
 			ID: "0001",
 			Migrate: func(tx *gorm.DB) error {
@@ -2343,7 +2346,7 @@ func Migrate() {
 				return nil
 			},
 		},
-	//Custom Black
+	//Custom Black（追加マイグレーションを登録）
 	}, custommigrations.CustomMigrations()...)
 	m := gormigrate.New(db, gormigrate.DefaultOptions, allMigrations)
 	// Custom END

@@ -11,9 +11,9 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/markphelps/optional"
 
-	// customcommon "github.com/xbapps/xbvr/pkg/custom/common"
-	// customcommon "github.com/xbapps/xbvr/pkg/custom/common"
+	// Custom Black
 	shared "github.com/xbapps/xbvr/pkg/custom/shared"
+	// Custom END
 )
 
 type Actor struct {
@@ -58,9 +58,10 @@ type Actor struct {
 	SceneRatingAverage string `json:"scene_rating_average" gorm:"-" `
 	AkaGroups          []Aka  `gorm:"many2many:actor_akas;" json:"aka_groups" xbvrbackup:"-"`
 
-	// Custom black
+	// Custom black（データ項目追加）
 	FaceImageUrl string `json:"face_image_url" xbvrbackup:"face_image_url"`
 	Furigana     string `json:"furigana" xbvrbackup:"furigana"`
+	// Custom END
 }
 
 type RequestActorList struct {
@@ -155,13 +156,9 @@ func (i *Actor) CountActorTags() {
 		}
 	}
 
-
-	// Scene が存在しない Actor を拾って更新
+	// Custom Black（Scene が存在しない Actor を拾って更新）
 	var orphanActors []Actor
-	commonDb.Model(&Actor{}).
-		Where("NOT EXISTS (SELECT 1 FROM scene_cast sc JOIN scenes s ON s.id = sc.scene_id AND s.deleted_at IS NULL WHERE sc.actor_id = actors.id)").
-		Find(&orphanActors)
-
+	commonDb.Model(&Actor{}).Where("NOT EXISTS (SELECT 1 FROM scene_cast sc JOIN scenes s ON s.id = sc.scene_id AND s.deleted_at IS NULL WHERE sc.actor_id = actors.id)").Find(&orphanActors)
 	for _, actor := range orphanActors {
 		if actor.Count != 0 || actor.AvailCount != 0 {
 			actor.Count = 0
@@ -169,6 +166,7 @@ func (i *Actor) CountActorTags() {
 			actor.Save()
 		}
 	}
+	// Custom END
 }
 func QueryActorFull(r RequestActorList) ResponseActorList {
 	var actors []Actor
@@ -439,14 +437,12 @@ func QueryActors(r RequestActorList, enablePreload bool) ResponseActorList {
 	}
 
 	switch r.Sort.OrElse("") {
-	//custom black
+	//Custom black（フリガナソートを追加）
 	case "furigana_asc":
-		//tx = tx.Order("actors.furigana asc NULLS LAST")
 		tx = tx.Order("CASE WHEN furigana IS NULL OR TRIM(furigana) = '' THEN 1 ELSE 0 END,  furigana ASC")
 	case "furigana_desc":
-		// tx = tx.Order("actors.furigana desc NULLS LAST")
 		tx = tx.Order("CASE WHEN furigana IS NULL OR TRIM(furigana) = '' THEN 1 ELSE 0 END,  furigana DESC")
-	// custom END
+	// Custom END
 	case "name_asc":
 		tx = tx.Order("name asc")
 	case "name_desc":
@@ -508,7 +504,8 @@ func QueryActors(r RequestActorList, enablePreload bool) ResponseActorList {
 
 	if r.JumpTo.OrElse("") != "" {
 		cnt := 0
-
+		
+		// Custom Black（フリガナソート時のページネーション処理を追加）
 		switch r.Sort.OrElse("") {
 		case "furigana_asc", "furigana_desc":
 			txList := tx.Select(`distinct actors.name, actors.furigana`)
@@ -530,9 +527,7 @@ func QueryActors(r RequestActorList, enablePreload bool) ResponseActorList {
 				cnt = idx
 			}
 			offset = offset + cnt + 1
-			// offset = (cnt / limit) * limit
 		default:
-			// if we want to jump to actors starting with a specific letter, then we need to work out the offset to them
 			txList := tx.Select(`distinct actors.name`)
 			txList.Find(&out.Actors)
 			for idx, actor := range out.Actors {
@@ -543,6 +538,7 @@ func QueryActors(r RequestActorList, enablePreload bool) ResponseActorList {
 			}
 			offset = (cnt / limit) * limit
 		}
+		// Custom END
 	}
 	out.Offset = offset
 

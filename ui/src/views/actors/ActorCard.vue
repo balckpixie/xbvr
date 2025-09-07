@@ -1,11 +1,14 @@
 <template>
   <div class="card is-shadowless">
     <div class="card-image">
+      <!-- Custom Black（顔表示を追加） -->
       <div class="bbox"
+           
            v-bind:style="{backgroundImage: `url(${getActorImageURL(actor)})`, backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', opacity:isAvailable(actor) ? 1.0 : isAvailOpactiy}"
            @click="showDetails(actor)"
            @mouseover="preview = true"
            @mouseleave="preview = false">
+      <!-- Custom End -->
       </div>
         <div class="overlay align-bottom-left">
          </div>
@@ -13,7 +16,9 @@
 
     <div style="padding-top:4px;">
       <div class="scene_title">{{actor.name}}</div>
+      <!-- Custom Blakc（フリガナ表示） -->
       <div v-if="actor.furigana!=''" class="furigana">{{actor.furigana}}</div>
+      <!-- Custom End -->
       <a v-if="colleague!=undefined" class="button is-info is-outlined is-small"
         @click="showColleague(actor.name,colleague)"
         :title="'Show Scenes with ' + actor.name">
@@ -22,7 +27,9 @@
       <actor-favourite-button :actor="actor" v-if="this.$store.state.optionsWeb.web.sceneFavourite"/>
       <actor-watchlist-button :actor="actor" v-if="this.$store.state.optionsWeb.web.sceneWatchlist"/>
       <actor-edit-button :actor="actor"/>
+      <!-- Custom Black（actor画像編集ボタン） -->
       <actor-edit-image-button :actor="actor"/>
+      <!-- Custom End -->
       <link-stashdb-button :item="actor" objectType="actor" />
       <b-tooltip :label="$t('Your rating')" :delay="500">
       <b-tag type="is-warning" v-if="actor.star_rating != 0 " size="is-small" style="height:30px;">
@@ -61,14 +68,21 @@ import LinkStashdbButton from '../../components/LinkStashdbButton'
 import VueLoadImage from 'vue-load-image'
 import { tr } from 'date-fns/locale'
 
+// Custom Black(Actor 画像編集ボタン追加)
 import ActorEditImageButton from '../../components/ActorEditImageButton.vue'
+// Custom End
 
 export default {
   name: 'ActorCard',
+  // Custom Black(顔表示用のprops追加)
   props: { actor: Object, colleague: String, showFace: Boolean },
-   components: {ActorFavouriteButton, ActorWatchlistButton, VueLoadImage, ActorEditButton, LinkStashdbButton,
-                ActorEditImageButton,
+  // Custom End
+
+  // Custom Black(Actor 画像編集ボタン追加)
+  components: {ActorFavouriteButton, ActorWatchlistButton, VueLoadImage, ActorEditButton, LinkStashdbButton,
+               ActorEditImageButton,
    },
+   // Custom End
   data () {
     return {
       preview: false,
@@ -85,7 +99,7 @@ export default {
     },
   },
   methods: {
-    // Custom Black
+    // Custom Black(顔表示用のメソッド追加)
     getActorImageURL(actor) {
         return this.showFace ? actor.face_image_url : actor.image_url;
     },
@@ -185,7 +199,7 @@ export default {
     overflow: hidden;
     text-overflow: ellipsis;
   }
-
+  /* Custom Black（フリガナ用CSS追加） */
   .furigana {
     font-size: 11px;
     text-align: right;
@@ -194,4 +208,5 @@ export default {
     overflow: hidden;
     text-overflow: ellipsis;
   }
+  /* Custom END */
 </style>

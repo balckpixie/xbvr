@@ -10,7 +10,9 @@ import (
 	"time"
 
 	"github.com/avast/retry-go/v4"
+	// Custom Black
 	"github.com/xbapps/xbvr/pkg/common"
+	// Custom END
 )
 
 type File struct {
@@ -45,7 +47,6 @@ type File struct {
 	IsSelectedScript    bool `json:"is_selected_script" xbvrbackup:"is_selected_script"`
 	IsExported          bool `json:"is_exported" xbvrbackup:"-"`
 	RefreshHeatmapCache bool `json:"refresh_heatmap_cache" xbvrbackup:"-"`
-
 	// Custom black
 	HasThumbnail       bool   `json:"has_thumbnail" gorm:"default:false" xbvrbackup:"has_thumbnail"`
 	ThumbnailParameters string `json:"thumbnail_parameters" xbvrbackup:"thumbnail_parameters"`
@@ -95,11 +96,13 @@ func (f *File) Exists() bool {
 		// NOTE: we're assuming files weren't removed via Put.io web UI, so there's no need to check
 		return true
 	default:
+		// Custom Black
 		// return false
 		if _, err := os.Stat(f.GetPath()); os.IsNotExist(err) {
 			return false
 		}
 		return true
+		// Custom END
 	}
 }
 
@@ -125,5 +128,4 @@ func (o *File) ThumbnailExists() bool {
 	}
 	return true
 }
-
 // Custom END

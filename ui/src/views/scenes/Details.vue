@@ -22,9 +22,10 @@
     <div class="modal-card">
       <section class="modal-card-body">
 
+        <!-- CUstom Black（レイアウト操作機能を追加：Pane、Split）-->
         <!-- <div class="columns"> -->
+        <!-- <div class="column is-half"></div> -->
         <div style="display: flex; justify-content: flex-end; align-items: center; gap: 0.5rem;">
-          
           <div class="is-flex is-pulled-left" style="gap: 0.25rem;">
             <div v-for="(f, idx) in filesByType" :key="idx">
               <button rounded
@@ -36,13 +37,11 @@
               </button>
             </div>
           </div>
-
           <button rounded 
             class="button is-outlined is-small"
             @click="onHideClick()">
             {{ hidePane2 ? 'Show' : 'Hide' }} Detail
           </button>
-
           <button rounded
             class="button is-outlined is-small"
             @click="isDetailOpen = !isDetailOpen">
@@ -50,13 +49,13 @@
           </button>
         </div>
 
-
         <splitpanes class="default-theme"
           style="max-height: 88vh;"
           :gutter-size="10" :min-pane-size="27" :max-pane-size="100" :split="splitDirection"
           @resize="onResize" ref="splitpanesRef">
         <pane min-size="27" max-size="100" :size="splitSize">
           <div>
+        <!-- Custom End -->
             <b-tabs v-model="activeMedia" position="is-centered" :animated="false">
 
               <b-tab-item label="Gallery">
@@ -78,11 +77,13 @@
               </b-tab-item>
 
               <b-tab-item label="Player" v-if="!displayingAlternateSource">
+                <!-- Custom Black（プレイヤーにラッパーを設定） -->
                 <div :class="['video-player-wrapper', aspectClass]" ref="videoContainer">
-                  <video id="videoPlayer" ref="player" class="video-js vjs-default-skin video-custom" controls playsinline preload="none"
-                    muted />
+                  <video id="videoPlayer" ref="player" class="video-js vjs-default-skin video-custom" controls playsinline preload="none" muted />
                 </div>
+                <!-- Custom End -->
 
+                <!-- Custom Black（各種操作ボタン群を配置） -->
                 <div class="columns is-vcentered" style="max-width: 120px;">
                   <div class="column pb-0 is-small" style="max-width: 120px;">
                     <!-- プロジェクション比選択プルダウン -->
@@ -124,11 +125,14 @@
                       </b-field>
                   </div>
                 </div>
+                <!-- Custom End -->
               </b-tab-item>
 
             </b-tabs>
 
           </div>
+
+        <!-- CUstom Black（レイアウト操作機能を追加：Pane、Split）-->
         </pane>
         <Pane v-show="!hidePane2" min-size="27" max-size="100">
 
@@ -136,6 +140,8 @@
           <b-collapse :open.sync="isDetailOpen">
           <div class="box">
           <p>
+          <!-- <div class="column is-half"></div> -->
+        <!-- Custom End -->
 
             <div class="block-info block">
               <div class="content">
@@ -149,7 +155,9 @@
                 <div class="columns">
                   <div class="column pb-0">
                     <small>
+                      <!-- Custom Black(シーンID表示を追加) -->
                       <a :href="item.scene_url" target="_blank" rel="noreferrer">{{ item.site }} [ {{ item.scene_id }} ]</a>
+                      <!-- Custom End -->
                       <br v-if="item.members_url != ''"/>
                       <a v-if="item.members_url != ''" :href="item.members_url" target="_blank" rel="noreferrer"><b-icon pack="mdi" icon="link-lock" custom-size="mdi-18px"/>Members Link</a>
                     </small>
@@ -171,21 +179,6 @@
                       <strong>Linked scene, Not an XBVR Scene</strong>
                     </b-field>
                   </div>
-
-                  <!-- <div class="column pt-0">
-                    <div class="is-flex is-pulled-left" style="gap: 0.25rem">
-                      <div class="" v-for="(f, idx) in filesByType" :key="idx" style="margin-top: 3px;">
-                        <button rounded
-                          class="button is-small"
-                          :class="f.has_thumbnail ? 'is-success' : 'is-danger'"
-                          @click='playFile(f)'
-                          v-show="f.type === 'video'">
-                        {{idx+1}}
-                        </button>
-                      </div>
-                    </div>
-                  </div> -->
-
                   <div class="column pt-0">
                     <div class="is-flex is-pulled-right" style="gap: 0.25rem">
                       <a class="button is-primary is-outlined is-small" @click="searchAlternateSourceScene()" title="Search for a different scene" v-if="displayingAlternateSource">
@@ -207,7 +200,9 @@
                       <wishlist-button :item="item" v-if="!displayingAlternateSource"/>
                       <watched-button :item="item" v-if="!displayingAlternateSource"/>
                       <edit-button :item="item"/>
+                      <!-- Custom Black（削除ボタンを追加） -->
                       <delete-button :item="item" @deleted="disposePlayer" />
+                      <!-- Custom End -->
                       <refresh-button :item="item" v-if="!displayingAlternateSource"/>
                       <rescrape-button :item="item" v-if="!displayingAlternateSource"/>
                       <link-stashdb-button :item="item" objectType="scene" />
@@ -229,9 +224,13 @@
 
             <div class="image-row" v-if="activeTab != 1 && !displayingAlternateSource">
               <div v-for="(image, idx) in castimages" :key="idx" class="image-wrapper">
+                <!-- Custom Black（ツールチップの位置を右側に変更） -->
                 <b-tooltip  type="is-light" :label="image.actor_label"  :delay=100 position="is-right" >
+                <!-- Custom END -->
                   <vue-load-image>
+                    <!-- Custom Black（顔画像表示に対応）-->
                     <img slot="image" :src="getImageURL(image.facesrc)" alt="Image" class="thumbnail" @mouseover="showTooltip(idx)" @mouseout="hideTooltip(idx)" @click='showActorDetail([image.actor_id])' />
+                    <!-- Custom End -->
                     <img slot="preloader" :src="getImageURL('https://i.stack.imgur.com/kOnzy.gif')" style="height: 50px;display: block;margin-left:auto;margin-right: auto;" @click='showCastScenes([image.actor_name])' />
                     <img slot="error" src="/ui/images/blank_female_profile.png" width="80" @click='showActorDetail([image.actor_id])' />
                   </vue-load-image>
@@ -242,6 +241,7 @@
                 </div>
               </div>
             </div>
+            <!-- Custom Black （キャスト画像表示を追加）-->
             <div v-if="castimages.length == 0 && !displayingAlternateSource" class="content is-small">
               <div v-for="(c, idx) in item.cast" :key="'cast' + idx" class="image-wrapper">
                 <b-tooltip  type="is-light" :label="c.name" :delay=100 position="is-right" >
@@ -251,9 +251,11 @@
                 </b-tooltip>
               </div>
             </div>
+            <!-- Custom End -->
 
             <div class="block-tags block" v-if="activeTab != 1">
               <b-taglist>
+                <!-- Custom Black（タグボタンの位置を修正：クラス追加）-->
                 <span v-for="(c, idx) in item.cast" :key="'cast' + idx">
                   <a class="tagbutton tag is-warning is-small" @click='showCastScenes([c.name])' :style="showOpenInNewWindow ? 'margin-right: 0;': 'margin-right: .5em;'" >{{ c.name }} ({{ c.avail_count }}/{{ c.count }})</a>
                   <a v-if="showOpenInNewWindow" class="tagbutton tag is-warning is-small" :href='getCastScenesUrl([c.name])' target="_blank" style="margin-right: 0.5em;"><b-icon pack="mdi" icon="open-in-new" size="is-small"></b-icon></a>
@@ -266,12 +268,15 @@
                   <a  @click='showTagScenes([tag.name])' class="tagbutton tag is-info is-small" :style="showOpenInNewWindow ? 'margin-right: 0;': 'margin-right: .5em;'">{{ tag.name }} ({{ tag.count }})</a>
                   <a v-if="showOpenInNewWindow" class="tagbutton tag is-info is-small" :href='getTagScenesUrl([tag.name])' target="_blank" style="margin-right: 0.5em;"><b-icon pack="mdi" icon="open-in-new" size="is-small"></b-icon></a>
                 </span>
+                <!-- Custom End -->
               </b-taglist>              
             </div>
 
+          <!-- CUstom Black（レイアウト操作機能を追加：Pane、Split）-->
            </p>
           </div>
           </b-collapse>
+          <!-- Custom End -->
 
             <div class="block-tags block" v-if="activeTab == 1">
              <b-taglist>
@@ -319,11 +324,15 @@
             </div>
 
 
+            <!-- Custom Black （参照用TabBar追加）-->
             <div class="block-opts block" ref="tabBar">
+            <!-- Custom ENd -->
               <b-tabs v-model="activeTab" :animated="false">
 
                 <b-tab-item :label="`Files (${fileCount})`" v-if="!displayingAlternateSource">
+                  <!-- Custom Black （オーバーフロー処理）-->
                   <div class="block-tab-content block" style="overflow: auto;">
+                  <!-- Custom End -->
                     <div class="content media is-small" v-for="(f, idx) in filesByType" :key="idx">
                       <div class="media-left">
                         <button rounded class="button is-success is-small" @click='playFile(f)'
@@ -363,6 +372,7 @@
                         <button class="button is-dark is-small is-outlined" title="Unmatch file from scene" @click='unmatchFile(f)'>
                           <b-icon pack="fas" icon="unlink" size="is-small"></b-icon>
                         </button>&nbsp;
+                        <!-- Custom Black（サムネ削除、プロジェクションリセット、リネーム、リセットボタンを追加）-->
                         <button class="button is-dark is-small is-outlined" title="Delete thumbnail for this file" @click='deleteThumbnail(f)'>
                             <b-icon pack="fas" icon="image" size="is-small"></b-icon>
                             <b-icon pack="fas" icon="trash" size="is-small"></b-icon>
@@ -370,13 +380,13 @@
                         <button class="button is-dark is-small is-outlined" title="Reset projection and delete thumbnail" @click='resetProjection(f)'>
                             <b-icon pack="fas" icon="window-restore" size="is-small"></b-icon>
                         </button>&nbsp;
-
                         <button class="button is-danger is-small is-outlined" title="reset filename" @click='resetFileName(f)'>
                           <b-icon pack="fas" icon="redo-alt" size="is-small"></b-icon>
                         </button>&nbsp;
                         <button class="button is-danger is-small is-outlined" title="rename file" @click='renameFile(f)'>
                           <b-icon pack="fas" icon="pen" size="is-small"></b-icon>
                         </button>&nbsp;
+                        <!-- Custom End -->
                         <button class="button is-danger is-small is-outlined" title="Delete file from disk" @click='removeFile(f)'>
                           <b-icon pack="fas" icon="trash" size="is-small"></b-icon>
                         </button>
@@ -476,7 +486,7 @@
                     </b-message>
                   </div>
                 </b-tab-item>
-
+                <!-- Custom Black（サムネタブを追加）-->
                 <b-tab-item label="Thumbnails" name="thumbnails">
                   <div ref="thumbnailTabRef">
                   <ThumbnailTab
@@ -494,6 +504,7 @@
                     <span>+</span>
                   </div>
                 </b-tab-item>
+                <!-- Custom End -->
 
                 <b-tab-item v-if="this.$store.state.optionsAdvanced.advanced.showSceneSearchField && !displayingAlternateSource" label="Search fields">
                   <div class="block-tab-content block">
@@ -509,9 +520,11 @@
             </div>
 
           </div>
+        <!-- CUstom Black（レイアウト操作機能を追加：Pane、Split）-->
+        <!-- </div> -->
         </pane>
         </splitpanes>
-        <!-- </div> -->
+        <!-- Custom End -->
       </section>
       <div class="scene-id">
         {{ item.scene_id }}
@@ -549,19 +562,20 @@ import RescrapeButton from '../../components/RescrapeButton'
 import TrailerlistButton from '../../components/TrailerlistButton'
 import HiddenButton from '../../components/HiddenButton'
 
+// Custom Black（サムネイルタブ、レイアウト操作用、ボタン 追加）
 import 'videojs-thumbnail-sprite-custom';
-// import 'videojs-sprite-thumbnails'
 import { Splitpanes, Pane } from 'splitpanes'
 import 'splitpanes/dist/splitpanes.css'
 import ThumbnailTab from '../../components/ThumbnailTab.vue'
 import DeleteButton from '../../components/DeleteButton.vue'
-import { vi } from 'date-fns/locale';
+import { vi } from 'date-fns/locale'; // スプライト用？
 
 export default {
   name: 'Details',
   components: { VueLoadImage, GlobalEvents, StarRating, WatchlistButton, FavouriteButton, LinkStashdbButton, WishlistButton, WatchedButton, EditButton, RefreshButton, RescrapeButton, TrailerlistButton, HiddenButton
     , ThumbnailTab, DeleteButton, Splitpanes, Pane 
    },
+// Custom End
   data () {
     return {
       index: 1,
@@ -590,14 +604,12 @@ export default {
       searchfields: [],
       alternateSources: [],
       waitingForQuickFind: false,
-      // Custom Black
+      // Custom Black（各種パラメータ追加）
       thumbStartTime:25,
       thumbInterval :30,
       thumbResolution: 200,
-
       isDetailOpen: true,
       maxHeight: 'calc(92vh - 20px)', //サムネイルコンポーネント高さ調整用
-
       currentFile: null,
       currentDuraiton: 0,
       aspectRatio: '4:3',
@@ -610,16 +622,7 @@ export default {
     }
   },
   computed: {
-    // Custom Black
-    // splitSize() {
-    //   if (this.hidePane2) {
-    //     return 100
-    //   }
-    //   else
-    //   {
-    //    return 58
-    //   }
-    // },
+    // Custom Black（動画アスペクトクラス用）
     aspectClass() {
       if (this.aspectRatio === 'original') return '';
       const value = this.aspectRatio.replace(':', '_');
@@ -643,18 +646,23 @@ export default {
           label += `, ${age} in scene`
         }
         let img = actor.image_url
+// Custom Black（顔画像表示に対応）
         let face = actor.face_image_url
+// Custom END
         if (img == "" ){
           img = "blank"  // forces an error image to load, blank won't display an image
         }
         if (actor.name.startsWith("aka:")) {
           img = ""
         }
+// Custom Black（顔画像表示に対応）
         return {src: img, facesrc: face, visible: false, actor_name: actor.name, actor_label: label, actor_id: actor.id};
       });
 
       this.castimages =  imgs.filter((img) => {
+        //return img.src !== '';
         return img.facesrc !== '';
+// Custom End
         });
       this.getSearchFields(item.id)
       return item
@@ -701,7 +709,7 @@ export default {
     },
     filesByType () {
       if (this.item.file !== null) {
-        // Custom Black
+// Custom Black(ファイルのソート順を 正しいファイル名順に修正)
         //return this.item.file.slice().sort((a, b) => (a.type === 'video') ? -1 : 1)
                 return this.item.file.slice().sort((a, b) => {
           if (a.Type === "video" && b.Type !== "video") {
@@ -712,7 +720,7 @@ export default {
           }
           return a.filename.localeCompare(b.filename);
         });
-        // Custom END
+// Custom END
       }
       return []
     },
@@ -803,7 +811,7 @@ export default {
       this.cuepointPositionTags.unshift("")
       })    
     
-    //サムネイル領域の高さ調整用
+    // Custom Black （サムネイル領域の高さ調整用）
     this.$nextTick(() => {
         const targetEl = this.$refs.tabBar
         if (targetEl) {
@@ -817,10 +825,11 @@ export default {
           this._resizeObserver.observe(targetEl)
         }
       })
+    // Custom END
   },
   
   watch:{
-    // Custom Black
+  // Custom Black（各種パラメータ追加）
     isDetailOpen() {
       this.$forceUpdate()
     },
@@ -837,7 +846,7 @@ export default {
         window.dispatchEvent(new Event('resize'));
       });
     },
-    activeTab(newIndex) {
+    activeTab(newIndex) { //Tab=4の時はサムネイル読み込み
       if (newIndex === 4) {
         this.$nextTick(() => {
            this.loadVideThumbnails()
@@ -872,15 +881,29 @@ export default {
     }
     this.activeTab = newVal
     this.$store.commit('overlay/changeDetailsTab', { tab: -1 })
+  },
+  activeMedia(newVal, oldVal) {
+    // Auto-load first video when Player tab is opened (without auto-playing)
+    // The webUI video player doesn't work for some users without autoloading
+    if (newVal === 1 && !this.displayingAlternateSource) {
+      const videoFiles = this.filesByType.filter(f => f.type === 'video')
+      if (videoFiles.length > 0) {
+        this.activeMedia = 1
+        this.updatePlayer('/api/dms/file/' + videoFiles[0].id + '?dnt=true', (videoFiles[0].projection == 'flat' ? 'NONE' : '180'))
+      }
+    }
   }
 },
-beforeDestroy() {
+
+// Custom Black（サムネイル領域の高さ調整用オブジェクトの廃棄）
+  beforeDestroy() {
   if (this._resizeObserver) {
   this._resizeObserver.disconnect()
   }},
+// Custom END
 
   methods: {
-    // Custom Black
+    // Custom Black （諸々の処理関数群を追加）
     onHideClick() {
       this.hidePane2 = !this.hidePane2
       if (this.hidePane2){
@@ -919,17 +942,12 @@ beforeDestroy() {
     async restartPlayer()
     {
       const currentTime = this.player.currentTime();
-      // const isPaused = this.player.paused();
-      // const wasMuted = this.player.muted();
-      // const volume = this.player.volume();
       const currentSrc = this.player.currentSrc();
-      // const duration = this.player.duration()
       const wasPlaying = !this.player.paused()
 
       this.recreateVideoPlayer()
       this.updatePlayer(currentSrc, this.projectionMode)
 
-      // if (wasPlaying) {
         this.player.ready(() => {
           if (wasPlaying) {
               this.player.load();     // 動画を読み込む（バッファ開始）
@@ -947,9 +965,6 @@ beforeDestroy() {
               this.player.play(); // `playing` イベントを発火させる
           }
         })  
-      //this.player.volume(volume);
-      //this.player.muted(wasMuted);
-
     },
 
     // Create New Video Player（for Change projection mode）
@@ -1002,7 +1017,6 @@ beforeDestroy() {
 
     spriteParams(file) {
       const thumbnailUrl = '/api_custom/thumbnail/image/' + file.id
-
       // thumbnail_parameters が文字列かオブジェクトかを安全に処理
       const parsed = (typeof file.thumbnail_parameters === 'string')
         ? JSON.parse(file.thumbnail_parameters)
@@ -1022,7 +1036,6 @@ beforeDestroy() {
         height: tileHeight,
       }
     },
-    
     // サムネイルスプライトの設定＆再設定用メソッド
     setSprites(player, options) {
         // ThumbnailSprite クラスのコンストラクタを Video.js レジストリから取得
@@ -1037,7 +1050,6 @@ beforeDestroy() {
             player.thumbnailSprite(options);
         }
     },
-
     resetSprites(player) {
         // ThumbnailSprite クラスのコンストラクタを Video.js レジストリから取得
         const ThumbnailSpriteClass = videojs.getPlugin('thumbnailSprite');
@@ -1049,8 +1061,6 @@ beforeDestroy() {
             pluginInstance.resetSprites();
         }
     },
-
-    // サーバー上に画像データが存在するか確認する
     checkImageExists(url, callback) {
       fetch(url, { method: 'HEAD' })
         .then(response => {
@@ -1060,38 +1070,36 @@ beforeDestroy() {
           callback(false);
         });
     },
-
-    // サムネイルパネルを表示する
     loadVideThumbnails() {
       if (this.$refs.thumbnailRef) {
         this.$refs.thumbnailRef.file = this.currentFile
         this.$refs.thumbnailRef.loadThumbnails()
       }
     },
-
     clearThumbnails() {
       if (this.$refs.thumbnailRef) {
         this.$refs.thumbnailRef.clearVideThumbnails()
       }
     },
-
-    // サムネイルのクリックイベント
     onThumbnailClicked(duration) {
           this.setCurrentTime(duration)
     },
-
-    // Custom END
+// Custom END
 
     setupPlayer()
     {
-      // Custom Black 再作成時にref参照できなるなるため、id参照に変更
+// Custom Black （再作成時にref参照できなるなるため、id参照に変更、再利用のためrestoreEl:true追加）
+      // this.player = videojs(this.$refs.player, {
+      // aspectRatio: '1:1',
+      // fluid: true,
+      // loop: true
       this.player = videojs('videoPlayer', {
         aspectRatio: this.aspectRatio,
         fluid: true,
         loop: true,
         restoreEl: true
       })
-
+// Custom END
       this.player.hotkeys({
         alwaysCaptureHotkeys: true,
         volumeStep: 0.1,
@@ -1161,13 +1169,12 @@ beforeDestroy() {
       if (src) {
         this.player.src({ src: src, type: 'video/mp4' })
       }
+// Custom Black（poster 設定を2秒後に実行）
       // this.player.poster(this.getImageURL(this.item.cover_url, ''))
-      // Custom Black
-      // poster 設定を2秒後に実行
       setTimeout(() => {
         this.player.poster(this.getImageURL(this.item.cover_url, ''));
       }, 1000);
-      // Custom END
+// Custom END
     },
 
     showCastScenes (actor) {
@@ -1253,18 +1260,16 @@ beforeDestroy() {
       this.activeMedia = 1
       this.updatePlayer('/api/dms/file/' + file.id + '?dnt=true', (file.projection == 'flat' ? 'NONE' : '180'))
       
-      // Custom Black
+// Custom Black（サムネイルスプライト設定）
       this.setupSprite(file)
-      // Custom END
-
+// Custom END
       this.player.play()
-
-      // Custom Black
+// Custom Black（サムネイルタブ設定）
       if (this.currentFile != file) {
         this.currentFile = file
         this.loadVideThumbnails()
       }
-      // Custom END
+// Custom END
     },
 
     unmatchFile (file) {
@@ -1295,6 +1300,7 @@ beforeDestroy() {
       })
     },
 
+// Custom Black（ボタン用関数を追加）
     deleteThumbnail (file) {
       this.$buefy.dialog.confirm({
         title: 'Delete thumbnail',
@@ -1363,7 +1369,7 @@ beforeDestroy() {
         }
       })
     },
-    // Custom END
+// Custom END
 
     selectScript (file) {
       ky.post(`/api/scene/selectscript/${this.item.id}`, {
@@ -1484,9 +1490,11 @@ beforeDestroy() {
         this.$store.commit('overlay/showDetails', { scene: data })
         this.activeMedia = 0
         this.carouselSlide = 0
+// Custom Black（サムネイルクリア＆スプライト再設定）
         this.clearThumbnails();
         this.updatePlayer(undefined, '180')
         this.setupSprite(null)
+// Custom END
       }
     },
     prevScene () {
@@ -1495,9 +1503,11 @@ beforeDestroy() {
         this.$store.commit('overlay/showDetails', { scene: data })
         this.activeMedia = 0
         this.carouselSlide = 0
+// Custom Black（サムネイルクリア＆スプライト再設定）
         this.clearThumbnails();
         this.updatePlayer(undefined, '180')
         this.setupSprite(null)
+// Custom END
       }
     },
     playerStepBack (interval) {
@@ -1759,6 +1769,13 @@ beforeDestroy() {
   margin: 0 auto;
 }
 
+:deep(.video-js .vjs-big-play-button) {
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%) !important;
+}
+
+// Custom Black 85%-> 95%
 .modal-card {
   width: 95%;
 }
@@ -1784,6 +1801,7 @@ beforeDestroy() {
   display: none;
 }
 
+// Custom Black（微調整）
 .block-opts {
     flex: 1;
     overflow-y: auto;
@@ -1795,6 +1813,7 @@ beforeDestroy() {
     height: 88vh;
     padding: 0.5rem;
 }
+// Custom END
 
 .vue-star-rating {
     line-height: 0;
@@ -1884,6 +1903,7 @@ span.is-active img {
   margin-right: .5em;
   object-fit: cover;
 }
+// Custom Black 表示レイアウト微調整
 .tooltip {
   position: absolute;
   z-index: 1;
@@ -1899,6 +1919,8 @@ span.is-active img {
   padding: 10px;
   transform: translateX(10px);
 }
+// Custom END
+
 .tooltip img {
   max-width: 100%;
   max-height: 100%;
@@ -1908,6 +1930,7 @@ span.is-active img {
   margin-left: 5px;  
 }
 
+// Custom Black（CSS追加）
 .thumbnail-tab {
   overflow: auto;
 }
@@ -1951,11 +1974,6 @@ span.is-active img {
   height: 100%;
   object-fit: contain;
 }
-
-// .splitpanes {
-//   background-color: #ffffff00;
-//   border: none;
-// }
 
 .splitpanes {
   background: #ffffff00 !important;
@@ -2049,4 +2067,5 @@ input[type="range"]::-moz-range-track {
   border-radius: 3px;
 }
 
+// Custom END
 </style>

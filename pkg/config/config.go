@@ -8,8 +8,9 @@ import (
 
 	"github.com/xbapps/xbvr/pkg/common"
 	"github.com/xbapps/xbvr/pkg/models"
-
+	// Custom Black
 	customconfig "github.com/xbapps/xbvr/pkg/custom/config"
+	// Custom END
 )
 
 type CronSchedule struct {
@@ -30,7 +31,6 @@ type ObjectConfig struct {
 		ThumbnailParams     customconfig.ThumbnailParams 	`json:"thumbnailParams"`
 	} `json:"custom"`
 	// Custom END
-
 	Server struct {
 		BindAddress string `default:"0.0.0.0" json:"bindAddress"`
 		Port        int    `default:"9999" json:"port"`
@@ -63,6 +63,7 @@ type ObjectConfig struct {
 		ShowHSPApiLink               bool      `default:"false" json:"showHSPApiLink"`
 		ShowSceneSearchField         bool      `default:"false" json:"showSceneSearchField"`
 		StashApiKey                  string    `default:"" json:"stashApiKey"`
+		ScraperProxy                 string    `default:"" json:"scraperProxy"`
 		ScrapeActorAfterScene        bool      `default:"true" json:"scrapeActorAfterScene"`
 		UseImperialEntry             bool      `default:"false" json:"useImperialEntry"`
 		ProgressTimeInterval         int       `default:"15" json:"progressTimeInterval"`
@@ -180,7 +181,8 @@ type ObjectConfig struct {
 		} `json:"linkScenesSchedule"`
 	} `json:"cron"`
 	Storage struct {
-		MatchOhash bool `default:"false" json:"match_ohash"`
+		MatchOhash bool     `default:"false" json:"match_ohash"`
+		VideoExt   []string `json:"video_ext"`
 	} `json:"storage"`
 	ScraperSettings struct {
 		TMWVRNet struct {
@@ -193,8 +195,10 @@ type ObjectConfig struct {
 }
 
 var (
-	Config            ObjectConfig
-	RecentIPAddresses []string
+	Config                   ObjectConfig
+	RecentIPAddresses        []string
+	ForbiddenVideoExtensions = []string{".funscript", ".cmscript", ".hsp", ".srt", ".ssa", ".ass"}
+	DefaultVideoExtensions   = []string{".mp4", ".avi", ".wmv", ".mpeg4", ".mov", ".mkv"}
 )
 
 func LoadConfig() {

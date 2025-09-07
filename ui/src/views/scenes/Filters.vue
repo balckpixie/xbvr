@@ -204,12 +204,12 @@
           </b-taginput>
         </b-field>
       </b-tooltip>
-
+      <!-- Custom Black（ファイル数での検索条件を追加） -->
       <b-field>
         <strong><small>{{ $t("Files") }}:</small></strong>
         <b-slider :min="0" :max="30" :step="1" :tooltip="true" v-model="filecounts" lazy class="slider" style="margin: 0.5em 1em 0em 2em;"></b-slider>
       </b-field>
-
+      <!-- Custom End -->
     </div>
     <div class="is-divider" data-content="Actor Also Known As groups"></div>
     <b-field>
@@ -590,6 +590,7 @@ export default {
     }
   },
   computed: {
+    // Custom Black（ファイル数での検索条件を追加）
     filecounts: {
       get () {
         return [this.$store.state.sceneList.filters.min_count, this.$store.state.sceneList.filters.max_count]
@@ -602,6 +603,7 @@ export default {
         }
       }
     },
+    // Custom END
 
     filters () {
       return this.$store.state.sceneList.filterOpts

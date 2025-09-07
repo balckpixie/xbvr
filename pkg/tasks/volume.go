@@ -23,11 +23,18 @@ import (
 	"github.com/xbapps/xbvr/pkg/ffprobe"
 	"github.com/xbapps/xbvr/pkg/models"
 	"github.com/xbapps/xbvr/pkg/scrape"
-
+	// Custom Black
 	shared "github.com/xbapps/xbvr/pkg/custom/shared"
+	// Custom END
 )
 
-var allowedVideoExt = []string{".mp4", ".avi", ".wmv", ".mpeg4", ".mov", ".mkv"}
+// The allowed video extensions are set in the config.go file as they now are user configurable
+func getAllowedVideoExt() []string {
+	if len(config.Config.Storage.VideoExt) == 0 {
+		return config.DefaultVideoExtensions
+	}
+	return config.Config.Storage.VideoExt
+}
 
 func RescanVolumes(id int) {
 	if !models.CheckLock("rescan") {
@@ -91,6 +98,7 @@ func RescanVolumes(id int) {
 			}
 
 			// Custom Black
+			// if no match, check if the filename (without extension) matches a known DVDID and scrape if found
 			if len(scenes) == 0 {
 				queryString := shared.ExtractDVDIDLogic(unescapedFilename)
 				if queryString != "" {
@@ -225,6 +233,7 @@ func RescanVolumes(id int) {
 }
 
 func scanLocalVolume(vol models.Volume, db *gorm.DB, tlog *logrus.Entry) {
+	allowedVideoExt := getAllowedVideoExt()
 	if vol.IsMounted() {
 
 		var videoProcList []string
@@ -318,49 +327,16 @@ func scanLocalVolume(vol models.Volume, db *gorm.DB, tlog *logrus.Entry) {
 					if projection, err := shared.DetectVRType(path,time.Second*5); err == nil {
 						fl.VideoProjection = projection
 					} else {
-					// if vs.Height*2 == vs.Width || vs.Width > vs.Height {
-					// 	fl.VideoProjection = "180_sbs"
-					// 	nameparts := filenameSeparator.Split(strings.ToLower(filepath.Base(path)), -1)
-					// 	for i, part := range nameparts {
-					// 		if part == "mkx200" || part == "mkx220" || part == "rf52" || part == "fisheye190" || part == "vrca220" || part == "flat" {
-					// 			fl.VideoProjection = part
-					// 			break
-					// 		} else if part == "fisheye" || part == "f180" || part == "180f" {
-					// 			fl.VideoProjection = "fisheye"
-					// 			break
-					// 		} else if i < len(nameparts)-1 && (part+"_"+nameparts[i+1] == "mono_360" || part+"_"+nameparts[i+1] == "mono_180") {
-					// 			fl.VideoProjection = nameparts[i+1] + "_mono"
-					// 			break
-					// 		} else if i < len(nameparts)-1 && (part+"_"+nameparts[i+1] == "360_mono" || part+"_"+nameparts[i+1] == "180_mono") {
-					// 			fl.VideoProjection = part + "_mono"
-					// 			break
-					// 		}
-					// 	}
-					// 	if fl.VideoProjection == "mkx200" || fl.VideoProjection == "mkx220" || fl.VideoProjection == "rf52" || fl.VideoProjection == "fisheye190" || fl.VideoProjection == "vrca220" {
-					// 		// alpha passthrough only works with fisheye projections
-					// 		for _, part := range nameparts {
-					// 			if part == "alpha" {
-					// 				fl.HasAlpha = true
-					// 				break
-					// 			}
-					// 		}
-					// 	}
-					// }
-					if fl.VideoProjection == "mkx200" || fl.VideoProjection == "mkx220" || fl.VideoProjection == "rf52" || fl.VideoProjection == "fisheye190" || fl.VideoProjection == "vrca220" {
-						nameparts := filenameSeparator.Split(strings.ToLower(filepath.Base(path)), -1)
-						// alpha passthrough only works with fisheye projections
-						for _, part := range nameparts {
-							if part == "alpha" {
-								fl.HasAlpha = true
-								break
+						if fl.VideoProjection == "mkx200" || fl.VideoProjection == "mkx220" || fl.VideoProjection == "rf52" || fl.VideoProjection == "fisheye190" || fl.VideoProjection == "vrca220" {
+							nameparts := filenameSeparator.Split(strings.ToLower(filepath.Base(path)), -1)
+							// alpha passthrough only works with fisheye projections
+							for _, part := range nameparts {
+								if part == "alpha" {
+									fl.HasAlpha = true
+									break
+								}
 							}
 						}
-					}
-
-					if vs.Height == vs.Width {
-						fl.VideoProjection = "360_tb"
-					}
-
 					}
 					//Custom END
 
@@ -434,6 +410,7 @@ func scanLocalVolume(vol models.Volume, db *gorm.DB, tlog *logrus.Entry) {
 }
 
 func scanPutIO(vol models.Volume, db *gorm.DB, tlog *logrus.Entry) {
+	allowedVideoExt := getAllowedVideoExt()
 	client := vol.GetPutIOClient()
 
 	acct, err := client.Account.Info(context.Background())
