@@ -96,7 +96,7 @@ type Scene struct {
 	TotalWatchTime int             `json:"total_watch_time" gorm:"default:0" xbvrbackup:"total_watch_time"`
 
 	HasVideoPreview bool `json:"has_preview" gorm:"default:false" xbvrbackup:"-"`
-
+	// HasVideoThumbnail bool `json:"has_video_thumbnail" gorm:"default:false"`
 
 	NeedsUpdate   bool   `json:"needs_update" xbvrbackup:"-"`
 	EditsApplied  bool   `json:"edits_applied" gorm:"default:false" xbvrbackup:"-"`
@@ -462,7 +462,9 @@ func SceneCreateUpdateFromExternal(db *gorm.DB, ext ScrapedScene) error {
 	// Clean & Associate Actors
 	db.Model(&o).Association("Cast").Clear()
 	var tmpActor Actor
+	//Custom Black(後続処理用)
 	cnt := 0
+	//Custom END
 	for _, name := range ext.Cast {
 		tmpActor = Actor{}
 		db.Where(&Actor{Name: strings.Replace(name, ".", "", -1)}).FirstOrCreate(&tmpActor)
@@ -485,8 +487,7 @@ func SceneCreateUpdateFromExternal(db *gorm.DB, ext ScrapedScene) error {
 				}
 			}
 		}
-
-		// Custom Black add Aliases and Furigana Parameter
+		// Custom Black （add Aliases and Furigana Parameter）
 		if ext.Rubys != nil && ext.Rubys[cnt] != "" {
 			if tmpActor.Aliases == "" {
 				tmpActor.Aliases = "[\"" + ext.Rubys[cnt] + "\"]"
@@ -496,7 +497,6 @@ func SceneCreateUpdateFromExternal(db *gorm.DB, ext ScrapedScene) error {
 				tmpActor.Furigana = ext.Rubys[cnt]
 				saveActor = true
 			}
-
 		}
 		cnt++
 		// Custom END
@@ -667,8 +667,10 @@ type RequestSceneList struct {
 	Volume       optional.Int      `json:"volume"`
 	Released     optional.String   `json:"releaseMonth"`
 	Sort         optional.String   `json:"sort"`
+	// Custom Black（検索パラメータを追加、動画ファイルの数）
 	MaxFileCount optional.Int      `json:"max_count"`	
 	MinFileCount optional.Int      `json:"min_count"`
+	// Custom END
 }
 
 type ResponseSceneList struct {
@@ -795,8 +797,7 @@ func queryScenes(db *gorm.DB, r RequestSceneList) (*gorm.DB, *gorm.DB) {
 		}
 	}
 
-	
-	// Custom Black
+	// Custom Black（検索パラメータ追加：シーン内の動画ファイルの数）
 	if r.MinFileCount.Present() && r.MinFileCount.OrElse(0) != 0 {
 		tx = tx.
 		Where("exists (select 1 from files where files.scene_id = scenes.id and files.type = 'video' group by files.scene_id having count(*) >= ?)", r.MinFileCount.OrElse(0))
@@ -805,8 +806,9 @@ func queryScenes(db *gorm.DB, r RequestSceneList) (*gorm.DB, *gorm.DB) {
 		tx = tx.
 		Where("exists (select 1 from files where files.scene_id = scenes.id and files.type = 'video' group by files.scene_id having count(*) <= ?)", r.MaxFileCount.OrElse(0))
 	}
-	// handle Attribute selections
+	// Custom END
 
+	// handle Attribute selections
 	var orAttribute []string
 	var andAttribute []string
 	combinedWhere := ""

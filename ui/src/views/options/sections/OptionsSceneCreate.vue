@@ -7,7 +7,9 @@
         <div class="card-content content">
           <b-field grouped>
             <b-select placeholder="Select scraper" v-model="javrScraper">
+              <!-- Custom Black(DMMを追加) -->
               <option value="dmm">DMM(FANZA)</option>
+              <!-- Custom End -->
               <option value="javdatabase">javdatabase.com</option>
               <option value="r18d">r18.dev</option>
               <option value="javlibrary">javlibrary.com</option>
@@ -101,7 +103,9 @@ export default {
   data () {
     return {
       isLoading: true,
+      // Custom Black(DMMをデフォルト設定)
       javrScraper: 'dmm',
+      // Custom End
       javrQuery: '',
       tpdbSceneUrl: '',
       customSceneTitle: '',

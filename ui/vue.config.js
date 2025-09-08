@@ -15,7 +15,9 @@ module.exports = {
   },
 
   configureWebpack: {
-    devtool: 'source-map',  // ← これを追加！
+    // Custom Black（ソースマップ有効化）
+    devtool: 'source-map',
+    // Custom END
     
     resolve: {
         fallback: {

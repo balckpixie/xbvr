@@ -78,11 +78,13 @@
                 {{subtitlesFilesCount(props.row)}}
               </b-tag>
             </b-table-column>
+            <!-- Custom Black（ID列を先頭に移動） -->
             <b-table-column field="scene_id" :label="$t('ID')" sortable nowrap v-slot="props">
               <span style="white-space: nowrap;">
                 {{ props.row.scene_id }}
               </span>
             </b-table-column>
+            <!-- Custom End -->
             <b-table-column field="title" :label="$t('Title')" sortable v-slot="props">
               <p v-if="props.row.title">{{ props.row.title }}</p>
               <small>
@@ -95,7 +97,6 @@
             <b-table-column field="duration" :label="$t('Duration')" sortable nowrap v-slot="props">
               {{ props.row.duration > 0 ? props.row.duration + " min" : ""}}
             </b-table-column>
-
             <b-table-column field="_score" :label="$t('Score')" sortable v-slot="props">
               <b-progress show-value :value="props.row._score * 100"></b-progress>
             </b-table-column>
@@ -105,7 +106,7 @@
           </b-table>
         </div>
       </section>
-
+      <!-- Custom Black（JAV検索機能を追加） -->
       <div class="modal-card-body">
         <p>{{$t('Import Japanese Adult VR (JAVR) Scene')}}</p>
         <div class="card">
@@ -138,8 +139,8 @@
           </div>
         </div>
       </div>
-
-      </div>
+      <!-- Custom End -->
+    </div>
     <a class="prev" @click="prevFile" title="Keyboard shortcut: O">&#10094;</a>
     <a class="next" @click="nextFile" title="Keyboard shortcut: P">&#10095;</a>
   </div>
@@ -162,8 +163,10 @@ export default {
       dataNumResponses: 0,
       currentPage: 1,
       queryString: '',
+      // Custom Black(Jav検索用パラメータ)
       javrQuery: '',
       javrScraper: 'dmm',
+      // Custom End
       format,
       parseISO
     }
@@ -171,47 +174,24 @@ export default {
   computed: {
     file () {
       return this.$store.state.overlay.match.file
-    },
-    lockScrape () {
+    }
+    // Custom Black（Javr検索の進捗表示用）
+    ,lockScrape () {
       return this.$store.state.messages.lockScrape
     },
     lastScrapeMessage () {
       return this.$store.state.messages.lastScrapeMessage
+    // Custom End
     }
   },
   mounted () {
     this.initView()
   },
   methods: {
-    // Custom Black
+    // Custom Black（DVDID抽出用関数）
     extractDVDID() {
         this.javrQuery = this.extractDVDIDlogic(this.file.filename)
     },
-    // extractDVDIDlogic(filename) {
-    //   let dvdid = ""
-    //   let regex = /[a-zA-Z0-9]{2,6}-\d{2,6}/;
-    //   let match = filename.match(regex);
-    //   if (!match) {
-    //     regex = /([a-zA-Z]{2,6})(\d{2,6})/;
-    //     match = filename.match(regex);
-    //     if (match) {
-    //       let firstPart = match[1];
-    //       let secondPart = match[2];
-    //       if (secondPart.length >= 4) {
-    //         secondPart = secondPart.replace(/^0+/, '');
-    //       }
-    //       if (secondPart.length < 3) {
-    //         secondPart = secondPart.padStart(3, '0');
-    //       }
-    //       dvdid = `${firstPart}-${secondPart}`;
-    //     } else {
-    //       dvdid = null;
-    //     }
-    //   } else {
-    //     dvdid = match[0];
-    //   }
-    //   return dvdid
-    // },
     extractDVDIDlogic(filename) {
       let dvdid = "";
       // 末尾アルファベットは無視
@@ -257,13 +237,10 @@ export default {
 
       this.data = []
 
-      // Custom Black
-      // dvdid を取得
+      // Custom Black（初期表示処理）
       var dvdid = this.extractDVDIDlogic(this.file.filename)
         ? this.extractDVDIDlogic(this.file.filename).toUpperCase()
         : null
-
-      // dvdid が取得できなかった場合の fallback queryString を定義
       var fallbackQuery = this.file.filename
         .replace(/\.|_|\+|-/g, ' ')
         .replace(/\s+/g, ' ')
@@ -272,10 +249,7 @@ export default {
         .filter(isNotCommonWord)
         .join(' ')
         .replace(/ s /g, "'s ")
-
-      // dvdid があればそれを使い、なければ fallbackQuery を使う
       this.queryString = dvdid || fallbackQuery
-
       this.loadData()
       this.extractDVDID()
       // Custom END

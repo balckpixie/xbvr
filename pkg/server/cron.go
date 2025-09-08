@@ -9,23 +9,33 @@ import (
 	"github.com/xbapps/xbvr/pkg/config"
 	"github.com/xbapps/xbvr/pkg/session"
 	"github.com/xbapps/xbvr/pkg/tasks"
-
+	// Custom Black
 	customtasks "github.com/xbapps/xbvr/pkg/custom/tasks"
+	// Custom END
 )
 
 var cronInstance *cron.Cron
 var rescrapTask cron.EntryID
 var rescanTask cron.EntryID
 var previewTask cron.EntryID
-var thumbTask cron.EntryID
 var actorScrapeTask cron.EntryID
 var stashdbScrapeTask cron.EntryID
 var linkScenesTask cron.EntryID
+// Custom Black
+var thumbTask cron.EntryID
+// Custom END
 
 func SetupCron() {
 	cronInstance = cron.New()
 	cronInstance.AddFunc("@every 2s", session.CheckForDeadSession)
 	cronInstance.AddFunc("@every 6h", tasks.CalculateCacheSizes)
+	// Custom Black
+	if config.Config.Custom.ThumbnailSchedule.Enabled {
+		log.Println(fmt.Sprintf("Setup Thumbnail Generation Task %v", formatCronSchedule(config.CronSchedule(config.Config.Custom.ThumbnailSchedule))))
+		ps := formatCronSchedule(config.CronSchedule(config.Config.Custom.ThumbnailSchedule))
+		thumbTask, _ = cronInstance.AddFunc(ps, generateThumbnailCron)
+	}
+	// Custom END
 	if config.Config.Cron.RescrapeSchedule.Enabled {
 		log.Println(fmt.Sprintf("Setup Rescrape Task %v", formatCronSchedule(config.CronSchedule(config.Config.Cron.RescrapeSchedule))))
 		rescrapTask, _ = cronInstance.AddFunc(formatCronSchedule(config.CronSchedule(config.Config.Cron.RescrapeSchedule)), scrapeCron)
@@ -39,13 +49,6 @@ func SetupCron() {
 		ps := formatCronSchedule(config.CronSchedule(config.Config.Cron.PreviewSchedule))
 		previewTask, _ = cronInstance.AddFunc(ps, generatePreviewCron)
 	}
-	// Custom Black
-	if config.Config.Custom.ThumbnailSchedule.Enabled {
-		log.Println(fmt.Sprintf("Setup Thumbnail Generation Task %v", formatCronSchedule(config.CronSchedule(config.Config.Custom.ThumbnailSchedule))))
-		ps := formatCronSchedule(config.CronSchedule(config.Config.Custom.ThumbnailSchedule))
-		thumbTask, _ = cronInstance.AddFunc(ps, generateThumbnailCron)
-	}
-	// Custom END
 	if config.Config.Cron.ActorRescrapeSchedule.Enabled {
 		log.Println(fmt.Sprintf("Setup Actor Rescrape Task %v", formatCronSchedule(config.CronSchedule(config.Config.Cron.ActorRescrapeSchedule))))
 		actorScrapeTask, _ = cronInstance.AddFunc(formatCronSchedule(config.CronSchedule(config.Config.Cron.ActorRescrapeSchedule)), actorRescrapeCron)
@@ -71,9 +74,6 @@ func SetupCron() {
 	if config.Config.Cron.PreviewSchedule.RunAtStartDelay > 0 {
 		time.AfterFunc(time.Duration(config.Config.Cron.PreviewSchedule.RunAtStartDelay)*time.Minute, generatePreviewCron)
 	}
-	if config.Config.Custom.ThumbnailSchedule.RunAtStartDelay > 0 {
-		time.AfterFunc(time.Duration(config.Config.Custom.ThumbnailSchedule.RunAtStartDelay)*time.Minute, generateThumbnailCron)
-	}
 	if config.Config.Cron.ActorRescrapeSchedule.RunAtStartDelay > 0 {
 		time.AfterFunc(time.Duration(config.Config.Cron.ActorRescrapeSchedule.RunAtStartDelay)*time.Minute, actorRescrapeCron)
 	}
@@ -87,10 +87,16 @@ func SetupCron() {
 	log.Println(fmt.Sprintf("Next Rescrape Task at %v", cronInstance.Entry(rescrapTask).Next))
 	log.Println(fmt.Sprintf("Next Rescan Task at %v", cronInstance.Entry(rescanTask).Next))
 	log.Println(fmt.Sprintf("Next Preview Generation Task at %v", cronInstance.Entry(previewTask).Next))
-	log.Println(fmt.Sprintf("Next Thumbnail Generation Task at %v", cronInstance.Entry(thumbTask).Next))
 	log.Println(fmt.Sprintf("Next Actor Rescripe Task at %v", cronInstance.Entry(actorScrapeTask).Next))
 	log.Println(fmt.Sprintf("Next Stashdb Rescrape Task at %v", cronInstance.Entry(stashdbScrapeTask).Next))
 	log.Println(fmt.Sprintf("Next Link Scenes Task at %v", cronInstance.Entry(linkScenesTask).Next))
+	
+	// Custom Black
+	if config.Config.Custom.ThumbnailSchedule.RunAtStartDelay > 0 {
+		time.AfterFunc(time.Duration(config.Config.Custom.ThumbnailSchedule.RunAtStartDelay)*time.Minute, generateThumbnailCron)
+	}
+	log.Println(fmt.Sprintf("Next Thumbnail Generation Task at %v", cronInstance.Entry(thumbTask).Next))
+	// Custom END
 }
 
 func scrapeCron() {
@@ -144,6 +150,9 @@ func generateThumbnailCron() {
 		}
 	}
 	log.Println(fmt.Sprintf("Next Thumbnail Generation Task at %v", cronInstance.Entry(previewTask).Next))
+}
+func CalcEndTime(startHour int, endHour int, minuteStart int) time.Time {
+	return(calcEndTime(startHour, endHour, minuteStart))
 }
 // Custom END
 
@@ -210,8 +219,3 @@ func calcEndTime(startHour int, endHour int, minuteStart int) time.Time {
 }
 
 
-// Custom Black
-func CalcEndTime(startHour int, endHour int, minuteStart int) time.Time {
-	return(calcEndTime(startHour, endHour, minuteStart))
-}
-// Custom END

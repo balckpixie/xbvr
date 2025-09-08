@@ -72,9 +72,11 @@
                   </div>
                 </div>
                 <div class="columns is-vcentered">
+                  <!-- Custom Black(顔表示追加) -->
                   <div class="vue-load-image">
                     <img :src="actor.face_image_url" style="width: 160px; height: auto;">
                   </div>
+                  <!-- Custom End -->
                   <div class="column pt-0">
                     <b-field>
                       <strong style="width: 8em;">{{ $t('Your Rating') }}</strong>
@@ -95,7 +97,9 @@
                       <actor-favourite-button :actor="actor"/>&nbsp;
                       <actor-watchlist-button :actor="actor"/>&nbsp;
                       <actor-edit-button :actor="actor"/>&nbsp;
+                      <!-- Custom Black（actor画像編集ボタン） -->
                       <actor-edit-image-button :actor="actor"/>&nbsp;
+                      <!-- Custom End -->
                       <link-stashdb-button :item="actor" objectType="actor" />
                     </div>
                   </div>
@@ -146,9 +150,11 @@
                     <b-field v-if="actor.aliases != '' && actor.aliases != '[]'">
                       <strong class="attribute-heading">{{ $t('Aliases') }}:</strong> <small class="attribute-long-data">{{ joinArray(actor.aliases) }}</small>
                     </b-field>
+                    <!-- Custom Black（フリガナ追加） -->
                     <b-field v-if="actor.furigana != ''">
                       <strong class="attribute-heading">{{ $t('Furigana') }}:</strong> <small class="attribute-long-data">{{ actor.furigana }}</small>
                     </b-field>
+                    <!-- Custom End -->
                     <b-field v-if="actor.tattoos != '' && actor.tattoos != '[]'">
                       <strong class="attribute-heading">{{ $t('Tattoos') }}:</strong> <small class="attribute-long-data">{{ joinArray(actor.tattoos) }}</small>
                     </b-field>
@@ -279,13 +285,17 @@ import LinkStashdbButton from '../../components/LinkStashdbButton'
 import SceneCard from '../scenes/SceneCard'
 import ActorCard from './ActorCard'
 
+// Custom Black(Actor 画像編集ボタン追加)
 import ActorEditImageButton from '../../components/ActorEditImageButton.vue'
+// Custom End
 
 export default {
   name: 'ActorDetails',
+  // Custom Black(Actor 画像編集ボタン追加)
   components: { VueLoadImage, GlobalEvents, StarRating, ActorWatchlistButton, ActorFavouriteButton, SceneCard, ActorEditButton,  ActorCard, LinkStashdbButton,
     ActorEditImageButton,
    },
+  // Custom End 
   data () {
     return {
       index: 1,
@@ -300,6 +310,11 @@ export default {
     }
   },
   computed: {
+    // Custom Black(Actor 画像編集ボタン追加)
+    showActorEditImage () {
+      return this.$store.state.overlay.actoreditimage.show
+    },
+    // Custom End
     actor () {      
       const actor = this.$store.state.overlay.actordetails.actor
       ky.get(`/api/actor/akas/${actor.id}`)
@@ -328,9 +343,6 @@ export default {
     },
     showEdit () {
       return this.$store.state.overlay.actoredit.show
-    },
-    showActorEditImage () {
-      return this.$store.state.overlay.actoreditimage.show
     },
     showOpenInNewWindow () {
       return this.$store.state.optionsWeb.web.showOpenInNewWindow

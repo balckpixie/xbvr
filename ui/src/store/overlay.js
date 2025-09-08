@@ -30,10 +30,6 @@ const state = {
     show: false,
     actor: null
   },  
-  actoreditimage: {
-    show: false,
-    actor: null
-  },
   quickFind: {
     show:false,
     searchString: null,  // use to preppoulate the search box
@@ -53,6 +49,12 @@ const state = {
     actor: null
   },
   changeDetailsTab: -1,
+  // Custom Black(Actor 画像編集モーダル追加)
+  actoreditimage: {
+    show: false,
+    actor: null
+  },
+  // Custom End
 }
 
 const mutations = {
@@ -101,16 +103,6 @@ const mutations = {
     state.actoredit.scene = null
     state.actoredit.show = false
   },
-  // Custom Black
-  editActorImage (state, payload) {
-    state.actoreditimage.actor = payload.actor
-    state.actoreditimage.show = true
-  },
-  hideActorEditImage (state) {
-    state.actoreditimage.scene = null
-    state.actoreditimage.show = false
-  },
-  // Custom End
   showPlayer (state, payload) {
     state.player.file = payload.file
     state.player.show = true
@@ -177,6 +169,16 @@ const mutations = {
   changeDetailsTab (state, payload) {
     state.changeDetailsTab = payload.tab
   },
+  // Custom Black(Actor 画像編集モーダル追加)
+  editActorImage (state, payload) {
+    state.actoreditimage.actor = payload.actor
+    state.actoreditimage.show = true
+  },
+  hideActorEditImage (state) {
+    state.actoreditimage.scene = null
+    state.actoreditimage.show = false
+  },
+  // Custom End
 }
 
 export default {

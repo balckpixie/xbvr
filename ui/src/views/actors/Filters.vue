@@ -29,10 +29,10 @@
           <select v-model="sort">
             <option value="name_asc">↑ {{ $t("Name") }}</option>
             <option value="name_desc">↓ {{ $t("Name") }}</option>
-            <!-- Custom start -->
+            <!-- Custom Black（フリガナソート追加） -->
             <option value="furigana_asc">↑ {{ $t("Furigana") }}</option>
             <option value="furigana_desc">↓ {{ $t("Furigana") }}</option>
-            <!-- Custom end -->
+            <!-- Custom End -->
             <option value="birthday_desc">↓ {{ $t("Birthdate") }}</option>
             <option value="birthday_asc">↑ {{ $t("Birthdate") }}</option>
             <option value="rating_desc">↓ {{ $t("Rating") }}</option>

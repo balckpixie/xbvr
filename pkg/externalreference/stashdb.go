@@ -7,8 +7,10 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/xbapps/xbvr/pkg/custom/shared"
 	"github.com/xbapps/xbvr/pkg/models"
+	// Custom Black
+	"github.com/xbapps/xbvr/pkg/custom/shared"
+	// Custom END
 )
 
 func UpdateAllPerformerData() {
@@ -379,12 +381,11 @@ func UpdateXbvrActor(performer models.StashPerformer, xbvrActorID uint) {
 		}
 	}
 
-// Custom Black
+	// Custom Black
+	// Aliasesからフリガナ名を取得
 	if actor.Furigana == "" && len(performer.Aliases) > 0 {
-		// []string → JSON文字列に変換
 		aliasesJSON, err := json.Marshal(performer.Aliases)
 		if err != nil {
-			// エラー時はスキップ
 			log.Println("aliases marshal error:", err)
 		} else {
 			furiganaList := shared.FilterHiraganaOnly(string(aliasesJSON))
@@ -394,7 +395,7 @@ func UpdateXbvrActor(performer models.StashPerformer, xbvrActorID uint) {
 			}
 		}
 	}
-// Custom END
+	// Custom END
 
 	for _, alias := range performer.Aliases {
 		changed = actor.AddToAliases(alias) || changed

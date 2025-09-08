@@ -30,7 +30,7 @@ func ProcessJavrTag(tag string) string {
 		"solowork":               true,
 		"dmm exclusive":          true,
 		"over 4 hours":           true,
-		// Custom Black
+		// Custom Black（除外するタグを追加）
 		"vr専用": 				 true,
 		"独占配信": 			 true,
 		"単体作品": 			 true,

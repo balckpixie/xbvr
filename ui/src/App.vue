@@ -13,7 +13,9 @@
     <EditScene v-if="showEdit" />
     <ActorDetails v-if="showActorDetails"/>
     <EditActor v-if="showActorEdit" />
+    <!-- Custom Black -->
     <EditActorImage v-if="showActorEditImage" />
+    <!-- Custom End -->
     <SearchStashdbScenes v-if="showSearchStashdbScenes" />
     <SearchStashdbActors v-if="showSearchStashdbActors" />
 
@@ -33,11 +35,11 @@ import Details from './views/scenes/Details'
 import EditScene from './views/scenes/EditScene'
 import ActorDetails from './views/actors/ActorDetails'
 import EditActor from './views/actors/EditActor'
-// Custom Black
-import EditActorImage from './views/actors/EditActorImage.vue'
-// Custom End
 import SearchStashdbScenes from './views/scenes/SearchStashdbScenes'
 import SearchStashdbActors from './views/actors/SearchStashdbActors'
+// Custom Black(Actor 画像編集モーダル追加)
+import EditActorImage from './views/actors/EditActorImage.vue'
+// Custom End
 
 export default {
   components: { Navbar, Socket, QuickFind, GlobalEvents, Details, EditScene, ActorDetails, EditActor, SearchStashdbScenes,SearchStashdbActors
@@ -56,17 +58,17 @@ export default {
     showActorEdit() {
       return this.$store.state.overlay.actoredit.show
     },
-    // Custom Black
-    showActorEditImage() {
-      return this.$store.state.overlay.actoreditimage.show
-    },
-    // Custom End
     showSearchStashdbScenes() {
       return this.$store.state.overlay.searchStashDbScenes.show
     },
     showSearchStashdbActors() {
       return this.$store.state.overlay.searchStashDbActors.show
     },
+    // Custom Black
+    showActorEditImage() {
+      return this.$store.state.overlay.actoreditimage.show
+    },
+    // Custom End
   }
 }
 </script>

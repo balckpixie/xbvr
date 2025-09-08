@@ -18,9 +18,9 @@ import (
 	"github.com/xbapps/xbvr/pkg/config"
 	"github.com/xbapps/xbvr/pkg/externalreference"
 	"github.com/xbapps/xbvr/pkg/models"
-
+	// Custom Black
 	custommcommon "github.com/xbapps/xbvr/pkg/custom/common"
-
+	// Custom END
 	nethtml "golang.org/x/net/html"
 )
 
@@ -271,9 +271,9 @@ func applyRules(actorPage string, source string, rules models.GenericScraperRule
 	}
 	// Custom black
 	// external idへの保存時にAPIパラメータを除くため
-	actorPageUrl := actorPage
+	actorPageBuf := actorPage
 	if custommcommon.DomainMatch(actorPage, "*.dmm.com") {
-		actorPageUrl, _ = custommcommon.AddAPIParam(actorPageUrl)
+		actorPage, _ = custommcommon.AddAPIParam(actorPage)
 	}
 	actorCollector.OnError(func(r *colly.Response, err error) {
 		log.Errorf("Error visiting %s %d %v", r.Request.URL, r.StatusCode, err)
@@ -283,14 +283,20 @@ func applyRules(actorPage string, source string, rules models.GenericScraperRule
 	})
 	// Custom END
 
-	url, _ := url.Parse(actorPageUrl)
+	url, _ := url.Parse(actorPage)
 	if rules.IsJson {
 		ScraperRateLimiterWait(url.Host)
-		err := actorCollector.Request("GET", actorPageUrl, nil, nil, nil)
+		err := actorCollector.Request("GET", actorPage, nil, nil, nil)
 		ScraperRateLimiterCheckErrors(url.Host, err)
 	} else {
-		WaitBeforeVisit(url.Host, actorCollector.Visit, actorPageUrl)
+		WaitBeforeVisit(url.Host, actorCollector.Visit, actorPage)
 	}
+
+	// Custom Black
+	// 上のBlockでDMMパラメータ付与された状態になるため、後続のログ出力等を考慮して元に戻しておく
+	actorPage = actorPageBuf
+	// Custom END
+
 	var extref models.ExternalReference
 	var extreflink models.ExternalReferenceLink
 
@@ -420,9 +426,9 @@ func assignField(field string, value string, actor *models.Actor, overwrite bool
 		if value != "" && (actor.ImageUrl == "" || (overwrite && !actor.CheckForSetImage())) {
 			//if (overwrite || actor.ImageUrl == "" ) && value != ""  && !actor.CheckForSetImage() {
 			actor.ImageUrl = value
-			// custom black
+			// Custom black
 			actor.FaceImageUrl = value
-			// custom END
+			// Custom END
 			changed = true
 		}
 	case "images":

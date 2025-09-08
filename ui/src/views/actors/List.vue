@@ -13,7 +13,9 @@
       <div class="column">
         <strong>{{total}} results</strong>
       </div>
+      <!-- Custom Black（ひらがな選択時は非表示） -->
       <div class="column" v-if="!hideHiragana">
+      <!-- Custom End -->
         <b-tooltip :label="$t('Press o/left arrow to page back, p/right arrow to page forward')" :delay="500" position="is-top">
           <b-pagination
               :total="total"
@@ -35,6 +37,7 @@
         <span v-show="show_actor_id==='never show, just need the computed show_actor_id to trigger '">{{show_actor_id}}</span>
       </div>
 
+      <!-- Custom Black（ひらがな選択時はカスタムコンポーネントを表示） -->
       <div v-if="hideHiragana">
         <CustomPagination
           :total="total"
@@ -43,26 +46,28 @@
           @change="onOffsetChange"
         />
       </div>
-
+      <!-- Custom End -->
+       
       <div class="column">
         <div class="is-pulled-right">
           <b-field>
             <span class="list-header-label">{{$t('Card size')}}</span>
-            <b-radio-button v-model="cardSize" native-value="0" size="is-small">
-              SS
-            </b-radio-button>
             <b-radio-button v-model="cardSize" native-value="1" size="is-small">
-              S
+              XS
             </b-radio-button>
             <b-radio-button v-model="cardSize" native-value="2" size="is-small">
-              M
+              S
             </b-radio-button>
             <b-radio-button v-model="cardSize" native-value="3" size="is-small">
+              M
+            </b-radio-button>
+            <b-radio-button v-model="cardSize" native-value="4" size="is-small">
               L
             </b-radio-button>
           </b-field>
         </div>
 
+        <!-- Custom Black(顔表示/体表示のトグルボタン追加) -->
         <div class="is-pulled-right">
           <div class="toggle-container">
             <label class="toggle-button" :class="{ active: showFace === true }">
@@ -75,8 +80,7 @@
             </label>
           </div>
         </div>
-
-
+        <!-- Custom End -->
 
       </div>
     </div>
@@ -105,7 +109,7 @@
           <b-radio-button v-model="jumpTo" native-value="W" size="is-small">W/X/Y/Z</b-radio-button>
         </div>
 
-        <!-- Hiragana Jump to -->
+        <!-- Custom Black（Hiragana Jump to） -->
         <div v-if="hideHiragana" style="margin-top: -0.9rem; margin-bottom: 1.0rem;">
           <div class="columns is-gapless is-centered" style="margin-bottom: 0.2rem;">
             <b-radio-button v-model="jumpToKana" native-value="" size="is-small"></b-radio-button>
@@ -119,13 +123,16 @@
             </div>
           </div>
         </div>
-        
+        <!-- Custom End -->
+         
     <div class="is-clearfix"></div>
 
     <div class="columns is-multiline">
       <div :class="['column', 'is-multiline', cardSizeClass]"
            v-for="actor in actors" :key="actor.id">
+        <!-- Custom Black(顔表示用のprops追加) -->
         <ActorCard :actor="actor" :showFace="showFace"/>
+        <!-- Custom End -->
       </div>
     </div>
       <div class="columns is-gapless is-centered" v-if="hideLetters">
@@ -152,7 +159,9 @@
         <b-radio-button v-model="jumpTo" native-value="U" size="is-small">U/V</b-radio-button>        
         <b-radio-button v-model="jumpTo" native-value="W" size="is-small">W/X/Y/Z</b-radio-button>
       </div>
+      <!-- Custom Black（ひらがな選択時は非表示） -->
       <div class="columns is-gapless is-centered" v-if="!hideHiragana">          
+      <!-- Custom End -->
         <b-tooltip :label="$t('Press k to page back, l to page forward')" :delay="500" position="is-top">
           <b-pagination
             :total="total"
@@ -172,7 +181,7 @@
         </b-pagination>
       </b-tooltip>
       </div>
-
+      <!-- Custom Black（ひらがな選択時はカスタムコンポーネントを表示） -->
       <div v-if="hideHiragana">
         <CustomPagination
           :total="total"
@@ -181,6 +190,7 @@
           @change="onOffsetChange"
         />
       </div>
+      <!-- Custom End -->
   </div>
 </template>
 
@@ -188,6 +198,7 @@
 import ActorCard from './ActorCard'
 import ky from 'ky'
 import GlobalEvents from 'vue-global-events'
+// Custom Black（ひらがな選択用のデータ追加）
 import CustomPagination from '../../components/CustomPagination.vue';
 
 export default {
@@ -222,9 +233,44 @@ export default {
       } else {
         this.jumpToKana = ""
       }
+// Custom End
     }
   },
   computed: {
+    // Custom Black（ひらがな選択用のデータ追加）
+    offset: {
+      get () {
+        return this.$store.state.actorList.offset - this.$store.state.actorList.limit  
+      },
+      set (value) {
+        this.$store.state.actorList.offset =  value
+        this.$store.dispatch('actorList/load', { offset: this.$store.state.actorList.offset })
+      } 
+    },
+    jumpToKana : {
+      get () {
+        return this.selectedLetter
+      },
+      set (value) {
+        if (value !== this.$store.state.actorList.filters.jumpTo) {
+          this.$store.state.actorList.filters.jumpTo = value
+          this.selectedLetter = value
+          this.reloadList()
+        }
+      }
+    },
+    hideHiragana: {
+      get () {        
+        switch (this.$store.state.actorList.filters.sort) {
+          case "furigana_asc":
+            return true
+          case "furigana_desc":
+            return true
+        }
+        return false
+      },
+    },
+    // Custom End
     cardSize: {
       get () {
         return this.$store.state.actorList.filters.cardSize
@@ -232,31 +278,20 @@ export default {
       set (value) {
         this.$store.state.actorList.filters.cardSize = value
         switch (value){
-          case "0":
-            this.limit=32
-            break
           case "1":
-            this.limit=18
+            this.limit=36
             break
           case "2":
-            this.limit=10
+            this.limit=18
             break
           case "3":
+            this.limit=10
+            break
+          case "4":
             this.limit=8
             break
             }            
         }      
-    },
-    offset: {
-      get () {
-        return this.$store.state.actorList.offset - this.$store.state.actorList.limit  
-      },
-      set (value) {
-        // this.$store.state.actorList.offset = value
-        // this.reloadList()
-        this.$store.state.actorList.offset =  value
-        this.$store.dispatch('actorList/load', { offset: this.$store.state.actorList.offset })
-      } 
     },
     limit: {
       get(){
@@ -275,38 +310,28 @@ export default {
         this.$store.dispatch('actorList/load', { offset: this.$store.state.actorList.offset })
       }
     },
-    jumpToKana : {
-      get () {
-        return this.selectedLetter
-      },
-      set (value) {
-        if (value !== this.$store.state.actorList.filters.jumpTo) {
-          this.$store.state.actorList.filters.jumpTo = value
-          this.selectedLetter = value
-          this.reloadList()
-        }
-      }
-    },
     jumpTo: {
       get () {
         return this.$store.state.actorList.filters.jumpTo
       },
       set (value) {
+        // Custom Black（ひらがな選択時はjumpToをクリアする）
         if (value !== this.$store.state.actorList.filters.jumpTo) {
           this.$store.state.actorList.filters.jumpTo = value
           this.reloadList()
         }
+        // Custom End
       }
     },
     cardSizeClass () {
       switch (this.$store.state.actorList.filters.cardSize) {
-        case '0':
-          return 'is-1-5' 
         case '1':
-          return 'is-2'
+          return 'is-1'
         case '2':
-          return 'is-one-fifth'
+          return 'is-2'
         case '3':
+          return 'is-one-fifth'
+        case '4':
           return 'is-one-quarter'
         default:
           return 'is-2'
@@ -348,24 +373,14 @@ export default {
         return false
         },
     },
-    hideHiragana: {
-      get () {        
-        switch (this.$store.state.actorList.filters.sort) {
-          case "furigana_asc":
-            return true
-          case "furigana_desc":
-            return true
-        }
-        return false
-      },
-    },
   },
   methods: {
+    // Custom Black（ひらがな選択用の関数追加）
     onOffsetChange(newOffset) {
       this.offset = newOffset;
-      // ここでAPIやデータ取得を実施する
       console.log('Offset changed:', newOffset);
     },
+    // Custom End
     reloadList () {
       this.$router.push({
         name: 'actors',
@@ -375,8 +390,10 @@ export default {
       })
     },
     async pageChanged () {      
+      // Custom Black（Offset設定処理を修正）
       // this.$store.state.actorList.offset = (this.current -1) * this.$store.state.actorList.limit
       this.$store.state.actorList.offset =  parseInt((this.current - 1) * this.$store.state.actorList.limit, 10)
+      // Custom End
       this.$store.dispatch('actorList/load', { offset: this.$store.state.actorList.offset })
     },
     nextpage () {
@@ -421,7 +438,6 @@ export default {
     margin-right: 1.5rem;
     margin-top: 0.25rem;
   }
-
   .toggle-button {
     flex: 1 1 50%;
     padding: 5px 10px;
@@ -433,26 +449,16 @@ export default {
     user-select: none;
     transition: background-color 0.2s;
   }
-
   .toggle-button+.toggle-button {
     border-left: none;
   }
-
-  /* ラジオボタン自体は非表示 */
   .toggle-button input {
     display: none;
   }
-
-  /* アクティブ状態 */
   .toggle-button.active {
     background-color: #42b983;
     color: white;
     border-color: #42b983;
-  }
-
-  .column.is-1-5 {
-    flex: none;
-   width: 12.5%; /* 1.5/12カラム相当 */
   }
   /* Custom END */
 </style>

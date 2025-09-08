@@ -60,7 +60,9 @@
       <wishlist-button v-if="this.$store.state.optionsWeb.web.sceneWishlist && !item.is_available" :item="item"/>
       <watched-button :item="item" v-if="this.$store.state.optionsWeb.web.sceneWatched"/>
       <edit-button :item="item" v-if="this.$store.state.optionsWeb.web.sceneEdit" />
+      <!-- Custom Black（削除ボタンを追加） -->
       <delete-button :item="item" v-if="this.$store.state.optionsWeb.web.sceneEdit" />
+      <!-- Custom End -->
       <link-stashdb-button :item="item" v-if="!this.stashLinkExists" objectType="scene"/>
 
       <span class="is-pulled-right" style="font-size:11px;text-align:right;">
@@ -93,7 +95,9 @@ import FavouriteButton from '../../components/FavouriteButton'
 import WishlistButton from '../../components/WishlistButton'
 import WatchedButton from '../../components/WatchedButton'
 import EditButton from '../../components/EditButton'
+// Custom Black（削除ボタンを追加）
 import DeleteButton from '../../components/DeleteButton'
+// Custom End
 import LinkStashdbButton from '../../components/LinkStashdbButton'
 import TrailerlistButton from '../../components/TrailerlistButton'
 import HiddenButton from '../../components/HiddenButton'
@@ -103,7 +107,9 @@ import VueLoadImage from 'vue-load-image'
 export default {
   name: 'SceneCard',
   props: { item: Object, reRead: Boolean },
+// Custom Black（削除ボタンを追加）
   components: { WatchlistButton, FavouriteButton, WishlistButton, WatchedButton, EditButton, DeleteButton, LinkStashdbButton, TrailerlistButton, HiddenButton, VueLoadImage },
+// Custom End
   data () {
     return {
       preview: false,
