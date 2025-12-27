@@ -3,6 +3,7 @@ package models
 import (
 	"encoding/json"
 	"sync/atomic"
+	"time"
 )
 
 var scrapers []Scraper
@@ -52,6 +53,7 @@ type ScrapedScene struct {
 	// Custom Black（フリガナ）
 	Rubys             []string `json:"ruby"`
 	// Custom END
+	Timestamps   string                  `json:"timestamps"`
 }
 
 type ActorDetails struct {
@@ -115,7 +117,7 @@ func (wg *ScrapeWG) Done() {
 
 func (wg *ScrapeWG) Wait(n int64) {
 	for atomic.LoadInt64(&wg.count) >= n && atomic.LoadInt64(&wg.count) != 0 {
-		continue
+		time.Sleep(10 * time.Millisecond)
 	}
 }
 

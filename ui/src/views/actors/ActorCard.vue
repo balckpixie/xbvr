@@ -2,13 +2,15 @@
   <div class="card is-shadowless">
     <div class="card-image">
       <!-- Custom Black（顔表示を追加） -->
-      <div class="bbox"
-           
-           v-bind:style="{backgroundImage: `url(${getActorImageURL(actor)})`, backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', opacity:isAvailable(actor) ? 1.0 : isAvailOpactiy}"
+      <div class="bbox"          
+           v-bind:style="{backgroundImage: `url(${getImageURL(actor.image_url)})`, backgroundSize: actorCardScale, backgroundPosition: 'center', backgroundRepeat: 'no-repeat', opacity:isAvailable(actor) ? 1.0 : isAvailOpacity, aspectRatio: actorCardAspectRatio}"
            @click="showDetails(actor)"
            @mouseover="preview = true"
            @mouseleave="preview = false">
       <!-- Custom End -->
+      <!-- バックアップ用
+      v-bind:style="{backgroundImage: `url(${getActorImageURL(actor)})`, backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', opacity:isAvailable(actor) ? 1.0 : isAvailOpactiy}"
+      -->
       </div>
         <div class="overlay align-bottom-left">
          </div>
@@ -91,11 +93,27 @@ export default {
     }
   },
   computed: {
-      isAvailOpactiy () {      
+    isAvailOpacity () {      
       if (this.$store.state.optionsWeb.web.isAvailOpacity == undefined) {
         return .4
       }
       return this.$store.state.optionsWeb.web.isAvailOpacity / 100
+    },
+    actorCardAspectRatio () {
+      if (this.$store.state.optionsWeb.web.actorCardAspectRatio == "2:3") {
+        return 2 / 3
+      } else if (this.$store.state.optionsWeb.web.actorCardAspectRatio == "9:16") {
+        return 9 / 16
+      } else {
+        return 1
+      }
+    },
+    actorCardScale () {
+      if (this.$store.state.optionsWeb.web.actorCardScaleToFit) {
+        return "contain"
+      } else {
+        return "cover"
+      }
     },
   },
   methods: {
