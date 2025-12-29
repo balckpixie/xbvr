@@ -20,6 +20,7 @@
     <SearchStashdbActors v-if="showSearchStashdbActors" />
 
     <QuickFind/>
+    <MigrationOverlay/>
 
     <Socket/>
   </div>
@@ -37,14 +38,17 @@ import ActorDetails from './views/actors/ActorDetails'
 import EditActor from './views/actors/EditActor'
 import SearchStashdbScenes from './views/scenes/SearchStashdbScenes'
 import SearchStashdbActors from './views/actors/SearchStashdbActors'
+import MigrationOverlay from './components/MigrationOverlay'
 // Custom Black(Actor 画像編集モーダル追加)
 import EditActorImage from './views/actors/EditActorImage.vue'
 // Custom End
 
 export default {
-  components: { Navbar, Socket, QuickFind, GlobalEvents, Details, EditScene, ActorDetails, EditActor, SearchStashdbScenes,SearchStashdbActors
+  components: { Navbar, Socket, QuickFind, GlobalEvents, Details, EditScene, ActorDetails, EditActor, SearchStashdbScenes, SearchStashdbActors, MigrationOverlay
+    // Custom Black
     ,EditActorImage
-   },
+    // Custom End
+  },
   computed: {
     showOverlay () {
       return this.$store.state.overlay.details.show
