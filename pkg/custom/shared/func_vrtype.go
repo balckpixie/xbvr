@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	"math"
 
 	"github.com/xbapps/xbvr/pkg/ffprobe"
 )
@@ -17,6 +18,9 @@ type ProbeData struct {
 		Tags   map[string]string `json:"tags"`
 	} `json:"streams"`
 }
+
+
+/*
 // DetectVRType は VR 動画の種類を判定
 // 戻り値: 180_mono / 180_sbs / 180_tb / 360_mono / 360_sbs / 360_tb / flat / fisheye / mkx200 ... / UNKNOWN
 func DetectVRType(filePath string, timeout time.Duration) (string, error) {
@@ -99,6 +103,7 @@ func DetectVRType(filePath string, timeout time.Duration) (string, error) {
 	// --- 3. よくある解像度から判定 ---
 	specialCases := map[[2]int]string{
 		{8192, 4096}: "180_sbs",
+		{8000, 4000}: "180_sbs",
 		{7680, 3840}: "180_sbs",
 		{5760, 2880}: "180_sbs",
 		{4096, 2048}: "180_sbs",
@@ -130,6 +135,135 @@ func DetectVRType(filePath string, timeout time.Duration) (string, error) {
 		return "180_mono", nil
 	case ratio > 1.75 && ratio < 1.79:
 		return "flat", nil
+	default:
+		return "flat", nil
+	}
+}
+*/
+
+// DetectVRType は VR 動画の種類を判定
+// 戻り値:
+// 180_mono / 180_sbs / 180_tb /
+// 360_mono / 360_sbs / 360_tb /
+// flat / fisheye / mkx200 ... / UNKNOWN
+func DetectVRType(filePath string, timeout time.Duration) (string, error) {
+
+	// --- 1. ファイル名から判定 ---
+	base := strings.ToLower(filepath.Base(filePath))
+	nameparts := strings.FieldsFunc(base, func(r rune) bool {
+		return r == '_' || r == '-' || r == '.' || r == ' '
+	})
+
+	for i, part := range nameparts {
+		switch part {
+		case "mkx200", "mkx220", "rf52", "fisheye190", "vrca220", "flat":
+			return part, nil
+		case "fisheye", "f180", "180f":
+			return "fisheye", nil
+		}
+
+		if i < len(nameparts)-1 {
+			combined := part + "_" + nameparts[i+1]
+			switch combined {
+			case "mono_360", "mono_180":
+				return nameparts[i+1] + "_mono", nil
+			case "360_mono", "180_mono":
+				return part + "_mono", nil
+			}
+		}
+	}
+
+	// --- 2. ffprobe のタグから判定 ---
+	data, err := ffprobe.GetProbeData(filePath, timeout)
+	if err != nil {
+		return "UNKNOWN", err
+	}
+	if len(data.Streams) == 0 {
+		return "UNKNOWN", nil
+	}
+
+	stream := data.Streams[0]
+	w, h := stream.Width, stream.Height
+	if w == 0 || h == 0 {
+		return "UNKNOWN", nil
+	}
+
+	ratio := float64(w) / float64(h)
+
+	proj := strings.ToLower(stream.Tags.Projection)
+	mode := strings.ToLower(stream.Tags.StereoMode)
+
+	if proj != "" || mode != "" {
+		switch proj {
+		case "equirectangular": // 360°
+			switch mode {
+			case "left_right":
+				return "360_sbs", nil
+			case "top_bottom":
+				return "360_tb", nil
+			default:
+				return "360_mono", nil
+			}
+		case "rectilinear": // 180°
+			switch mode {
+			case "left_right":
+				return "180_sbs", nil
+			case "top_bottom":
+				return "180_tb", nil
+			default:
+				return "180_mono", nil
+			}
+		}
+
+		// Projection が無い場合は stereo_mode + 解像度形状で補完
+		if mode == "left_right" {
+			eyeRatio := float64(w) / 2 / float64(h)
+			if math.Abs(eyeRatio-1.0) < 0.05 {
+				return "180_sbs", nil
+			}
+			return "360_sbs", nil
+		}
+		if mode == "top_bottom" {
+			eyeRatio := float64(h) / 2 / float64(w)
+			if math.Abs(eyeRatio-1.0) < 0.05 {
+				return "180_tb", nil
+			}
+			return "360_tb", nil
+		}
+	}
+
+	// --- 3. 解像度ヒューリスティック（最重要） ---
+
+	eyeRatioSBS := float64(w) / 2 / float64(h)
+	eyeRatioTB := float64(h) / 2 / float64(w)
+
+	switch {
+	// 360 SBS（4:1）
+	case ratio > 3.5 && ratio < 4.1:
+		return "360_sbs", nil
+
+	// 2:1（180 SBS or 360 mono）
+	case ratio > 1.9 && ratio < 2.1:
+		if math.Abs(eyeRatioSBS-1.0) < 0.05 {
+			return "180_sbs", nil
+		}
+		return "360_mono", nil
+
+	// 1:1（180 TB or 360 TB）
+	case ratio > 0.95 && ratio < 1.05:
+		if math.Abs(eyeRatioTB-1.0) < 0.05 {
+			return "180_tb", nil
+		}
+		return "360_tb", nil
+
+	// 180 mono（おおよそ 16:10〜16:9）
+	case ratio > 1.6 && ratio < 1.8:
+		return "180_mono", nil
+
+	// 通常の 16:9
+	case ratio > 1.75 && ratio < 1.79:
+		return "flat", nil
+
 	default:
 		return "flat", nil
 	}

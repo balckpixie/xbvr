@@ -1,6 +1,12 @@
 package migrations
 
+// デバッグ用ダミー実装
+func getVRPornSlugToID() map[string]string {
+    return map[string]string{}
+}
+
 // VRPorn slug to ID mappings -- 38,758 ids
+/*
 func getVRPornSlugToID() map[string]string {
 	m := make(map[string]string, 38758)
 	m["/friend-zoned-cuckolding-femdom-joi/"] = "20f7a237-7d59-51bd-a33a-22ac324409f3"
@@ -38763,3 +38769,4 @@ func getVRPornSlugToID() map[string]string {
 	m["/muscle-definition-is-sexy/"] = "5764b145-fc67-50df-ae01-fcce3f344834"
 	return m
 }
+*/
