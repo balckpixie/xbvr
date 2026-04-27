@@ -129,12 +129,9 @@
               </b-tab-item>
 
               <b-tab-item label="NewPlayer">
-                <div v-show="activeMedia === 2" class="vr-container" 
-                    ref="vrContainer"
-                    style="position: relative; width: 100%; height: calc(100vh - 200px); min-height: 400px; overflow: hidden;">
-                  <canvas ref="vrCanvas" style="width: 100%; height: 100%; display: block;"></canvas>
-                  <video ref="vrVideo" crossorigin="anonymous" playsinline muted style="display:none"></video>
-                </div>
+              <div v-if="activeMedia === 2 && currentFile" style="flex: 1; display: flex; flex-direction: column;">
+                <Vr180Player :fileId="currentFile.id" />
+              </div>
               </b-tab-item>
             </b-tabs>
 
@@ -579,13 +576,12 @@ import DeleteButton from '../../components/DeleteButton.vue'
 import { vi } from 'date-fns/locale'; // スプライト用？
 
 // VRPlayer用
-import * as THREE from "three"
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js"
+import Vr180Player from '../../components/Vr180Player';
 
 export default {
   name: 'Details',
   components: { VueLoadImage, GlobalEvents, StarRating, WatchlistButton, FavouriteButton, LinkStashdbButton, WishlistButton, WatchedButton, EditButton, RefreshButton, RescrapeButton, TrailerlistButton, HiddenButton
-    , ThumbnailTab, DeleteButton, Splitpanes, Pane 
+    , ThumbnailTab, DeleteButton, Splitpanes, Pane, Vr180Player
    },
 // Custom End
   data () {
@@ -630,25 +626,6 @@ export default {
       projectionMode: '180_LR',
       hidePane2:false,
       displayWidth:100,
-      // VR Player用
-      // renderer:null,
-      // scene:null,
-      // camera:null,
-      // controls:null,
-      // vrVideo:null,
-      // vrTexture:null,
-      // sphereFront:null,
-      // sphereBack:null,
-      // mesh:undefined,
-      vr: {
-        renderer: null,
-        scene: null,
-        camera: null,
-        controls: null,
-        video: null,
-        texture: null,
-        animationId: null
-      },
       // Custom END
     }
   },
@@ -859,7 +836,7 @@ export default {
     // Custom END
 
     // Custom Black for VR Player
-    this.initVRPlayer()
+    // this.initVRPlayer()
     // Custom END
   },
   
@@ -888,15 +865,7 @@ export default {
         });
       }
    },
-  activeMedia(newVal) {
-    if (newVal === 2) { // NewPlayer タブ
-      this.$nextTick(() => {
-        this.initVRPlayer();
-      });
-    } else {
-      cancelAnimationFrame(this.vr.animationId);
-    }
-  },
+
    // Custom END
 
   quickFindOverlayState(newVal, oldVal){
@@ -1315,14 +1284,14 @@ export default {
       }
 
       // NewPlayer (Three.js)
-      if (this.activeMedia === 2) {
-        if (this.$refs.vrVideo) {
-          const videoUrl = '/api/dms/file/' + file.id + '?dnt=true';
-          this.$refs.vrVideo.src = videoUrl;
-          this.$refs.vrVideo.load();
-          this.$refs.vrVideo.play();
-        }
-      }
+      // if (this.activeMedia === 2) {
+      //   if (this.$refs.vrVideo) {
+      //     const videoUrl = '/api/dms/file/' + file.id + '?dnt=true';
+      //     this.$refs.vrVideo.src = videoUrl;
+      //     this.$refs.vrVideo.load();
+      //     this.$refs.vrVideo.play();
+      //   }
+      // }
 
 // Custom Black（サムネイルタブ設定）
       if (this.currentFile != file) {
@@ -1826,131 +1795,6 @@ export default {
     parseISO,
     prettyBytes,
     formatDistance,
-
-    initVRPlayer() {
-      const canvas = this.$refs.vrCanvas;
-      const video = this.$refs.vrVideo;
-
-      this.vr.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-
-      // 【追加】出力を sRGB に固定する
-      // Three.js のバージョンによって書き方が異なります
-      if (THREE.SRGBColorSpace) {
-        this.vr.renderer.outputColorSpace = THREE.SRGBColorSpace; // 最新版
-      } else {
-        this.vr.renderer.outputEncoding = THREE.sRGBEncoding; // 少し古い版
-      }
-
-      this.vr.renderer.setSize(canvas.clientWidth, canvas.clientHeight);
-
-      this.vr.scene = new THREE.Scene();
-
-      // 【重要】FOVを元のソースと同じ 60 に設定（75だと端が伸びます）
-      this.vr.camera = new THREE.PerspectiveCamera(60, canvas.clientWidth / canvas.clientHeight, 1, 2000);
-      
-      // カメラ位置を微調整（jQuery版の 0.01 などのオフセットを再現）
-      this.vr.camera.position.set(0, 0, 0.1);
-
-      this.vr.controls = new OrbitControls(this.vr.camera, canvas);
-      this.vr.controls.rotateSpeed = -0.5;
-      this.vr.controls.enableZoom = false; // 手動FOVズームを使うため無効化
-
-      // 【重要】分割数を jQuery 版と同じ 60, 40 に戻す
-      // 第4引数を -Math.PI/2 にすることで正面中心に配置します
-      const geometry = new THREE.SphereGeometry(1000, 60, 40, -Math.PI / 2, Math.PI, 0, Math.PI);
-      geometry.scale(-1, 1, 1);
-
-      // 【重要】UVマッピングの修正（VR180 Side-by-Side 用）
-      const uvs = geometry.attributes.uv;
-      for (let i = 0; i < uvs.count; i++) {
-        let u = uvs.getX(i);
-        // ジオメトリの 0.0〜1.0 を 動画の左半分（0.0〜0.5）にマッピング
-        uvs.setX(i, u * 0.5);
-      }
-      uvs.needsUpdate = true;
-
-      this.vr.texture = new THREE.VideoTexture(video);
-
-      // 【追加】テクスチャの色空間設定
-      if (THREE.SRGBColorSpace) {
-        this.vr.texture.colorSpace = THREE.SRGBColorSpace;
-      } else {
-        this.vr.texture.encoding = THREE.sRGBEncoding;
-      }
-
-      this.vr.texture.minFilter = THREE.LinearFilter; // 描画を滑らかに
-      
-      const material = new THREE.MeshBasicMaterial({ map: this.vr.texture });
-      const mesh = new THREE.Mesh(geometry, material);
-      this.vr.scene.add(mesh);
-
-      // ホイールイベントの登録
-      canvas.addEventListener('wheel', this.handleWheel, { passive: false });
-      
-      // initVRPlayer() の最後に追加
-      window.addEventListener('resize', this.onVRResize);
-
-      // beforeDestroy() またはタブ切り替え処理の中に追加
-      window.removeEventListener('resize', this.onVRResize);
-
-      this.animateVR();
-    },
-
-    animateVR() {
-      if (this.activeMedia !== 2) return; // NewPlayerタブ以外では即リターン
-
-      this.vr.animationId = requestAnimationFrame(this.animateVR);
-
-      // 動画テクスチャの更新
-      if (this.$refs.vrVideo && this.$refs.vrVideo.readyState >= this.$refs.vrVideo.HAVE_CURRENT_DATA) {
-        this.vr.texture.needsUpdate = true;
-      }
-
-      this.vr.controls.update();
-      this.vr.renderer.render(this.vr.scene, this.vr.camera);
-    },
-
-    // ズーム操作関数
-    handleZoom(delta) {
-      const zoomSpeed = 2;
-      this.vr.camera.fov += delta * zoomSpeed;
-      this.vr.camera.fov = Math.max(30, Math.min(100, this.vr.camera.fov)); // 制限
-      this.vr.camera.updateProjectionMatrix();
-    },
-
-    handleWheel(event) {
-      event.preventDefault();
-
-      // ズーム感度の調整（0.05〜0.1程度）
-      const zoomSpeed = 0.07;
-      
-      // 視野角（FOV）を増減させる
-      this.vr.camera.fov += event.deltaY * zoomSpeed;
-
-      // ズーム範囲の制限（30度〜90度）
-      // 元のソースの標準が 60 なので、その前後で制限します
-      this.vr.camera.fov = Math.max(30, Math.min(90, this.vr.camera.fov));
-      
-      // 変更をカメラ行列に適用
-      this.vr.camera.updateProjectionMatrix();
-    },
-
-    onVRResize() {
-      const container = this.$refs.vrContainer;
-      const canvas = this.$refs.vrCanvas;
-      if (!container || !this.vr.renderer) return;
-
-      const width = container.clientWidth;
-      const height = container.clientHeight;
-
-      // レンダラーのサイズを更新
-      this.vr.renderer.setSize(width, height);
-
-      // カメラのアスペクト比を更新
-      this.vr.camera.aspect = width / height;
-      this.vr.camera.updateProjectionMatrix();
-    },
-
   }
 }
 </script>
