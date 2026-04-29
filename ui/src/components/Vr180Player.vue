@@ -21,12 +21,17 @@
             <button class="ctrl-btn" @click="onStop">■</button>
             <button class="ctrl-btn" @click="onRewind">⏪</button>
             <button class="ctrl-btn" @click="onFastForward">⏩</button>
-            <span class="time-display">00:00 / 00:00</span>
+            <span class="time-display">
+              {{ formatTime(currentTime) }} / {{ formatTime(duration) }}
+            </span>
           </div>
 
           <div class="right-controls">
             <button class="ctrl-btn" @click="onRecenter">Recenter</button>
-            <button class="ctrl-btn" @click="onToggleMute">Mute</button>
+            <button class="ctrl-btn" :class="{ 'is-active': isMuted }" @click="onToggleMute">
+              <span v-if="isMuted">🔇 Muted</span>
+              <span v-else>🔊 Mute</span>
+            </button>
             <input type="range" class="volume-bar" min="0" max="1" step="0.1" @input="onVolumeChange">
             <button class="ctrl-btn" @click="onToggleFullScreen">Full</button>
           </div>
@@ -42,6 +47,8 @@
       style="display:none"
       @play="isPaused = false"
       @pause="isPaused = true"
+      @loadedmetadata="onLoadedMetadata"
+      @timeupdate="onTimeUpdate"
     ></video>
   </div>
 </template>
@@ -58,8 +65,11 @@ export default {
     return {
       isReady: false,
       isPaused: true,
+      isMuted: true,
       uiVisible: true,  // UIの表示状態
       uiTimer: null,    // 非表示用タイマー
+      currentTime: 0,
+    duration: 0,
       vr: { 
         renderer: null, 
         scene: null, 
@@ -169,9 +179,6 @@ export default {
       }
     },
 
-
-
-    // マウス移動時に呼ばれるメソッド
     handleMouseMove() {
       this.uiVisible = true;
       if (this.uiTimer) clearTimeout(this.uiTimer);
@@ -180,22 +187,105 @@ export default {
       }, 3000);
     },
 
-    // ボタン・コントロール用メソッド（枠組み）
     togglePlay() {
       const video = this.$refs.vrVideo;
       if (video.paused) video.play(); else video.pause();
       this.handleMouseMove();
     },
-    onStop() { /* ③ 停止 */ },
-    onRewind() { /* ④ 巻き戻し */ },
-    onFastForward() { /* ⑥ 早送り */ },
+
+    onStop() {
+      const video = this.$refs.vrVideo;
+      if (video) {
+        video.pause();
+        video.currentTime = 0;
+      }
+      this.handleMouseMove(); // UI表示タイマーをリセット
+    },
+
+    onRewind() {
+      const video = this.$refs.vrVideo;
+      if (video) {
+        video.currentTime = Math.max(0, video.currentTime - 10);
+      }
+      this.handleMouseMove();
+    },
+
+    onFastForward() {
+      const video = this.$refs.vrVideo;
+      if (video) {
+        video.currentTime = Math.min(video.duration, video.currentTime + 10);
+      }
+      this.handleMouseMove();
+    },
+
+    onRecenter() {
+      if (this.vr.controls && this.vr.camera) {
+        // OrbitControls のターゲットと回転をリセット
+        this.vr.controls.reset();
+        
+        // 参考ソースの初期座標 (100, 0, 0) にカメラを再配置
+        this.vr.camera.position.set(100, 0, 0);
+        this.vr.camera.lookAt(0, 0, 0);
+      }
+      this.handleMouseMove();
+    },
+
+    onToggleMute() {
+      const video = this.$refs.vrVideo;
+      if (video) {
+        video.muted = !video.muted;
+        // データの isMuted 状態も更新（UI表示用）
+        this.isMuted = video.muted;
+      }
+      this.handleMouseMove();
+    },
+
+    onToggleFullScreen() {
+      // canvas コンテナ要素を全画面化の対象とする
+      const container = this.$el.querySelector('.vr-canvas-container');
+      
+      if (!document.fullscreenElement) {
+        // 全画面開始
+        if (container.requestFullscreen) {
+          container.requestFullscreen();
+        } else if (container.webkitRequestFullscreen) {
+          container.webkitRequestFullscreen(); // Safari用
+        }
+      } else {
+        // 全画面解除
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+      this.handleMouseMove();
+    },
+
     onSeek(e) { /* ⑤ シークバー操作 */ },
-    onRecenter() { /* ⑨ リセンター */ },
-    onToggleMute() { /* ⑧ ミュート切替 */ },
     onVolumeChange(e) { /* ⑦ 音量変更 */ },
-    onToggleFullScreen() { /* ⑩ 全画面切替 */ },
 
+    // 秒(数)を 00:00 形式の文字列に変換する
+    formatTime(seconds) {
+      if (!seconds || isNaN(seconds)) return '00:00';
+      const min = Math.floor(seconds / 60);
+      const sec = Math.floor(seconds % 60);
+      return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+    },
 
+    // ビデオのメタデータが読み込まれたら総時間を取得
+    onLoadedMetadata() {
+      const video = this.$refs.vrVideo;
+      if (video) {
+        this.duration = video.duration;
+      }
+    },
+
+    // 再生位置が更新されるたびに現在の時間を取得
+    onTimeUpdate() {
+      const video = this.$refs.vrVideo;
+      if (video) {
+        this.currentTime = video.currentTime;
+      }
+    },
 
     animate() {
       this.vr.animationId = requestAnimationFrame(this.animate);
