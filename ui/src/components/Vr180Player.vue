@@ -1,12 +1,43 @@
 <template>
   <div class="vr-player-wrapper">
-    <div class="vr-canvas-container">
+    <div class="vr-canvas-container" @mousemove="showControls">
       <canvas ref="vrCanvas" class="vr-canvas"></canvas>
+      
       <div v-if="!isReady" class="vr-loading">
         <div class="loader"></div>
       </div>
+
+      <div class="vr-controls" :class="{ 'vr-controls-hide': !uiVisible }">
+        <div class="control-row seek-bar-row">
+          <input type="range" class="seek-bar" step="0.1"
+            :min="0" :max="videoDuration" :value="videoCurrentTime"
+            @input="onSeek" @mousedown="isSeeking = true" @mouseup="isSeeking = false">
+        </div>
+
+        <div class="control-row button-row">
+          <div class="left-controls">
+            <button @click="togglePlay" class="ctrl-btn">
+              <span v-if="paused">▶</span><span v-else>||</span>
+            </button>
+            <button @click="stopVideo" class="ctrl-btn">■</button>
+            <button @click="rewind" class="ctrl-btn">-10s</button>
+            <button @click="fastForward" class="ctrl-btn">+10s</button>
+            <span class="time-display">{{ formatTime(videoCurrentTime) }} / {{ formatTime(videoDuration) }}</span>
+          </div>
+
+          <div class="right-controls">
+            <button @click="recenter" class="ctrl-btn">Recenter</button>
+            <button @click="toggleMute" class="ctrl-btn">
+              <span v-if="isMuted">Mute ON</span><span v-else>Mute OFF</span>
+            </button>
+            <input type="range" class="volume-bar" min="0" max="1" step="0.1" v-model="volume">
+            <button @click="toggleFullScreen" class="ctrl-btn">Fullscreen</button>
+          </div>
+        </div>
+      </div>
     </div>
-    <video ref="vrVideo" crossorigin="anonymous" playsinline muted style="display:none"></video>
+    <video ref="vrVideo" crossorigin="anonymous" playsinline style="display:none"
+      @loadedmetadata="onMetadataLoaded" @timeupdate="onTimeUpdate" @ended="onEnded"></video>
   </div>
 </template>
 
@@ -20,14 +51,29 @@ export default {
   },
   data() {
     return {
+      // UI管理
+      uiVisible: true,
+      uiTimer: null,
+      isSeeking: false,
+      // ビデオ状態
+      paused: true,
+      videoCurrentTime: 0,
+      videoDuration: 0,
+      volume: 1,
+      isMuted: true,
+      
       isReady: false,
       vr: { renderer: null, scene: null, camera: null, controls: null, animationId: null },
       resizeObserver: null
     };
   },
   watch: {
-    fileId: 'updateVideoSource'
+    fileId: 'updateVideoSource',
+    volume(val) {
+     if (this.$refs.vrVideo) this.$refs.vrVideo.volume = val;
+    }
   },
+
   mounted() {
     this.initThree();
     this.updateVideoSource();
@@ -173,13 +219,83 @@ export default {
 
     handleWheel(e) {
     // this.vr.controls.handleMouseWheel(e); // OrbitControlsのデフォルトズームを使う場合
-  },
+    },
+
     dispose() {
       cancelAnimationFrame(this.vr.animationId);
       if (this.vr.renderer) {
         this.vr.renderer.dispose();
         this.vr.renderer.forceContextLoss();
       }
+    },
+
+    // ① 時間フォーマット (sec2timestr の移植)
+    formatTime(sec) {
+      if (!sec || isNaN(sec)) return "00:00:00";
+      const h = Math.floor(sec / 3600).toString().padStart(2, '0');
+      const m = Math.floor((sec % 3600) / 60).toString().padStart(2, '0');
+      const s = Math.floor(sec % 60).toString().padStart(2, '0');
+      return `${h}:${m}:${s}`;
+    },
+    // メタデータ読み込み
+    onMetadataLoaded() {
+      this.videoDuration = this.$refs.vrVideo.duration;
+    },
+    // ⑤ シーク更新
+    onTimeUpdate() {
+      if (!this.isSeeking) {
+        this.videoCurrentTime = this.$refs.vrVideo.currentTime;
+      }
+      this.paused = this.$refs.vrVideo.paused;
+    },
+    // ② 一時停止／再生
+    togglePlay() {
+      const video = this.$refs.vrVideo;
+      if (video.paused) video.play(); else video.pause();
+    },
+    // ③ 停止
+    stopVideo() {
+      const video = this.$refs.vrVideo;
+      video.pause();
+      video.currentTime = 0;
+    },
+    // ④ 巻き戻し / ⑥ 早送り
+    rewind() { this.$refs.vrVideo.currentTime -= 10; },
+    fastForward() { this.$refs.vrVideo.currentTime += 10; },
+    // ⑤ シーク操作
+    onSeek(e) {
+      const val = parseFloat(e.target.value);
+      this.videoCurrentTime = val;
+      this.$refs.vrVideo.currentTime = val;
+    },
+    // ⑧ ミュート
+    toggleMute() {
+      this.isMuted = !this.isMuted;
+      this.$refs.vrVideo.muted = this.isMuted;
+    },
+    // ⑨ リセンター (参考ソースの set(90, 0, 0.01) を適用)
+    recenter() {
+      if (this.vr.camera) {
+        this.vr.camera.position.set(100, 0, 0); 
+        this.vr.controls.reset();
+      }
+    },
+    // ⑩ 全画面表示
+    toggleFullScreen() {
+      const el = this.$el;
+      if (!document.fullscreenElement) {
+        el.requestFullscreen().catch(err => console.error(err));
+      } else {
+        document.exitFullscreen();
+      }
+    },
+    // UIの自動非表示
+    showControls() {
+      this.uiVisible = true;
+      clearTimeout(this.uiTimer);
+      this.uiTimer = setTimeout(() => {
+        this.uiVisible = false;
+      }, 3000);
     }
   }
 };
@@ -231,4 +347,50 @@ export default {
   display: flex; align-items: center; justify-content: center;
   background: rgba(0,0,0,0.8); z-index: 10;
 }
+
+.vr-controls {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(transparent, rgba(0,0,0,0.7));
+  color: white;
+  padding: 10px;
+  transition: opacity 0.5s;
+  z-index: 100;
+}
+.vr-controls-hide {
+  opacity: 0;
+  pointer-events: none;
+}
+.control-row {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+.button-row {
+  justify-content: space-between;
+  margin-top: 5px;
+}
+.left-controls, .right-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.seek-bar {
+  width: 100%;
+  cursor: pointer;
+}
+.ctrl-btn {
+  background: rgba(255,255,255,0.2);
+  border: none;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.ctrl-btn:hover { background: rgba(255,255,255,0.4); }
+.time-display { font-size: 14px; font-family: monospace; }
+.volume-bar { width: 60px; }
+
 </style>
