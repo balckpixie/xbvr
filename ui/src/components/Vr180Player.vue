@@ -45,53 +45,98 @@ export default {
     if (this.resizeObserver) this.resizeObserver.disconnect();
     this.dispose();
   },
+
   methods: {
-  initThree() {
-    const canvas = this.$refs.vrCanvas;
-    const video = this.$refs.vrVideo;
 
-    this.vr.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-    this.vr.renderer.setPixelRatio(window.devicePixelRatio);
-    this.vr.renderer.outputColorSpace = THREE.SRGBColorSpace; 
+    initThree() {
+      const canvas = this.$refs.vrCanvas;
 
-    this.vr.scene = new THREE.Scene();
-    
-    // カメラ設定：参考コードと同じ位置
-    this.vr.camera = new THREE.PerspectiveCamera(60, 1, 1, 20000);
-    this.vr.camera.position.set(100, 0, 0); 
-    this.vr.camera.lookAt(0, 0, 0);
+      // 1. レンダラー、シーン、カメラの基本設定
+      this.initBaseScene(canvas);
 
-    // OrbitControls：拡大縮小（Distance）の制限を適用
-    this.vr.controls = new OrbitControls(this.vr.camera, canvas);
-    this.vr.controls.rotateSpeed = -0.5;
-    this.vr.controls.enableZoom = true;
-    this.vr.controls.minDistance = 100; // 最大ズーム
-    this.vr.controls.maxDistance = 600; // 最小ズーム
-    this.vr.controls.enableDamping = false;
-    this.vr.controls.enablePan = false;
+      // 2. カメラ操作（ズーム・回転）の設定
+      this.initControls(canvas);
 
-    // 全球ジオメトリ
-    const geometry = new THREE.SphereGeometry(1000, 60, 40);
-    geometry.scale(-1, 1, 1);
+      // 3. 180SBS動画用マッピングメッシュの作成
+      this.initVRMesh();
 
-    const texture = new THREE.VideoTexture(video);
-    texture.colorSpace = THREE.SRGBColorSpace;
-    texture.minFilter = texture.magFilter = THREE.LinearFilter;
-    
-    const material = new THREE.MeshBasicMaterial({ map: texture });
-    const mesh = new THREE.Mesh(geometry, material);
+      this.handleResize();
+      this.isReady = true;
+      this.animate();
+    },
 
-    // 【重要】映像の中心（正面）を向かせるための回転
-    // カメラが X:100 にあるため、球体を Y 軸に 90 度回転させることで
-    // 映像の中心（テクスチャの 0.5 付近）がカメラの正面に来るようになります。
-    mesh.rotation.y = Math.PI / 2; 
+    /**
+     * シーン・レンダラー・カメラの初期化
+     */
+    initBaseScene(canvas) {
+      this.vr.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+      this.vr.renderer.setPixelRatio(window.devicePixelRatio);
+      this.vr.renderer.outputColorSpace = THREE.SRGBColorSpace;
 
-    this.vr.scene.add(mesh);
-    
-    this.handleResize();
-    this.isReady = true;
-    this.animate();
-  },
+      this.vr.scene = new THREE.Scene();
+
+      this.vr.camera = new THREE.PerspectiveCamera(60, 1, 1, 20000);
+      // 初期位置を x: 100 に設定し、中心を向かせる
+      this.vr.camera.position.set(100, 0, 0);
+      this.vr.camera.lookAt(0, 0, 0);
+    },
+
+    /**
+     * OrbitControls（拡大縮小・回転）の初期化
+     */
+    initControls(canvas) {
+      this.vr.controls = new OrbitControls(this.vr.camera, canvas);
+      this.vr.controls.rotateSpeed = -0.5;
+      this.vr.controls.enableZoom = true;
+      this.vr.controls.minDistance = 100; // 拡大上限
+      this.vr.controls.maxDistance = 800; // 縮小上限
+      this.vr.controls.enableDamping = false;
+      this.vr.controls.enablePan = false;
+    },
+
+    /**
+     * 180SBS動画を全球にマッピング（前方：正位置、後方：反転）
+     */
+    initVRMesh() {
+      const video = this.$refs.vrVideo;
+
+      // 1. 360度全球ジオメトリの作成
+      const geometry = new THREE.SphereGeometry(1000, 60, 40);
+      geometry.scale(-1, 1, 1); // 内側を表示
+
+      // 2. UV座標の計算：180SBS動画の左半分(0.0-0.5)だけを使用するように調整
+      const uvs = geometry.attributes.uv;
+      for (let i = 0; i < uvs.count; i++) {
+        let u = uvs.getX(i); // 球体表面の割合 (0.0〜1.0)
+
+        if (u <= 0.5) {
+          // 【前方エリア】球体の 0〜180度
+          // 動画の左半分(0.0〜0.5)をそのまま割り当てる
+          uvs.setX(i, u);
+        } else {
+          // 【後方エリア】球体の 180〜360度
+          // 動画の左半分を反転(0.5〜0.0)させて割り当てる
+          uvs.setX(i, 1.0 - u);
+        }
+      }
+      uvs.needsUpdate = true;
+
+      // 3. テクスチャとマテリアルの作成
+      const texture = new THREE.VideoTexture(video);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.wrapS = THREE.ClampToEdgeWrapping;
+      texture.minFilter = texture.magFilter = THREE.LinearFilter;
+
+      const material = new THREE.MeshBasicMaterial({ map: texture });
+      const mesh = new THREE.Mesh(geometry, material);
+
+      // 4. 正面合わせの回転
+      // SBSの左半分の中央（0.25地点）が正面に来るよう調整
+      mesh.rotation.y = Math.PI / 2;
+
+      this.vr.scene.add(mesh);
+    },
+
     updateVideoSource() {
       if (this.$refs.vrVideo && this.fileId) {
         this.$refs.vrVideo.src = `/api/dms/file/${this.fileId}?dnt=true`;
@@ -125,35 +170,8 @@ export default {
       this.vr.camera.aspect = width / height;
       this.vr.camera.updateProjectionMatrix();
     },
-    // handleWheel(e) {
-    //   e.preventDefault();
-      
-    //   // 変化の感度を調整（数値が小さいほど滑らかになります）
-    //   // 以前の 0.07 から 0.03 に変更し、さらに現在の FOV に応じて感度を変えることで
-    //   // ズームインしている時ほどゆっくり変化するようにします。
-    //   const sensitivity = 0.01;
-    //   const zoomAmount = e.deltaY * sensitivity * (this.vr.camera.fov / 60);
-      
-    //   // 新しい FOV を計算
-    //   const newFov = this.vr.camera.fov + zoomAmount;
-      
-    //   // 30度から90度の範囲でクランプ（制限）
-    //   this.vr.camera.fov = Math.max(30, Math.min(90, newFov));
-      
-    //   this.vr.camera.updateProjectionMatrix();
-    // },
-    handleWheel(e) {
-    // e.preventDefault();
-    // // 前回の回答よりさらに細かい制御（感度 0.02）
-    // const sensitivity = 0.02;
-    // const zoomAmount = e.deltaY * sensitivity;
-    
-    // // FOV（画角）によるズーム
-    // const newFov = this.vr.camera.fov + zoomAmount;
-    // this.vr.camera.fov = Math.max(30, Math.min(90, newFov));
-    // this.vr.camera.updateProjectionMatrix();
 
-    // または、参考コードのようにカメラの距離(Distance)を変える場合は以下
+    handleWheel(e) {
     // this.vr.controls.handleMouseWheel(e); // OrbitControlsのデフォルトズームを使う場合
   },
     dispose() {
@@ -171,12 +189,9 @@ export default {
 .vr-player-wrapper {
   position: relative; /* 子の absolute の基準点 */
   width: 100%;
-  /* 100% を基本にしつつ、ウィンドウからはみ出さないように 
-     vh（ビューポートの高さ）で上限を強制します。
-  */
   height: 100%;
   min-height: 300px;   /* 潰れ防止の最小値 */
-  max-height: 75vh;    /* ウィンドウの75%以上には絶対にならないように制限 */
+  /* max-height: 83vh; */    /* ウィンドウの75%以上には絶対にならないように制限 */
   
   margin: 0;
   padding: 0;

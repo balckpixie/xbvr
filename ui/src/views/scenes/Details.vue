@@ -2152,7 +2152,7 @@ display:none;
 .player-container {
   width: 100%;
   height: 100%;
-  max-height: 78vh;
+  max-height: 83vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
