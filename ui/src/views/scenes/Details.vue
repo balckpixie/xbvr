@@ -52,11 +52,11 @@
         <splitpanes class="default-theme"
           style="max-height: 88vh;"
           :gutter-size="10" :min-pane-size="27" :max-pane-size="100" :split="splitDirection"
-          @resize="onResize" ref="splitpanesRef">
+          @resize="onSplitterResized" ref="splitpanesRef">
         <pane min-size="27" max-size="100" :size="splitSize">
-          <div>
+          <div style="height:100%">
         <!-- Custom End -->
-            <b-tabs v-model="activeMedia" position="is-centered" :animated="false">
+            <b-tabs v-model="activeMedia" position="is-centered" :animated="false" style="height:100%">
 
               <b-tab-item label="Gallery">
                 <b-carousel v-model="carouselSlide" @change="scrollToActiveIndicator" :autoplay="false" :indicator-inside="false">
@@ -129,9 +129,13 @@
               </b-tab-item>
 
               <b-tab-item label="NewPlayer">
-              <div v-if="activeMedia === 2 && currentFile" style="flex: 1; display: flex; flex-direction: column;">
-                <Vr180Player :fileId="currentFile.id" />
-              </div>
+                <div class="player-container" ref="playerContainer">
+                  <Vr180Player 
+                    v-if="activeMedia === 2" 
+                    ref="vrPlayer" 
+                    :fileId="currentFile.id" 
+                  />
+                </div>
               </b-tab-item>
             </b-tabs>
 
@@ -917,6 +921,14 @@ export default {
 
   methods: {
     // Custom Black （諸々の処理関数群を追加）
+    onSplitterResized() {
+      this.$nextTick(() => {
+        if (this.$refs.vrPlayer) {
+          this.$refs.playerContainer.height = 700;
+          this.$refs.vrPlayer.handleResize();
+        }
+      });
+    },
     onHideClick() {
       this.hidePane2 = !this.hidePane2
       if (this.hidePane2){
@@ -1800,6 +1812,9 @@ export default {
 </script>
 
 <style lang="less" scoped>
+.tab-content{
+  height: 100% !important;
+}
 .bbox {
   flex: 1 0 calc(25%);
   display: flex;
@@ -2131,6 +2146,25 @@ display:block;
 
 .vr-video{
 display:none;
+}
+
+/* コンテナが潰れないように高さを確保 */
+.player-container {
+  width: 100%;
+  height: 100%;
+  max-height: 78vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.tab-item{
+  height: 100%;
+}
+.b-tabs{
+  height: 100%;
+}
+:deep(section.tab-content) {
+    height: 100% !important;
 }
 // Custom END
 </style>

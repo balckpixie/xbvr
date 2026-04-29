@@ -1,6 +1,6 @@
 <template>
-  <div class="vr-player-wrapper" ref="vrWrapper">
-    <div class="vr-canvas-container" ref="vrContainer">
+  <div class="vr-player-wrapper">
+    <div class="vr-canvas-container">
       <canvas ref="vrCanvas" class="vr-canvas"></canvas>
       <div v-if="!isReady" class="vr-loading">
         <div class="loader"></div>
@@ -93,19 +93,28 @@ export default {
       if (this.vr.controls) this.vr.controls.update();
       if (this.vr.renderer) this.vr.renderer.render(this.vr.scene, this.vr.camera);
     },
-    handleResize() {
-      const container = this.$el;
-      if (!container || !this.vr.renderer) return;
+handleResize() {
+  const container = this.$el;
+  if (!container || !this.vr.renderer) return;
 
-      const width = container.clientWidth;
-      const height = container.clientHeight;
+  // 親要素の現在のサイズを取得
+  let width = container.clientWidth;
+  let height = container.clientHeight;
 
-      if (width === 0 || height === 0) return;
+  // 安全策：ウィンドウの高さの 90% を超える場合は制限する
+  // （CSSの max-height が効いていれば、基本的にはここを通ることはありません）
+  const maxHeight = window.innerHeight * 0.8;
+  if (height > maxHeight) {
+    height = maxHeight;
+  }
 
-      this.vr.renderer.setSize(width, height, false);
-      this.vr.camera.aspect = width / height;
-      this.vr.camera.updateProjectionMatrix();
-    },
+  if (width === 0 || height === 0) return;
+
+  // レンダラーのサイズを更新（第3引数を false にして CSS との競合を防ぐ）
+  this.vr.renderer.setSize(width, height, false);
+  this.vr.camera.aspect = width / height;
+  this.vr.camera.updateProjectionMatrix();
+},
     handleWheel(e) {
       e.preventDefault();
       this.vr.camera.fov = Math.max(30, Math.min(90, this.vr.camera.fov + e.deltaY * 0.07));
@@ -124,30 +133,39 @@ export default {
 
 <style scoped>
 .vr-player-wrapper {
-  /* 表示を安定させるため、以前の 65vh を「基準の高さ」として設定しつつ、
-     親要素がそれ以上の高さを持つ場合は 100% 広がるようにします 
-  */
+  position: relative; /* 子の absolute の基準点 */
   width: 100%;
+  /* 100% を基本にしつつ、ウィンドウからはみ出さないように 
+     vh（ビューポートの高さ）で上限を強制します。
+  */
   height: 100%;
-  min-height: 500px; /* ここで「表示されなくなる」のを防ぎます */
-  background-color: #000;
+  min-height: 300px;   /* 潰れ防止の最小値 */
+  max-height: 75vh;    /* ウィンドウの75%以上には絶対にならないように制限 */
+  
   margin: 0;
   padding: 0;
-  overflow: hidden;
-  display: flex;
+  background-color: #000;
+  overflow: hidden;    /* はみ出しを物理的にカット */
 }
 
 .vr-canvas-container {
-  flex: 1;
-  position: relative;
+  /* 絶対配置にすることで、この要素が親（.vr-player-wrapper）の
+     サイズを押し広げる「フィードバックループ」を完全に遮断します。
+  */
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   width: 100%;
   height: 100%;
+  background: #000;
   cursor: grab;
 }
 
 .vr-canvas {
-  /* canvasの下に隙間(4px程度)ができないように block 指定 */
-  display: block; 
+  /* Three.js が管理するサイズをそのまま表示 */
+  display: block;
   width: 100% !important;
   height: 100% !important;
 }
@@ -162,14 +180,4 @@ export default {
   display: flex; align-items: center; justify-content: center;
   background: rgba(0,0,0,0.8); z-index: 10;
 }
-
-.loader {
-  border: 4px solid #333;
-  border-top: 4px solid #3498db;
-  border-radius: 50%;
-  width: 30px;
-  height: 30px;
-  animation: spin 1s linear infinite;
-}
-@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 </style>
