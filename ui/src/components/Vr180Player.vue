@@ -8,11 +8,28 @@
       </div>
 
       <div class="vr-controls" :class="{ 'vr-controls-hide': !uiVisible }">
-        <div class="control-row button-row">
-          <button class="ctrl-btn" @mousedown.stop @click="togglePlay">
-            <span v-if="isPaused">▶ 再生</span>
-            <span v-else>|| 一時停止</span>
-          </button>
+        
+        <div class="control-row seek-bar-row" @mousedown.stop>
+          <input type="range" class="seek-bar" min="0" max="100" value="0" @input="onSeek">
+        </div>
+
+        <div class="control-row button-row" @mousedown.stop>
+          <div class="left-controls">
+            <button class="ctrl-btn" @click="togglePlay">
+              <span v-if="isPaused">▶</span><span v-else>||</span>
+            </button>
+            <button class="ctrl-btn" @click="onStop">■</button>
+            <button class="ctrl-btn" @click="onRewind">⏪</button>
+            <button class="ctrl-btn" @click="onFastForward">⏩</button>
+            <span class="time-display">00:00 / 00:00</span>
+          </div>
+
+          <div class="right-controls">
+            <button class="ctrl-btn" @click="onRecenter">Recenter</button>
+            <button class="ctrl-btn" @click="onToggleMute">Mute</button>
+            <input type="range" class="volume-bar" min="0" max="1" step="0.1" @input="onVolumeChange">
+            <button class="ctrl-btn" @click="onToggleFullScreen">Full</button>
+          </div>
         </div>
       </div>
     </div>
@@ -156,30 +173,27 @@ export default {
 
     // マウス移動時に呼ばれるメソッド
     handleMouseMove() {
-      // 1. UIを表示
       this.uiVisible = true;
-
-      // 2. 既存のタイマーがあればクリア
-      if (this.uiTimer) {
-        clearTimeout(this.uiTimer);
-      }
-
-      // 3. 3秒間（任意）動きがなければ非表示にする
+      if (this.uiTimer) clearTimeout(this.uiTimer);
       this.uiTimer = setTimeout(() => {
         this.uiVisible = false;
       }, 3000);
     },
 
+    // ボタン・コントロール用メソッド（枠組み）
     togglePlay() {
       const video = this.$refs.vrVideo;
-      if (video.paused) {
-        video.play();
-      } else {
-        video.pause();
-      }
-      // ボタン操作時もタイマーを更新して消えないようにする
+      if (video.paused) video.play(); else video.pause();
       this.handleMouseMove();
     },
+    onStop() { /* ③ 停止 */ },
+    onRewind() { /* ④ 巻き戻し */ },
+    onFastForward() { /* ⑥ 早送り */ },
+    onSeek(e) { /* ⑤ シークバー操作 */ },
+    onRecenter() { /* ⑨ リセンター */ },
+    onToggleMute() { /* ⑧ ミュート切替 */ },
+    onVolumeChange(e) { /* ⑦ 音量変更 */ },
+    onToggleFullScreen() { /* ⑩ 全画面切替 */ },
 
 
 
@@ -277,48 +291,46 @@ export default {
 }
 
 
-
 .vr-controls {
   position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 40px 20px 20px; /* 下部にグラデーションの余裕を持たせる */
-  background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+  bottom: 0; left: 0; right: 0;
+  padding: 40px 20px 20px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
   color: white;
   z-index: 100;
-  
-  /* 重要：UIの親要素はマウスを透過（Splitterのため） */
-  pointer-events: none;
-  
-  /* フェードアニメーション */
+  pointer-events: none; /* 透明エリアは透過 */
   transition: opacity 0.5s ease;
-  opacity: 1;
 }
 
-/* 非表示状態 */
-.vr-controls-hide {
-  opacity: 0;
-}
+.vr-controls-hide { opacity: 0; }
 
 .control-row {
   display: flex;
   align-items: center;
-  /* 子要素（ボタンなど）はマウスを有効化 */
-  pointer-events: auto;
+  pointer-events: auto; /* UIパーツは操作有効 */
 }
+
+/* シークバーの行 */
+.seek-bar-row { margin-bottom: 10px; }
+.seek-bar { width: 100%; cursor: pointer; }
+
+/* ボタンの行 */
+.button-row { justify-content: space-between; }
+.left-controls, .right-controls { display: flex; align-items: center; gap: 10px; }
 
 .ctrl-btn {
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(255, 255, 255, 0.1);
   color: white;
-  border: 1px solid #fff;
-  padding: 8px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  padding: 5px 12px;
   cursor: pointer;
   border-radius: 4px;
-  transition: background 0.2s;
+  font-size: 12px;
 }
 
-.ctrl-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
+.ctrl-btn:hover { background: rgba(255, 255, 255, 0.3); }
+
+.time-display { font-size: 13px; font-family: monospace; }
+
+.volume-bar { width: 60px; cursor: pointer; }
 </style>
