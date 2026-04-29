@@ -46,7 +46,7 @@ export default {
     this.dispose();
   },
   methods: {
-initThree() {
+  initThree() {
     const canvas = this.$refs.vrCanvas;
     const video = this.$refs.vrVideo;
 
@@ -87,9 +87,6 @@ initThree() {
     mesh.rotation.y = Math.PI / 2; 
 
     this.vr.scene.add(mesh);
-
-    // 以前の handleWheel は OrbitControls のズームと競合するため、
-    // ここではイベントリスナーを登録せず、OrbitControls に任せます。
     
     this.handleResize();
     this.isReady = true;
