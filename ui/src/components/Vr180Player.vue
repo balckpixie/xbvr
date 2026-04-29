@@ -1,17 +1,19 @@
 <template>
   <div class="vr-player-wrapper">
-    <div class="vr-canvas-container">
+    <div class="vr-canvas-container" @mousemove="handleMouseMove">
       <canvas ref="vrCanvas" class="vr-canvas"></canvas>
       
       <div v-if="!isReady" class="vr-loading">
         <div class="loader"></div>
       </div>
 
-      <div class="simple-controls">
-        <button class="play-btn" @mousedown.stop @click="togglePlay">
-          <span v-if="isPaused">▶ 再生</span>
-          <span v-else>|| 一時停止</span>
-        </button>
+      <div class="vr-controls" :class="{ 'vr-controls-hide': !uiVisible }">
+        <div class="control-row button-row">
+          <button class="ctrl-btn" @mousedown.stop @click="togglePlay">
+            <span v-if="isPaused">▶ 再生</span>
+            <span v-else>|| 一時停止</span>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -39,6 +41,8 @@ export default {
     return {
       isReady: false,
       isPaused: true,
+      uiVisible: true,  // UIの表示状態
+      uiTimer: null,    // 非表示用タイマー
       vr: { 
         renderer: null, 
         scene: null, 
@@ -148,6 +152,37 @@ export default {
       }
     },
 
+
+
+    // マウス移動時に呼ばれるメソッド
+    handleMouseMove() {
+      // 1. UIを表示
+      this.uiVisible = true;
+
+      // 2. 既存のタイマーがあればクリア
+      if (this.uiTimer) {
+        clearTimeout(this.uiTimer);
+      }
+
+      // 3. 3秒間（任意）動きがなければ非表示にする
+      this.uiTimer = setTimeout(() => {
+        this.uiVisible = false;
+      }, 3000);
+    },
+
+    togglePlay() {
+      const video = this.$refs.vrVideo;
+      if (video.paused) {
+        video.play();
+      } else {
+        video.pause();
+      }
+      // ボタン操作時もタイマーを更新して消えないようにする
+      this.handleMouseMove();
+    },
+
+
+
     animate() {
       this.vr.animationId = requestAnimationFrame(this.animate);
       
@@ -239,5 +274,51 @@ export default {
   top: 0; left: 0; width: 100%; height: 100%;
   display: flex; align-items: center; justify-content: center;
   background: rgba(0,0,0,0.8); z-index: 10;
+}
+
+
+
+.vr-controls {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 40px 20px 20px; /* 下部にグラデーションの余裕を持たせる */
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+  color: white;
+  z-index: 100;
+  
+  /* 重要：UIの親要素はマウスを透過（Splitterのため） */
+  pointer-events: none;
+  
+  /* フェードアニメーション */
+  transition: opacity 0.5s ease;
+  opacity: 1;
+}
+
+/* 非表示状態 */
+.vr-controls-hide {
+  opacity: 0;
+}
+
+.control-row {
+  display: flex;
+  align-items: center;
+  /* 子要素（ボタンなど）はマウスを有効化 */
+  pointer-events: auto;
+}
+
+.ctrl-btn {
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  border: 1px solid #fff;
+  padding: 8px 16px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.ctrl-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 </style>
