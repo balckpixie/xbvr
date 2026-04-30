@@ -10,7 +10,18 @@
       <div class="vr-controls" :class="{ 'vr-controls-hide': !uiVisible }">
         
         <div class="control-row seek-bar-row" @mousedown.stop>
-          <input type="range" class="seek-bar" min="0" max="100" value="0" @input="onSeek">
+          <input 
+            type="range" 
+            class="seek-bar" 
+            step="0.1"
+            :min="0" 
+            :max="duration" 
+            :value="currentTime"
+            @mousedown="onSeekStart"
+            @touchstart="onSeekStart"
+            @input="onSeekInput"
+            @change="onSeekEnd"
+          >
         </div>
 
         <div class="control-row button-row" @mousedown.stop>
@@ -66,10 +77,11 @@ export default {
       isReady: false,
       isPaused: true,
       isMuted: true,
+      isSeeking: false, // シークバーをドラッグ中かどうか
       uiVisible: true,  // UIの表示状態
       uiTimer: null,    // 非表示用タイマー
       currentTime: 0,
-    duration: 0,
+      duration: 0,
       vr: { 
         renderer: null, 
         scene: null, 
@@ -260,7 +272,28 @@ export default {
       this.handleMouseMove();
     },
 
-    onSeek(e) { /* ⑤ シークバー操作 */ },
+    // シークバーを触り始めた時
+    onSeekStart() {
+      this.isSeeking = true;
+      this.handleMouseMove(); // UIが消えないように
+    },
+
+    // シークバーを動かしている最中 (プレビュー感覚で時間を更新)
+    onSeekInput(e) {
+      this.currentTime = parseFloat(e.target.value);
+      this.handleMouseMove();
+    },
+
+    // シークバーを離した時 (実際に動画の再生位置を確定)
+    onSeekEnd(e) {
+      const video = this.$refs.vrVideo;
+      if (video) {
+        video.currentTime = parseFloat(e.target.value);
+      }
+      this.isSeeking = false;
+      this.handleMouseMove();
+    },
+
     onVolumeChange(e) { /* ⑦ 音量変更 */ },
 
     // 秒(数)を 00:00 形式の文字列に変換する
@@ -279,10 +312,10 @@ export default {
       }
     },
 
-    // 再生位置が更新されるたびに現在の時間を取得
     onTimeUpdate() {
       const video = this.$refs.vrVideo;
-      if (video) {
+      if (video && !this.isSeeking) {
+        // シーク操作中でなければ、現在の再生位置を更新
         this.currentTime = video.currentTime;
       }
     },
