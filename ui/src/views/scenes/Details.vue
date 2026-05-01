@@ -133,7 +133,7 @@
                   <Vr180Player 
                     v-if="activeMedia === 2" 
                     ref="vrPlayer" 
-                    :fileId="currentFile.id" 
+                    :file="currentFile" 
                   />
                 </div>
               </b-tab-item>

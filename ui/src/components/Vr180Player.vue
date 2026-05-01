@@ -10,6 +10,15 @@
       <div class="vr-controls" :class="{ 'vr-controls-hide': !uiVisible }">
         
         <div class="control-row seek-bar-row" @mousedown.stop>
+          <!-- サムネイルプレビュー: hoverTime を表示 -->
+          <div 
+            v-if="spriteConfig" 
+            class="thumbnail-preview" 
+            :style="thumbnailStyle"
+          >
+            <span class="thumbnail-time">{{ formatTime(hoverTime) }}</span>
+          </div>
+
           <input 
             type="range" 
             class="seek-bar" 
@@ -18,9 +27,10 @@
             :max="duration" 
             :value="currentTime"
             @mousedown="onSeekStart"
-            @touchstart="onSeekStart"
             @input="onSeekInput"
             @change="onSeekEnd"
+            @mousemove="updateThumbnail"
+            @mouseleave="thumbnailStyle.display = 'none'"
           >
         </div>
 
@@ -70,7 +80,8 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
 export default {
   props: {
-    fileId: { type: Number, default: null }
+    // fileId: { type: Number, default: null } // 廃止
+    file: { type: Object, default: null }      // 新設: Details.vue 等から渡されるオブジェクト
   },
   data() {
     return {
@@ -90,11 +101,31 @@ export default {
         animationId: null,
         videoTexture: null // テクスチャ更新用に保持
       },
-      resizeObserver: null
+      resizeObserver: null,
+      //for Sprite
+      hoverTime: 0,
+      spriteConfig: null, // spriteParamsの結果を保持
+      thumbnailStyle: {
+        display: 'none',
+        left: '0px',
+        width: '0px',
+        height: '0px',
+        backgroundImage: '',
+        backgroundPosition: '0px 0px',
+        backgroundSize: '0px 0px'
+      },
     };
   },
   watch: {
-    fileId: 'updateVideoSource'
+    //fileId: 'updateVideoSource'
+    file: {
+      immediate: true,
+      handler(newFile) {
+        if (newFile) {
+          this.updateVideoSource(newFile);
+        }
+      }
+    }
   },
   mounted() {
     this.initThree();
@@ -114,6 +145,14 @@ export default {
   },
 
   methods: {
+    dispose() {
+      cancelAnimationFrame(this.vr.animationId);
+      if (this.vr.renderer) {
+        this.vr.renderer.dispose();
+        this.vr.renderer.forceContextLoss();
+      }
+    },
+
     initThree() {
       const canvas = this.$refs.vrCanvas;
       this.initBaseScene(canvas);
@@ -174,12 +213,19 @@ export default {
       this.vr.scene.add(mesh);
     },
 
-    updateVideoSource() {
+    updateVideoSource(file) {
       const video = this.$refs.vrVideo;
-      if (video && this.fileId) {
-        video.src = `/api/dms/file/${this.fileId}?dnt=true`;
-        video.play().catch(() => {});
-      }
+      if (!video || !file) return;
+
+      // 1. スプライトパラメータを計算して保持
+      this.updateSpriteParams(file);
+
+      // 2. 動画ソースの設定と再生
+      video.src = `/api/dms/file/${file.id}?dnt=true`;
+      video.load(); // ソース変更時は念のため明示的にロード
+      video.play().catch(() => {
+        console.log("Autoplay blocked or video not ready.");
+      });
     },
 
     togglePlay() {
@@ -346,13 +392,63 @@ export default {
       this.vr.camera.updateProjectionMatrix();
     },
 
-    dispose() {
-      cancelAnimationFrame(this.vr.animationId);
-      if (this.vr.renderer) {
-        this.vr.renderer.dispose();
-        this.vr.renderer.forceContextLoss();
+    updateSpriteParams(file) {
+      if (!file || !file.thumbnail_parameters) {
+        this.spriteConfig = null;
+        return;
       }
-    }
+
+      const thumbnailUrl = '/api_custom/thumbnail/image/' + file.id;
+      const parsed = (typeof file.thumbnail_parameters === 'string')
+        ? JSON.parse(file.thumbnail_parameters)
+        : file.thumbnail_parameters;
+
+      let tileHeight = parsed.resolution;
+      if (file.projection === 'flat') {
+        tileHeight = (file.video_height / file.video_width) * parsed.resolution;
+      }
+
+      this.spriteConfig = {
+        url: thumbnailUrl,
+        duration: file.duration,
+        start: parsed.start,
+        interval: parsed.interval,
+        width: parsed.resolution,
+        height: tileHeight,
+      };
+    },
+
+    updateThumbnail(e) {
+      const seekBar = e.currentTarget;
+      const config = this.spriteConfig;
+      if (!seekBar || !config || !this.duration) return;
+
+      // 1. マウス位置から時間を算出
+      const rect = seekBar.getBoundingClientRect();
+      const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+      const percent = x / rect.width;
+      this.hoverTime = percent * this.duration;
+
+      // 2. インデックスの計算 (参考コードのロジック)[cite: 3]
+      const spriteIndex = Math.floor((this.hoverTime - config.start) / config.interval);
+      if (spriteIndex < 0) return;
+
+      // 3. 背景座標の計算
+      // スプライト画像は通常、横に10枚並んでいる構成を想定 (columns = 10)
+      const columns = 10; 
+      const row = Math.floor(spriteIndex / columns);
+      const col = spriteIndex % columns;
+
+      this.thumbnailStyle = {
+        display: 'block',
+        left: `${x}px`,
+        width: `${config.width}px`,
+        height: `${config.height}px`,
+        backgroundImage: `url(${config.url})`,
+        backgroundPosition: `-${col * config.width}px -${row * config.height}px`,
+        backgroundSize: `${config.width * columns}px auto`
+      };
+    },
   }
 };
 </script>
@@ -456,4 +552,23 @@ export default {
 .time-display { font-size: 13px; font-family: monospace; }
 
 .volume-bar { width: 60px; cursor: pointer; }
+
+.thumbnail-preview {
+  position: absolute;
+  /* 1. マウスイベントを完全に透過させる（最重要） */
+  pointer-events: none !important; 
+  
+  /* 2. 配置の基準を「下端からの距離」にする */
+  bottom: 76px; 
+  
+  /* 3. 左端（left: 0）をデフォルトにし、JSで動的に上書きする */
+  left: 0;
+  
+  /* 4. サムネイルの「中央」が指定した left 座標に来るように調整 */
+  transform: translateX(-50%);
+  
+  border: 2px solid #fff;
+  z-index: 1000;
+  display: none; /* JSで計算されるまで隠す */
+}
 </style>
