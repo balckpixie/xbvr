@@ -418,37 +418,49 @@ export default {
       };
     },
 
-    updateThumbnail(e) {
-      const seekBar = e.currentTarget;
-      const config = this.spriteConfig;
-      if (!seekBar || !config || !this.duration) return;
+updateThumbnail(e) {
+  const seekBar = this.$el.querySelector('.seek-bar');
+  const config = this.spriteConfig;
+  if (!seekBar || !config || !this.duration) return;
 
-      // 1. マウス位置から時間を算出
-      const rect = seekBar.getBoundingClientRect();
-      const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
-      const percent = x / rect.width;
-      this.hoverTime = percent * this.duration;
+  const rect = seekBar.getBoundingClientRect();
+  let x = e.clientX - rect.left;
+  x = Math.max(0, Math.min(x, rect.width));
+  
+  const percent = x / rect.width;
+  this.hoverTime = percent * this.duration;
 
-      // 2. インデックスの計算 (参考コードのロジック)[cite: 3]
-      const spriteIndex = Math.floor((this.hoverTime - config.start) / config.interval);
-      if (spriteIndex < 0) return;
+  // 1. 何番目のコマか計算
+  const spriteIndex = Math.floor((this.hoverTime - config.start) / config.interval);
+  if (spriteIndex < 0) return;
 
-      // 3. 背景座標の計算
-      // スプライト画像は通常、横に10枚並んでいる構成を想定 (columns = 10)
-      const columns = 10; 
-      const row = Math.floor(spriteIndex / columns);
-      const col = spriteIndex % columns;
+  // 2. 列数の特定（※ここが重要です）
+  // 1つの画像に4つ見える場合、横は2枚（columns = 2）である可能性が高いです。
+  // もしAPI側で列数が指定されていない場合、実際の画像の幅を確認する必要があります。
+  const columns = 2; // ここを実際の画像構成（横に何枚並んでいるか）に合わせて変更してください
+  
+  const row = Math.floor(spriteIndex / columns);
+  const col = spriteIndex % columns;
 
-      this.thumbnailStyle = {
-        display: 'block',
-        left: `${x}px`,
-        width: `${config.width}px`,
-        height: `${config.height}px`,
-        backgroundImage: `url(${config.url})`,
-        backgroundPosition: `-${col * config.width}px -${row * config.height}px`,
-        backgroundSize: `${config.width * columns}px auto`
-      };
-    },
+  // 3. 背景サイズの計算
+  // 1コマのサイズ(config.width) × 列数(columns) が background-size の横幅になります
+  const bgWidth = config.width * columns;
+
+  this.thumbnailStyle = {
+    display: 'block',
+    left: `${x}px`,
+    width: `${config.width}px`,
+    height: `${config.height}px`,
+    backgroundImage: `url(${config.url})`,
+    // 指定したコマの位置まで背景をずらす
+    backgroundPosition: `-${col * config.width}px -${row * config.height}px`,
+    // 全体のサイズを「1コマの幅×列数」に強制固定する
+    backgroundSize: `${bgWidth}px auto`,
+    opacity: 1,
+    pointerEvents: 'none' // ちらつき防止のダメ押し
+  };
+},
+
   }
 };
 </script>
