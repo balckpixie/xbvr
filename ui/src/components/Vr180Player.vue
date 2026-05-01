@@ -22,7 +22,7 @@
           <input 
             type="range" 
             class="seek-bar" 
-            step="0.1"
+            step="0.01"
             :min="0" 
             :max="duration" 
             :value="currentTime"
@@ -408,59 +408,78 @@ export default {
         tileHeight = (file.video_height / file.video_width) * parsed.resolution;
       }
 
-      this.spriteConfig = {
-        url: thumbnailUrl,
-        duration: file.duration,
-        start: parsed.start,
-        interval: parsed.interval,
-        width: parsed.resolution,
-        height: tileHeight,
+      // --- 画像サイズを取得する処理 ---
+      const img = new Image();
+      img.src = thumbnailUrl;
+      
+      img.onload = () => {
+        // 画像全体のサイズを取得
+        const fullWidth = img.naturalWidth;
+        const fullHeight = img.naturalHeight;
+
+        // 画像サイズから列数・行数を逆算
+        const columns = Math.floor(fullWidth / parsed.resolution);
+        const rows = Math.floor(fullHeight / tileHeight);
+
+        // 確定した情報を保持
+        this.spriteConfig = {
+          url: thumbnailUrl,
+          duration: file.duration,
+          start: parsed.start,
+          interval: parsed.interval,
+          width: parsed.resolution, // 1コマの幅
+          height: tileHeight,       // 1コマの高さ
+          columns: columns,         // 計算された列数
+          totalWidth: fullWidth,    // 画像全体の幅
+          totalHeight: fullHeight   // 画像全体の高さ
+        };
+      };
+
+      img.onerror = () => {
+        console.error("サムネイル画像の読み込みに失敗しました。");
+        this.spriteConfig = null;
       };
     },
 
-updateThumbnail(e) {
-  const seekBar = this.$el.querySelector('.seek-bar');
-  const config = this.spriteConfig;
-  if (!seekBar || !config || !this.duration) return;
 
-  const rect = seekBar.getBoundingClientRect();
-  let x = e.clientX - rect.left;
-  x = Math.max(0, Math.min(x, rect.width));
-  
-  const percent = x / rect.width;
-  this.hoverTime = percent * this.duration;
+    updateThumbnail(e) {
+      const seekBar = this.$el.querySelector('.seek-bar');
+      const config = this.spriteConfig;
+      if (!seekBar || !config || !this.duration) return;
 
-  // 1. 何番目のコマか計算
-  const spriteIndex = Math.floor((this.hoverTime - config.start) / config.interval);
-  if (spriteIndex < 0) return;
+      const rect = seekBar.getBoundingClientRect();
+      let x = e.clientX - rect.left;
+      x = Math.max(0, Math.min(x, rect.width));
+      
+      const percent = x / rect.width;
+      this.hoverTime = percent * this.duration;
 
-  // 2. 列数の特定（※ここが重要です）
-  // 1つの画像に4つ見える場合、横は2枚（columns = 2）である可能性が高いです。
-  // もしAPI側で列数が指定されていない場合、実際の画像の幅を確認する必要があります。
-  const columns = 2; // ここを実際の画像構成（横に何枚並んでいるか）に合わせて変更してください
-  
-  const row = Math.floor(spriteIndex / columns);
-  const col = spriteIndex % columns;
+// マウス位置から求めた時間に、スプライトの開始オフセットを考慮
+  // 微小な誤差（0.0001）を加えることで、境界での切り捨てミスを防ぐ
+  const adjustedTime = Math.max(0, this.hoverTime - config.start);
+  const spriteIndex = Math.floor((adjustedTime + 0.0001) / config.interval);
 
-  // 3. 背景サイズの計算
-  // 1コマのサイズ(config.width) × 列数(columns) が background-size の横幅になります
-  const bgWidth = config.width * columns;
+  // 総コマ数を超えないようにガード
+  const maxIndex = (config.columns * (config.rows || config.columns)) - 1;
+  const safeIndex = Math.max(0, Math.min(spriteIndex, maxIndex));
 
-  this.thumbnailStyle = {
-    display: 'block',
-    left: `${x}px`,
-    width: `${config.width}px`,
-    height: `${config.height}px`,
-    backgroundImage: `url(${config.url})`,
-    // 指定したコマの位置まで背景をずらす
-    backgroundPosition: `-${col * config.width}px -${row * config.height}px`,
-    // 全体のサイズを「1コマの幅×列数」に強制固定する
-    backgroundSize: `${bgWidth}px auto`,
-    opacity: 1,
-    pointerEvents: 'none' // ちらつき防止のダメ押し
-  };
-},
+  const col = safeIndex % config.columns;
+  const row = Math.floor(safeIndex / config.columns);
 
+      this.thumbnailStyle = {
+        display: 'block',
+        left: `${x}px`,
+        width: `${config.width}px`,
+        height: `${config.height}px`,
+        backgroundImage: `url(${config.url})`,
+        // 1コマのサイズ分だけ背景をマイナス方向にずらす
+        backgroundPosition: `-${col * config.width}px -${row * config.height}px`,
+        // 重要：背景全体のサイズを「1コマの幅 × 列数」に指定して拡大させる
+        backgroundSize: `${config.totalWidth}px ${config.totalHeight}px`,
+        opacity: 1,
+        pointerEvents: 'none'
+      };
+    },
   }
 };
 </script>
