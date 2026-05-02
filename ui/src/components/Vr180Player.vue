@@ -22,13 +22,13 @@
           <input 
             type="range" 
             class="seek-bar" 
-            step="0.01"
+            step="0.001"
             :min="0" 
             :max="duration" 
             :value="currentTime"
             @mousedown="onSeekStart"
             @input="onSeekInput"
-            @change="onSeekEnd"
+            @mouseup="onSeekEnd"
             @mousemove="updateThumbnail"
             @mouseleave="thumbnailStyle.display = 'none'"
           >
@@ -337,30 +337,31 @@ export default {
       this.handleMouseMove();
     },
 
-    // シークバーを離した時 (実際に動画の再生位置を確定)
-    onSeekEnd(e) {
-      const video = this.$refs.vrVideo;
-      if (!video || !Number.isFinite(this.duration)) {
-        this.isSeeking = false;
-        return;
-      }
+ onSeekEnd(e) {
+  const video = this.$refs.vrVideo;
+  const seekBar = this.$el.querySelector('.seek-bar');
+  if (!video || !seekBar || !Number.isFinite(this.duration)) {
+    this.isSeeking = false;
+    return;
+  }
 
-      // 1. input要素から直接値を取得（これが最も速い）
-      const seekValue = parseFloat(e.target.value);
+  // --- updateThumbnail と同じ計算ロジックを適用 ---
+  const rect = seekBar.getBoundingClientRect();
+  let x = e.clientX - rect.left;
+  x = Math.max(0, Math.min(x, rect.width));
 
-      // 2. 値が正当かチェック
-      if (Number.isFinite(seekValue)) {
-        video.currentTime = seekValue;
-        this.currentTime = seekValue;
-        console.log(`Seeked to: ${this.formatTime(seekValue)}`);
-      }
+  // ピクセルベースで時間を算出
+  const seekValue = (x * this.duration) / rect.width;
 
-      // 3. フラグ解除
-      this.isSeeking = false;
-      
-      // UIを表示し続けるタイマーを更新
-      this.handleMouseMove();
-    },
+  if (Number.isFinite(seekValue)) {
+    video.currentTime = seekValue;
+    this.currentTime = seekValue;
+    console.log(`Seeked (Sync) to: ${this.formatTime(seekValue)}`);
+  }
+
+  this.isSeeking = false;
+  this.handleMouseMove();
+},
 
     onVolumeChange(e) { /* ⑦ 音量変更 */ },
 
@@ -502,14 +503,9 @@ export default {
         displayLeft = rect.width + controlsPadding - halfThumbWidth;
       }
 
-      // const percent = seekBarPosX / rect.width;
-      // this.hoverTime = percent * this.duration;
-
-      this.hoverTime = seekBarPosX * this.duration / rect.width;
-      //console.log(`Mouse X: ${seekBarPosX}px, Percent: ${(percent * 100).toFixed(2)}%, Hover Time: ${this.formatTime(this.hoverTime)}`);
+      this.hoverTime = parseFloat(seekBarPosX * this.duration / rect.width);
       console.log(`Mouse X: ${seekBarPosX}px, Hover Time: ${this.formatTime(this.hoverTime)}`);
       
-
       // マウス位置から求めた時間に、スプライトの開始オフセットを考慮
       // 微小な誤差（0.0001）を加えることで、境界での切り捨てミスを防ぐ
       const adjustedTime = Math.max(0, this.hoverTime - config.start);
@@ -618,6 +614,11 @@ export default {
 
 /* シークバーの行 */
 .seek-bar-row { margin-bottom: 10px; }
+.seek-bar::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+}
 .seek-bar {
   width: 100%;
   margin: 0;        /* 隙間の原因になるため 0 に */
