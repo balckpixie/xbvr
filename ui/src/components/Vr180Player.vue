@@ -71,6 +71,12 @@
       @loadedmetadata="onLoadedMetadata"
       @timeupdate="onTimeUpdate"
     ></video>
+
+    <!-- ローディングオーバーレイ -->
+    <div v-if="isBuffering" class="loading-overlay">
+      <div class="spinner"></div>
+    </div>
+
   </div>
 </template>
 
@@ -89,6 +95,7 @@ export default {
       isPaused: true,
       isMuted: true,
       isSeeking: false, // シークバーをドラッグ中かどうか
+      isBuffering: false,  // 動画ロード（バッファリング）中
       uiVisible: true,  // UIの表示状態
       uiTimer: null,    // 非表示用タイマー
       currentTime: 0,
@@ -333,10 +340,24 @@ export default {
     // シークバーを離した時 (実際に動画の再生位置を確定)
     onSeekEnd(e) {
       const video = this.$refs.vrVideo;
-      if (video) {
-        video.currentTime = parseFloat(e.target.value);
+      if (!video || !Number.isFinite(this.duration)) {
+        this.isSeeking = false;
+        return;
       }
+
+      // 1. input要素から直接値を取得（これが最も速い）
+      const seekValue = parseFloat(e.target.value);
+
+      // 2. 値が正当かチェック
+      if (Number.isFinite(seekValue)) {
+        video.currentTime = seekValue;
+        this.currentTime = seekValue;
+      }
+
+      // 3. フラグ解除
       this.isSeeking = false;
+      
+      // UIを表示し続けるタイマーを更新
       this.handleMouseMove();
     },
 
@@ -355,6 +376,21 @@ export default {
       const video = this.$refs.vrVideo;
       if (video) {
         this.duration = video.duration;
+
+        const setBufferingTrue = () => { this.isBuffering = true; };
+        const setBufferingFalse = () => { this.isBuffering = false; };
+
+        video.addEventListener('waiting', setBufferingTrue);
+        video.addEventListener('seeking', setBufferingTrue);
+        video.addEventListener('playing', setBufferingFalse);
+        video.addEventListener('seeked', setBufferingFalse);
+
+        this.$once('hook:beforeDestroy', () => {
+          video.removeEventListener('waiting', setBufferingTrue);
+          video.removeEventListener('seeking', setBufferingTrue);
+          video.removeEventListener('playing', setBufferingFalse);
+          video.removeEventListener('seeked', setBufferingFalse);
+        });
       }
     },
 
@@ -601,5 +637,34 @@ export default {
   border: 2px solid #fff;
   z-index: 1000;
   display: none; /* JSで計算されるまで隠す */
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.2); /* 軽く暗くする */
+  pointer-events: none; /* 下の要素のクリックを邪魔しない */
+  z-index: 2000;
+}
+
+/* シンプルなスピナーの例 */
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid rgba(255, 255, 255, 0.3);
+  border-top: 5px solid #fff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 </style>
