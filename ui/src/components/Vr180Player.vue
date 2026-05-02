@@ -352,6 +352,7 @@ export default {
       if (Number.isFinite(seekValue)) {
         video.currentTime = seekValue;
         this.currentTime = seekValue;
+        console.log(`Seeked to: ${this.formatTime(seekValue)}`);
       }
 
       // 3. フラグ解除
@@ -484,27 +485,46 @@ export default {
       if (!seekBar || !config || !this.duration) return;
 
       const rect = seekBar.getBoundingClientRect();
-      let x = e.clientX - rect.left;
-      x = Math.max(0, Math.min(x, rect.width));
+      let seekBarPosX = e.clientX - rect.left;
+      seekBarPosX = Math.max(0, Math.min(seekBarPosX, rect.width));
       
-      const percent = x / rect.width;
-      this.hoverTime = percent * this.duration;
+      // --- はみ出し防止ロジックの追加 ---
+      const controlsPadding = 20;
+      const halfThumbWidth = config.width / 2;
+      let displayLeft = seekBarPosX;
 
-// マウス位置から求めた時間に、スプライトの開始オフセットを考慮
-  // 微小な誤差（0.0001）を加えることで、境界での切り捨てミスを防ぐ
-  const adjustedTime = Math.max(0, this.hoverTime - config.start);
-  const spriteIndex = Math.floor((adjustedTime + 0.0001) / config.interval);
+      // 左端の制限: 半分より左に行こうとしたら、左端（halfWidth）で止める
+      if (seekBarPosX < halfThumbWidth) {
+        displayLeft = halfThumbWidth + controlsPadding;
+      } 
+      // 右端の制限: 右端から半分より右に行こうとしたら、右端（width - halfWidth）で止める
+      else if (seekBarPosX > rect.width + controlsPadding - halfThumbWidth) {
+        displayLeft = rect.width + controlsPadding - halfThumbWidth;
+      }
 
-  // 総コマ数を超えないようにガード
-  const maxIndex = (config.columns * (config.rows || config.columns)) - 1;
-  const safeIndex = Math.max(0, Math.min(spriteIndex, maxIndex));
+      // const percent = seekBarPosX / rect.width;
+      // this.hoverTime = percent * this.duration;
 
-  const col = safeIndex % config.columns;
-  const row = Math.floor(safeIndex / config.columns);
+      this.hoverTime = seekBarPosX * this.duration / rect.width;
+      //console.log(`Mouse X: ${seekBarPosX}px, Percent: ${(percent * 100).toFixed(2)}%, Hover Time: ${this.formatTime(this.hoverTime)}`);
+      console.log(`Mouse X: ${seekBarPosX}px, Hover Time: ${this.formatTime(this.hoverTime)}`);
+      
+
+      // マウス位置から求めた時間に、スプライトの開始オフセットを考慮
+      // 微小な誤差（0.0001）を加えることで、境界での切り捨てミスを防ぐ
+      const adjustedTime = Math.max(0, this.hoverTime - config.start);
+      const spriteIndex = Math.floor((adjustedTime + 0.0001) / config.interval);
+
+      // 総コマ数を超えないようにガード
+      const maxIndex = (config.columns * (config.rows || config.columns)) - 1;
+      const safeIndex = Math.max(0, Math.min(spriteIndex, maxIndex));
+
+      const col = safeIndex % config.columns;
+      const row = Math.floor(safeIndex / config.columns);
 
       this.thumbnailStyle = {
         display: 'block',
-        left: `${x}px`,
+        left: `${displayLeft}px`,
         width: `${config.width}px`,
         height: `${config.height}px`,
         backgroundImage: `url(${config.url})`,
@@ -598,7 +618,12 @@ export default {
 
 /* シークバーの行 */
 .seek-bar-row { margin-bottom: 10px; }
-.seek-bar { width: 100%; cursor: pointer; }
+.seek-bar {
+  width: 100%;
+  margin: 0;        /* 隙間の原因になるため 0 に */
+  padding: 0;       /* 隙間の原因になるため 0 に */
+  cursor: pointer;
+}
 
 /* ボタンの行 */
 .button-row { justify-content: space-between; }
@@ -637,6 +662,7 @@ export default {
   border: 2px solid #fff;
   z-index: 1000;
   display: none; /* JSで計算されるまで隠す */
+  box-sizing: border-box; /* 境界線が幅に含まれるようにする */
 }
 
 .loading-overlay {
