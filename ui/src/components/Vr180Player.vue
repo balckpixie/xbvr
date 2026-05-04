@@ -16,7 +16,10 @@
             class="thumbnail-preview" 
             :style="thumbnailStyle"
           >
-            <span class="thumbnail-time">{{ formatTime(hoverTime) }}</span>
+            <!-- 画像エリアのすぐ下に時間を配置 -->
+            <div class="thumbnail-time-container">
+              <span class="thumbnail-time">{{ formatTime(hoverTime) }}</span>
+            </div>
           </div>
 
           <input 
@@ -646,24 +649,44 @@ export default {
 
 .volume-bar { width: 60px; cursor: pointer; }
 
+/* スプライト画像を表示するメインコンテナ */
+/* スプライト画像を表示するメインコンテナ */
 .thumbnail-preview {
   position: absolute;
-  /* 1. マウスイベントを完全に透過させる（最重要） */
   pointer-events: none !important; 
-  
-  /* 2. 配置の基準を「下端からの距離」にする */
-  bottom: 76px; 
-  
-  /* 3. 左端（left: 0）をデフォルトにし、JSで動的に上書きする */
+  /* 1. 全体をさらに上に浮かせる (85px から 110px 程度へ) */
+  bottom: 110px; 
   left: 0;
-  
-  /* 4. サムネイルの「中央」が指定した left 座標に来るように調整 */
   transform: translateX(-50%);
-  
-  border: 2px solid #fff;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  border-radius: 8px;
   z-index: 1000;
-  display: none; /* JSで計算されるまで隠す */
-  box-sizing: border-box; /* 境界線が幅に含まれるようにする */
+  display: none;
+  box-sizing: border-box;
+  overflow: visible; /* 時間表示を枠外に出すために必須 */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+}
+
+/* 時間表示のコンテナ */
+.thumbnail-time-container {
+  position: absolute;
+  /* 2. 画像の下端から少し隙間を空けて配置 (例: -30px) */
+  bottom: -32px; 
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  text-align: center;
+}
+
+/* 時間テキスト自体のスタイル */
+.thumbnail-time {
+  background: rgba(0, 0, 0, 0.7); /* 少し濃くして視認性アップ */
+  color: #fff;
+  padding: 4px 10px; /* 少し大きくして画像に寄せすぎない */
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: bold;
+  font-family: monospace; /* 数字の幅を一定にする[cite: 1] */
 }
 
 .loading-overlay {
