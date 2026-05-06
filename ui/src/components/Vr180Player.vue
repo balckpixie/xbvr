@@ -11,7 +11,12 @@
         <div class="loader"></div>
       </div>
 
-      <div class="vr-controls" :class="{ 'vr-controls-hide': !uiVisible }">
+      <div
+        class="vr-controls"
+        :class="{ 'vr-controls-hide': !uiVisible }"
+        @mousedown.stop
+        @mouseup.stop
+      >
         
         <div class="control-row seek-bar-row" @mousedown.stop>
           <!-- サムネイルプレビュー: hoverTime を表示 -->
@@ -456,10 +461,22 @@ export default {
     handleResize() {
       const container = this.$el;
       if (!container || !this.vr.renderer) return;
-      let width = container.clientWidth;
-      let height = container.clientHeight;
-      const maxHeight = window.innerHeight * 0.8;
-      if (height > maxHeight) height = maxHeight;
+      
+      // 全画面表示中かどうかを判定
+      const isFull = !!document.fullscreenElement;
+
+      let width, height;
+
+      if (isFull) {
+        // 全画面時はブラウザの表示領域いっぱいに設定
+        width = window.innerWidth;
+        height = window.innerHeight;
+      } else {
+        width = container.clientWidth;
+        height = container.clientHeight;
+        const maxHeight = window.innerHeight * 0.8;
+        if (height > maxHeight) height = maxHeight;
+      }
       if (width === 0 || height === 0) return;
 
       this.vr.renderer.setSize(width, height, false);
