@@ -279,8 +279,8 @@ export default {
 
       // 標準のズーム（前後移動）の設定
       this.vr.controls.enableZoom = true;
-      this.vr.controls.minDistance = 100;
-      this.vr.controls.maxDistance = 800;
+      this.vr.controls.minDistance = 10;
+      this.vr.controls.maxDistance = 1000;
       this.vr.controls.zoomSpeed = 2.0;// ズームの速さも調整可能（必要に応じて）
 
       // Ctrl + ホイールで FOV を変更するためのイベントリスナー
