@@ -1,6 +1,10 @@
 <template>
   <div class="vr-player-wrapper">
-    <div class="vr-canvas-container" @mousemove="handleMouseMove">
+    <div class="vr-canvas-container"
+      @mousedown="onCanvasMouseDown"
+      @mousemove="onCanvasMouseMove"
+      @mouseup="onCanvasMouseUp"
+      >
       <canvas ref="vrCanvas" class="vr-canvas"></canvas>
       
       <div v-if="!isReady" class="vr-loading">
@@ -40,26 +44,36 @@
         <div class="control-row button-row" @mousedown.stop>
           <div class="left-controls">
             <button class="ctrl-btn" @click="togglePlay">
-              <span v-if="isPaused">▶</span><span v-else>||</span>
+              <span class="material-icons">{{ isPaused ? 'play_arrow' : 'pause' }}</span>
             </button>
-            <button class="ctrl-btn" @click="onStop">■</button>
-            <button class="ctrl-btn" @click="onRewind">⏪</button>
-            <button class="ctrl-btn" @click="onFastForward">⏩</button>
+            <button class="ctrl-btn" @click="onStop">
+              <span class="material-icons">stop</span>
+            </button>
+            <button class="ctrl-btn" @click="onRewind">
+              <span class="material-icons">replay_10</span>
+            </button>
+            <button class="ctrl-btn" @click="onFastForward">
+              <span class="material-icons">forward_10</span>
+            </button>
             <span class="time-display">
               {{ formatTime(currentTime) }} / {{ formatTime(duration) }}
             </span>
           </div>
 
           <div class="right-controls">
-            <button class="ctrl-btn" @click="onRecenter">Recenter</button>
+            <button class="ctrl-btn" @click="onRecenter" title="Recenter">
+              <span class="material-icons">filter_center_focus</span>
+            </button>
             <button class="ctrl-btn" :class="{ 'is-active': isMuted }" @click="onToggleMute">
-              <span v-if="isMuted">🔇 Muted</span>
-              <span v-else>🔊 Mute</span>
+              <span class="material-icons">{{ isMuted ? 'volume_off' : 'volume_up' }}</span>
             </button>
             <input type="range" class="volume-bar" min="0" max="1" step="0.1" @input="onVolumeChange">
-            <button class="ctrl-btn" @click="onToggleFullScreen">Full</button>
+            <button class="ctrl-btn" @click="onToggleFullScreen">
+              <span class="material-icons">fullscreen</span>
+            </button>
           </div>
         </div>
+
       </div>
     </div>
 
@@ -99,6 +113,8 @@ export default {
       isMuted: true,
       isSeeking: false, // シークバーをドラッグ中かどうか
       isBuffering: false,  // 動画ロード（バッファリング）中
+      isDragging: false,
+      mouseMoved: false,
       uiVisible: true,  // UIの表示状態
       uiTimer: null,    // 非表示用タイマー
       currentTime: 0,
@@ -130,8 +146,8 @@ export default {
     //fileId: 'updateVideoSource'
     file: {
       immediate: true,
-      handler(newFile) {
-        if (newFile) {
+      handler(newFile, oldFile) {
+        if (newFile && (!oldFile || newFile.id !== oldFile.id)) {
           this.updateVideoSource(newFile);
         }
       }
@@ -139,7 +155,9 @@ export default {
   },
   mounted() {
     this.initThree();
-    this.updateVideoSource();
+    if (this.file) {
+      this.updateVideoSource(this.file);
+    }
     
     this.resizeObserver = new ResizeObserver(() => {
       this.handleResize();
@@ -219,7 +237,7 @@ export default {
 
       const material = new THREE.MeshBasicMaterial({ map: texture });
       const mesh = new THREE.Mesh(geometry, material);
-      mesh.rotation.y = Math.PI / 2;
+      mesh.rotation.y = (-1) * Math.PI / 2;
       this.vr.scene.add(mesh);
     },
 
@@ -246,7 +264,23 @@ export default {
         video.pause();
       }
     },
-
+    onCanvasMouseDown() {
+      this.isDragging = true;
+      this.mouseMoved = false; // 押し下げた瞬間は移動していない
+    },
+    onCanvasMouseMove() {
+      if (this.isDragging) {
+        this.mouseMoved = true; // マウスが動いたのでドラッグと判定
+      }
+      this.handleMouseMove(); // UI表示用
+    },
+    onCanvasMouseUp() {
+      this.isDragging = false;
+      // マウスが動いていない（純粋なクリック）場合のみ再生/一時停止
+      if (!this.mouseMoved) {
+        this.togglePlay();
+      }
+    },
     handleMouseMove() {
       this.uiVisible = true;
       if (this.uiTimer) clearTimeout(this.uiTimer);
@@ -540,6 +574,8 @@ export default {
 </script>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+
 .vr-player-wrapper {
   position: relative;
   width: 100%;
@@ -634,20 +670,33 @@ export default {
 .left-controls, .right-controls { display: flex; align-items: center; gap: 10px; }
 
 .ctrl-btn {
-  background: rgba(255, 255, 255, 0.1);
+  background: transparent; /* 背景をスッキリさせる */
   color: white;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  padding: 5px 12px;
+  border: none; /* 枠線を消してモダンに */
+  padding: 4px;
   cursor: pointer;
-  border-radius: 4px;
-  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s ease, color 0.2s;
 }
 
-.ctrl-btn:hover { background: rgba(255, 255, 255, 0.3); }
+.ctrl-btn:hover {
+  color: #00e5ff; /* ホバー時にアクセントカラー */
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%; /* 円形のホバーエフェクト */
+}
+
 
 .time-display { font-size: 13px; font-family: monospace; }
 
-.volume-bar { width: 60px; cursor: pointer; }
+/* ボリュームバーを少しスリムに */
+.volume-bar {
+  width: 80px;
+  height: 4px;
+  cursor: pointer;
+  accent-color: #00e5ff; /* スライダーの色も合わせる */
+}
 
 /* スプライト画像を表示するメインコンテナ */
 /* スプライト画像を表示するメインコンテナ */
@@ -717,4 +766,11 @@ export default {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+
+.material-icons {
+  font-size: 24px; /* アイコンの基本サイズ */
+}
+
+
 </style>
