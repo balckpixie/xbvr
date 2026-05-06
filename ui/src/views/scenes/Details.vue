@@ -1283,7 +1283,7 @@ export default {
     },
     playFile (file) {
       if (this.activeMedia === 0) {
-        this.activeMedia = 1
+        this.activeMedia = 2
       }
   
       // 既存プレイヤー
