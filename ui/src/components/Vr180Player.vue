@@ -214,6 +214,13 @@ export default {
       this.vr.controls.maxDistance = 800;
       this.vr.controls.enableDamping = false;
       this.vr.controls.enablePan = false;
+      // --- なめらか動作の設定 ---
+      // 慣性（ズームや回転を止めた後の余韻）を有効にする
+      this.vr.controls.enableDamping = true;
+      // 慣性の強さ (0.0 ～ 1.0)。値が小さいほど「ぬるっ」と動きます
+      this.vr.controls.dampingFactor = 0.05;
+      // ズームの速さも調整可能（必要に応じて）
+      this.vr.controls.zoomSpeed = 2.0;
     },
 
     initVRMesh() {
