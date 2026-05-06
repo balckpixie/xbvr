@@ -66,8 +66,40 @@
           </div>
 
           <div class="right-controls">
-            <button class="ctrl-btn" @click="onRecenter" title="Recenter">
-              <span class="material-icons">filter_center_focus</span>
+            <!-- 背面映像の表示切替ボタン -->
+            <button 
+              class="ctrl-btn" 
+              :class="{ 'is-active': isRearVisible }"
+              @click.stop="toggleRearMesh" 
+              title="背面映像の表示/非表示"
+            >
+              <span class="material-icons">
+                {{ isRearVisible ? 'visibility' : 'visibility_off' }}
+              </span>
+            </button>
+
+            <!-- 1. 標準表示ボタン（広角）：広い範囲を表現 -->
+            <button 
+              class="ctrl-btn" 
+              :class="{ 'is-active': !isDistortionCorrected }"
+              @click.stop="setDistortion(false)" 
+              title="標準表示 (広角)"
+            >
+              <span class="material-icons">view_in_ar</span>
+            </button>
+
+            <!-- 2. ゆがみ補正ボタン (ズーム)：焦点を絞る表現 -->
+            <button 
+              class="ctrl-btn" 
+              :class="{ 'is-active': isDistortionCorrected }"
+              @click.stop="setDistortion(true)" 
+              title="ゆがみ補正 (ズーム)"
+            >
+              <span class="material-icons">center_focus_strong</span>
+            </button>
+            
+            <button class="ctrl-btn" @click.stop="onRecenter" title="正面に戻す">
+              <span class="material-icons">home</span>
             </button>
             <button class="ctrl-btn" :class="{ 'is-active': isMuted }" @click="onToggleMute">
               <span class="material-icons">{{ isMuted ? 'volume_off' : 'volume_up' }}</span>
@@ -116,14 +148,20 @@ export default {
       isReady: false,
       isPaused: true,
       isMuted: true,
+      currentVolume: 1.0,   // 現在の音量（0.0 〜 1.0）
+      lastVolume: 1.0,       // ミュート解除時に戻すための音量保存用
       isSeeking: false, // シークバーをドラッグ中かどうか
       isBuffering: false,  // 動画ロード（バッファリング）中
       isDragging: false,
+      isRearVisible: true, // 初期状態は表示
       mouseMoved: false,
       uiVisible: true,  // UIの表示状態
       uiTimer: null,    // 非表示用タイマー
       currentTime: 0,
       duration: 0,
+      isDistortionCorrected: false,
+      defaultFov: 75,   // 標準の視野角（少しゆがむが広い）
+      correctedFov: 50, // 補正後の視野角（ゆがみが少なく自然）
       vr: { 
         renderer: null, 
         scene: null, 
@@ -171,9 +209,16 @@ export default {
     
     window.addEventListener('resize', this.handleResize);
   },
+
   beforeDestroy() {
     window.removeEventListener('resize', this.handleResize);
     if (this.resizeObserver) this.resizeObserver.disconnect();
+
+    const canvas = this.vr.renderer?.domElement;
+    if (canvas) {
+      canvas.removeEventListener('wheel', this.onDocumentMouseWheel);
+    }
+
     this.dispose();
   },
 
@@ -183,6 +228,14 @@ export default {
       if (this.vr.renderer) {
         this.vr.renderer.dispose();
         this.vr.renderer.forceContextLoss();
+      }
+      if (this.vr.frontMesh) {
+        this.vr.frontMesh.geometry.dispose();
+        this.vr.frontMesh.material.dispose();
+      }
+      if (this.vr.rearMesh) {
+        this.vr.rearMesh.geometry.dispose();
+        this.vr.rearMesh.material.dispose();
       }
     },
 
@@ -197,8 +250,15 @@ export default {
     },
 
     initBaseScene(canvas) {
-      this.vr.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-      this.vr.renderer.setPixelRatio(window.devicePixelRatio);
+      // this.vr.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+      this.vr.renderer = new THREE.WebGLRenderer({
+        canvas,
+        antialias: false, // ここをfalseにする
+        precision: 'mediump' // 'highp'（高精度）から'mediump'（中精度）へ下げる
+      });
+
+      //this.vr.renderer.setPixelRatio(window.devicePixelRatio);
+      this.vr.renderer.setPixelRatio(1.0);
       this.vr.renderer.outputColorSpace = THREE.SRGBColorSpace;
       this.vr.scene = new THREE.Scene();
       this.vr.camera = new THREE.PerspectiveCamera(60, 1, 1, 20000);
@@ -209,48 +269,79 @@ export default {
     initControls(canvas) {
       this.vr.controls = new OrbitControls(this.vr.camera, canvas);
       this.vr.controls.rotateSpeed = -0.5;
+      this.vr.controls.enablePan = false;
+
+      // --- なめらか動作の設定 ---
+      this.vr.controls.enableDamping = true;// 慣性（ズームや回転を止めた後の余韻）を有効にする
+      this.vr.controls.dampingFactor = 0.05;// 慣性の強さ (0.0 ～ 1.0)。値が小さいほど「ぬるっ」と動きます 
+
+      this.vr.controls.target.set(0, 0, 0);
+
+      // 標準のズーム（前後移動）の設定
       this.vr.controls.enableZoom = true;
       this.vr.controls.minDistance = 100;
       this.vr.controls.maxDistance = 800;
-      this.vr.controls.enableDamping = false;
-      this.vr.controls.enablePan = false;
-      // --- なめらか動作の設定 ---
-      // 慣性（ズームや回転を止めた後の余韻）を有効にする
-      this.vr.controls.enableDamping = true;
-      // 慣性の強さ (0.0 ～ 1.0)。値が小さいほど「ぬるっ」と動きます
-      this.vr.controls.dampingFactor = 0.05;
-      // ズームの速さも調整可能（必要に応じて）
-      this.vr.controls.zoomSpeed = 2.0;
+      this.vr.controls.zoomSpeed = 2.0;// ズームの速さも調整可能（必要に応じて）
+
+      // Ctrl + ホイールで FOV を変更するためのイベントリスナー
+      canvas.addEventListener('wheel', this.onDocumentMouseWheel, { passive: false });
     },
 
     initVRMesh() {
       const video = this.$refs.vrVideo;
-      const geometry = new THREE.SphereGeometry(1000, 60, 40);
-      geometry.scale(-1, 1, 1);
-
-      const uvs = geometry.attributes.uv;
-      for (let i = 0; i < uvs.count; i++) {
-        let u = uvs.getX(i);
-        if (u <= 0.5) {
-          uvs.setX(i, u);
-        } else {
-          uvs.setX(i, 1.0 - u);
-        }
-      }
-      uvs.needsUpdate = true;
-
+      if (!video) return;
+      
+      // 1. テクスチャの設定（以前のコードの設定を継承）
       const texture = new THREE.VideoTexture(video);
       texture.colorSpace = THREE.SRGBColorSpace;
       texture.wrapS = THREE.ClampToEdgeWrapping;
       texture.minFilter = texture.magFilter = THREE.LinearFilter;
-      
-      // テクスチャを保持しておく
+      texture.generateMipmaps = false; // ミップマップ生成をオフにしてメモリ節約
+
       this.vr.videoTexture = texture;
 
       const material = new THREE.MeshBasicMaterial({ map: texture });
-      const mesh = new THREE.Mesh(geometry, material);
-      mesh.rotation.y = (-1) * Math.PI / 2;
-      this.vr.scene.add(mesh);
+
+      /**
+       * SBS映像の左半分をマッピングする共通関数
+       * @param {THREE.BufferGeometry} geometry - 対象のジオメトリ
+       * @param {boolean} isMirrored - 左右反転するかどうか
+       */
+      const applySBSUVMapping = (geometry, isMirrored = false) => {
+        const uvs = geometry.attributes.uv;
+        for (let i = 0; i < uvs.count; i++) {
+          let u = uvs.getX(i);
+          
+          // 反転フラグがtrueなら (1.0 - u)、通常なら u を使用
+          const targetU = isMirrored ? (1.0 - u) : u;
+          
+          // 左半分(0.0 - 0.5)の領域へマッピング
+          uvs.setX(i, targetU * 0.5);
+        }
+        uvs.needsUpdate = true;
+      };
+
+      // --- 前面メッシュ (Front) ---
+      const frontGeom = new THREE.SphereGeometry(1000, 32, 24, Math.PI / 2, Math.PI);
+      frontGeom.scale(-1, 1, 1);
+      applySBSUVMapping(frontGeom, false);
+
+      this.vr.frontMesh = new THREE.Mesh(frontGeom, material);
+      // rotation.y を 0（または消去）にすることで、デフォルトのカメラ正面と一致させます
+      this.vr.frontMesh.rotation.y = 0; 
+      this.vr.scene.add(this.vr.frontMesh);
+
+      // --- 背面メッシュ (Rear) ---
+      const rearGeom = new THREE.SphereGeometry(1000, 32, 24, (-1) * Math.PI / 2, Math.PI);
+      rearGeom.scale(-1, 1, 1);
+      applySBSUVMapping(rearGeom, true);
+
+      this.vr.rearMesh = new THREE.Mesh(rearGeom, material);
+      this.vr.rearMesh.rotation.y = 0;
+      this.vr.rearMesh.visible = this.isRearVisible;
+      this.vr.scene.add(this.vr.rearMesh);
+
+      this.vr.commonMaterial = material;
     },
 
     updateVideoSource(file) {
@@ -268,6 +359,29 @@ export default {
       });
     },
 
+    /**
+     * ゆがみ補正モードを直接設定する
+     * @param {boolean} corrected - true: 補正(ズーム), false: 標準(広角)
+     */
+    setDistortion(corrected) {
+      if (!this.vr.camera) return;
+
+      this.isDistortionCorrected = corrected;
+      
+      // ターゲットとなるFOVを決定
+      const targetFov = this.isDistortionCorrected ? this.correctedFov : this.defaultFov;
+
+      // カメラのFOVを更新
+      this.vr.camera.fov = targetFov;
+      this.vr.camera.updateProjectionMatrix();
+      
+      // ズーム時の最小距離制限を調整
+      if (this.isDistortionCorrected) {
+        this.vr.controls.minDistance = 200;
+      } else {
+        this.vr.controls.minDistance = 100;
+      }
+    },
     togglePlay() {
       const video = this.$refs.vrVideo;
       if (video.paused) {
@@ -332,12 +446,38 @@ export default {
       this.handleMouseMove();
     },
 
+    // 表示切り替えメソッド
+    // toggleRearMesh() {
+    //   if (!this.vr.rearMesh) return;
+      
+    //   this.isRearVisible = !this.isRearVisible;
+    //   this.vr.rearMesh.visible = this.isRearVisible;
+    // },
+    toggleRearMesh() {
+      if (!this.vr.rearMesh) return;
+      
+      this.isRearVisible = !this.isRearVisible;
+      this.vr.rearMesh.visible = this.isRearVisible;
+
+      // 負荷対策：非表示のときは、背面メッシュからマテリアルを外す
+      // これにより、GPUは背面メッシュのためのテクスチャサンプリングを行わなくなります
+      // if (this.isRearVisible) {
+      //   this.vr.rearMesh.material = this.vr.commonMaterial; // 保持しておいたマテリアルを再割り当て
+      // } else {
+      //   this.vr.rearMesh.material = new THREE.MeshBasicMaterial({ color: 0x000000 }); // 軽量な黒マテリアルに差し替え
+      // }
+      if (this.isRearVisible) {
+        this.vr.scene.add(this.vr.rearMesh);
+      } else {
+        this.vr.scene.remove(this.vr.rearMesh);
+      }
+    },
     onRecenter() {
       if (this.vr.controls && this.vr.camera) {
-        // OrbitControls のターゲットと回転をリセット
         this.vr.controls.reset();
-        
-        // 参考ソースの初期座標 (100, 0, 0) にカメラを再配置
+        this.setDistortion(false); // 標準表示に戻す
+        this.vr.camera.fov = this.defaultFov;
+        this.vr.camera.updateProjectionMatrix();
         this.vr.camera.position.set(100, 0, 0);
         this.vr.camera.lookAt(0, 0, 0);
       }
@@ -346,12 +486,26 @@ export default {
 
     onToggleMute() {
       const video = this.$refs.vrVideo;
-      if (video) {
-        video.muted = !video.muted;
-        // データの isMuted 状態も更新（UI表示用）
-        this.isMuted = video.muted;
+      if (!video) return;
+
+      this.isMuted = !this.isMuted;
+      
+      if (this.isMuted) {
+        // ミュート時：現在の値を保存して0にする
+        this.lastVolume = this.currentVolume;
+        this.currentVolume = 0;
+      } else {
+        // 解除時：保存していた値に戻す（0だった場合は1.0にする）
+        this.currentVolume = this.lastVolume > 0 ? this.lastVolume : 1.0;
       }
-      this.handleMouseMove();
+
+      video.muted = this.isMuted;
+      video.volume = this.currentVolume;
+      
+      // スライダーの見た目も同期させる
+      const volumeBar = this.$el.querySelector('.volume-bar');
+      if (volumeBar) volumeBar.value = this.currentVolume;
+        this.handleMouseMove();
     },
 
     onToggleFullScreen() {
@@ -386,33 +540,73 @@ export default {
       this.handleMouseMove();
     },
 
- onSeekEnd(e) {
-  const video = this.$refs.vrVideo;
-  const seekBar = this.$el.querySelector('.seek-bar');
-  if (!video || !seekBar || !Number.isFinite(this.duration)) {
-    this.isSeeking = false;
-    return;
-  }
+    onSeekEnd(e) {
+      const video = this.$refs.vrVideo;
+      const seekBar = this.$el.querySelector('.seek-bar');
+      if (!video || !seekBar || !Number.isFinite(this.duration)) {
+        this.isSeeking = false;
+        return;
+      }
 
-  // --- updateThumbnail と同じ計算ロジックを適用 ---
-  const rect = seekBar.getBoundingClientRect();
-  let x = e.clientX - rect.left;
-  x = Math.max(0, Math.min(x, rect.width));
+      // --- updateThumbnail と同じ計算ロジックを適用 ---
+      const rect = seekBar.getBoundingClientRect();
+      let x = e.clientX - rect.left;
+      x = Math.max(0, Math.min(x, rect.width));
 
-  // ピクセルベースで時間を算出
-  const seekValue = (x * this.duration) / rect.width;
+      // ピクセルベースで時間を算出
+      const seekValue = (x * this.duration) / rect.width;
 
-  if (Number.isFinite(seekValue)) {
-    video.currentTime = seekValue;
-    this.currentTime = seekValue;
-    console.log(`Seeked (Sync) to: ${this.formatTime(seekValue)}`);
-  }
+      if (Number.isFinite(seekValue)) {
+        video.currentTime = seekValue;
+        this.currentTime = seekValue;
+        console.log(`Seeked (Sync) to: ${this.formatTime(seekValue)}`);
+      }
 
-  this.isSeeking = false;
-  this.handleMouseMove();
-},
+      this.isSeeking = false;
+      this.handleMouseMove();
+    },
 
-    onVolumeChange(e) { /* ⑦ 音量変更 */ },
+    onDocumentMouseWheel(event) {
+      // Ctrlキーが押されている場合のみ FOV を変更
+      if (event.ctrlKey) {
+        event.preventDefault(); // ブラウザ全体のズームを防止
+        
+        // OrbitControls のズームを一時的に無効化
+        this.vr.controls.enableZoom = false;
+
+        const zoomStep = 2; // 1回で変化させるFOV量
+        if (event.deltaY < 0) {
+          // ホイール上：FOVを小さく（ゆがみ補正/ズーム）
+          this.vr.camera.fov = Math.max(10, this.vr.camera.fov - zoomStep);
+        } else {
+          // ホイール下：FOVを大きく（広角）
+          this.vr.camera.fov = Math.min(120, this.vr.camera.fov + zoomStep);
+        }
+
+        this.vr.camera.updateProjectionMatrix();
+      } else {
+        // Ctrlが押されていない場合は OrbitControls のズーム（距離移動）を有効にする
+        this.vr.controls.enableZoom = true;
+      }
+    },
+
+    onVolumeChange(event) {
+      const video = this.$refs.vrVideo;
+      if (!video) return;
+
+      const val = parseFloat(event.target.value);
+      this.currentVolume = val;
+      video.volume = val;
+
+      // 音量が0より大きければミュートを自動解除、0ならミュート状態にする
+      if (val > 0) {
+        this.isMuted = false;
+        video.muted = false;
+      } else {
+        this.isMuted = true;
+        video.muted = true;
+      }
+    },
 
     // 秒(数)を 00:00 形式の文字列に変換する
     formatTime(seconds) {
@@ -456,13 +650,16 @@ export default {
     animate() {
       this.vr.animationId = requestAnimationFrame(this.animate);
       
-      // ビデオフレームの更新を強制
-      if (this.vr.videoTexture) {
-        this.vr.videoTexture.needsUpdate = true;
-      }
+// 1. 動画が一時停止中、かつカメラ操作（Controls）も動いていないなら描画をスキップ
+  const isVideoPlaying = !this.$refs.vrVideo.paused;
+  const isControlsChanging = this.vr.controls.enabled && this.vr.controls.isDirty; // 独自のフラグ管理が必要な場合あり
 
-      if (this.vr.controls) this.vr.controls.update();
-      if (this.vr.renderer) this.vr.renderer.render(this.vr.scene, this.vr.camera);
+  // シンプルな実装：動画が動いている時だけレンダリング
+  if (isVideoPlaying || this.needsUpdate) {
+    this.vr.controls.update();
+    this.vr.renderer.render(this.vr.scene, this.vr.camera);
+    this.needsUpdate = false; // 操作が終わったらfalseに戻す
+  }
     },
 
     handleResize() {
@@ -704,11 +901,15 @@ export default {
   justify-content: center;
   transition: transform 0.1s ease, color 0.2s;
 }
+.ctrl-btn.is-active {
+  color: #00e5ff; /* アクティブ時はシアンブルー */
+  transform: scale(1.1); /* 少しだけ大きくする */
+  transition: all 0.2s ease;
+}
 
 .ctrl-btn:hover {
-  color: #00e5ff; /* ホバー時にアクセントカラー */
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 50%; /* 円形のホバーエフェクト */
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
 }
 
 
