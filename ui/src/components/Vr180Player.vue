@@ -238,6 +238,19 @@ export default {
         this.vr.rearMesh.material.dispose();
       }
     },
+    
+    /**
+     * 指定した時間（秒）にシークする
+     * @param {number} time - 秒数
+     */
+    seekTo(time) {
+      const video = this.$refs.vrVideo;
+      if (video) {
+        video.currentTime = time;
+        
+        this.needsUpdate = true;
+      }
+    },
 
     initThree() {
       const canvas = this.$refs.vrCanvas;
@@ -279,7 +292,7 @@ export default {
 
       // 標準のズーム（前後移動）の設定
       this.vr.controls.enableZoom = true;
-      this.vr.controls.minDistance = 10;
+      this.vr.controls.minDistance = 0.1;
       this.vr.controls.maxDistance = 1000;
       this.vr.controls.zoomSpeed = 2.0;// ズームの速さも調整可能（必要に応じて）
 
@@ -881,9 +894,10 @@ export default {
 }
 .seek-bar {
   width: 100%;
-  margin: 0;        /* 隙間の原因になるため 0 に */
-  padding: 0;       /* 隙間の原因になるため 0 に */
   cursor: pointer;
+  height: 4px;            /* 見た目の高さ */
+  padding: 15px 0;        /* 上下に透明な余白を作り、クリック・ホバー判定を広げる */
+  margin: -15px 0;        /* 外側への影響を打ち消す */
 }
 
 /* ボタンの行 */

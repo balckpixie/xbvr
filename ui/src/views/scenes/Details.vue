@@ -1107,8 +1107,17 @@ export default {
       }
     },
     onThumbnailClicked(duration) {
+    // 既存プレイヤー
+      if ( this.activeMedia=== 1) {
           this.setCurrentTime(duration)
+      } else if (this.activeMedia === 2) {
+        // VRプレイヤー
+        if (this.$refs.vrPlayer) {
+          this.$refs.vrPlayer.seekTo(duration)
+        }
+      }
     },
+
 // Custom END
 
     setupPlayer()
