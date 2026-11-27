@@ -4,11 +4,10 @@
       v-for="(sample, idx) in samples"
       :key="idx"
       class="file-thumb-item"
-      :title="`Play from ${sample.timeLabel}`"
       @click.stop="$emit('thumbnail-clicked', sample.duration)"
     >
-      <img :src="sample.dataUrl" :alt="sample.timeLabel" />
-      <span class="file-thumb-time">{{ sample.timeLabel }}</span>
+      <img class="thumbsImage" :src="sample.dataUrl" :alt="sample.timeLabel" />
+      <div class="thumb-popup">{{ sample.timeLabel }}</div>
     </div>
   </div>
 </template>
@@ -25,7 +24,7 @@ export default {
     },
     maxCount: {
       type: Number,
-      default: 5
+      default: 8
     }
   },
   data () {
@@ -65,35 +64,45 @@ export default {
 
 .file-thumb-item {
   position: relative;
+  display: flex;
+  overflow: visible;
   cursor: pointer;
-  border-radius: 4px;
-  overflow: hidden;
-  border: 1px solid rgba(0, 0, 0, 0.15);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.thumbsImage {
+  width: 90px;
+  height: 90px;
+  object-fit: cover;
+  display: block;
+  border-radius: 6px;
+  transition: transform 0.2s ease;
 }
 
 .file-thumb-item:hover {
-  transform: scale(1.08);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  z-index: 10;
+}
+
+.file-thumb-item:hover .thumbsImage {
+  transform: scale(1.3);
   z-index: 2;
 }
 
-.file-thumb-item img {
-  display: block;
-  height: 54px;
-  width: auto;
-  object-fit: cover;
-}
-
-.file-thumb-time {
+.thumb-popup {
+  display: none;
   position: absolute;
-  right: 2px;
-  bottom: 2px;
+  top: -5px;
+  right: -10px;
   background: rgba(0, 0, 0, 0.75);
   color: #fff;
-  font-size: 10px;
-  line-height: 1.2;
-  padding: 1px 4px;
-  border-radius: 3px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 999;
+}
+
+.file-thumb-item:hover .thumb-popup {
+  display: block;
 }
 </style>

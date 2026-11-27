@@ -1,8 +1,9 @@
 package api
 
 import (
-	// "encoding/json"
+	"encoding/json"
 	// "fmt"
+	"math"
 	"net/http"
 	// "net/url"
 	// "regexp"
@@ -40,6 +41,14 @@ func (i ActorResource) WebService() *restful.WebService {
 		Metadata(restfulspec.KeyOpenAPITags, tags).
 		Writes(models.Actor{}))
 
+	ws.Route(ws.POST("/ratings/{actor-id}").To(i.setActorDetailedRatings).
+		Metadata(restfulspec.KeyOpenAPITags, tags).
+		Writes(models.Actor{}))
+
+	ws.Route(ws.POST("/genre_tags/{actor-id}").To(i.setActorGenreTags).
+		Metadata(restfulspec.KeyOpenAPITags, tags).
+		Writes(models.Actor{}))
+
 	return ws
 }
 
@@ -51,6 +60,18 @@ type RequestSetActorImage struct {
 type RequestSetActorImages struct {
 	ActorID uint   `json:"actor_id"`
 	Urls     []string `json:"urls"`
+}
+
+type RequestSetActorDetailedRatings struct {
+	RatingFace  *float64 `json:"rating_face"`
+	RatingStyle *float64 `json:"rating_style"`
+	RatingBust  *float64 `json:"rating_bust"`
+	RatingVibe  *float64 `json:"rating_vibe"`
+	StarRating  *float64 `json:"star_rating"`
+}
+
+type RequestSetActorGenreTags struct {
+	GenreTags []string `json:"genre_tags"`
 }
 // type RequestSearchActorImage struct {
 // 	ActorID uint   `json:"actor_id"`
@@ -121,6 +142,96 @@ func (i ActorResource) setActorFaceImage(req *restful.Request, resp *restful.Res
 
 	aa := models.ActionActor{ActorID: actor.ID, ActionType: "setimage", Source: "edit_actor", ChangedColumn: "face_image_url", NewValue: actor.FaceImageUrl}
 	aa.Save()
+	resp.WriteHeaderAndEntity(http.StatusOK, actor)
+}
+
+func (i ActorResource) setActorDetailedRatings(req *restful.Request, resp *restful.Response) {
+	actorID := req.PathParameter("actor-id")
+	var r RequestSetActorDetailedRatings
+	if err := req.ReadEntity(&r); err != nil {
+		log.Error(err)
+		resp.WriteError(http.StatusBadRequest, err)
+		return
+	}
+
+	db, _ := models.GetDB()
+	defer db.Close()
+
+	var actor models.Actor
+	if err := db.Where("id = ?", actorID).First(&actor).Error; err != nil {
+		resp.WriteError(http.StatusNotFound, err)
+		return
+	}
+
+	if r.RatingFace != nil {
+		actor.RatingFace = *r.RatingFace
+	}
+	if r.RatingStyle != nil {
+		actor.RatingStyle = *r.RatingStyle
+	}
+	if r.RatingBust != nil {
+		actor.RatingBust = *r.RatingBust
+	}
+	if r.RatingVibe != nil {
+		actor.RatingVibe = *r.RatingVibe
+	}
+
+	// 総合評価(StarRating)は顔・スタイル・胸・雰囲気の評価済み項目の平均から自動算出
+	sum := 0.0
+	count := 0
+	for _, v := range []float64{actor.RatingFace, actor.RatingStyle, actor.RatingBust, actor.RatingVibe} {
+		if v > 0 {
+			sum += v
+			count++
+		}
+	}
+	if count > 0 {
+		actor.StarRating = math.Round((sum/float64(count))*10) / 10
+	} else {
+		actor.StarRating = 0
+	}
+
+	if err := actor.Save(); err != nil {
+		log.Error(err)
+		resp.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+
+	resp.WriteHeaderAndEntity(http.StatusOK, actor)
+}
+
+func (i ActorResource) setActorGenreTags(req *restful.Request, resp *restful.Response) {
+	actorID := req.PathParameter("actor-id")
+	var r RequestSetActorGenreTags
+	if err := req.ReadEntity(&r); err != nil {
+		log.Error(err)
+		resp.WriteError(http.StatusBadRequest, err)
+		return
+	}
+
+	db, _ := models.GetDB()
+	defer db.Close()
+
+	var actor models.Actor
+	if err := db.Where("id = ?", actorID).First(&actor).Error; err != nil {
+		resp.WriteError(http.StatusNotFound, err)
+		return
+	}
+
+	tagsJSON, err := json.Marshal(r.GenreTags)
+	if err != nil {
+		log.Error(err)
+		resp.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+	actor.GenreTags = string(tagsJSON)
+
+	if err := actor.Save(); err != nil {
+		log.Error(err)
+		resp.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+
 	resp.WriteHeaderAndEntity(http.StatusOK, actor)
 }
 // func (i ActorResource) searchActorImage(req *restful.Request, resp *restful.Response) {

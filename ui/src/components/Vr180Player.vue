@@ -1,11 +1,32 @@
 <template>
   <div class="vr-player-wrapper">
     <div class="vr-canvas-container"
+      :class="{ 'is-flat': viewMode === 'flat' }"
       @mousedown="onCanvasMouseDown"
       @mousemove="onCanvasMouseMove"
       @mouseup="onCanvasMouseUp"
+      @contextmenu.prevent
       >
-      <canvas ref="vrCanvas" class="vr-canvas"></canvas>
+      <canvas v-show="viewMode === 'vr'" ref="vrCanvas" class="vr-canvas"></canvas>
+
+      <video
+        v-show="viewMode === 'flat'"
+        ref="vrVideo"
+        class="flat-video"
+        crossorigin="anonymous"
+        playsinline
+        muted
+        @play="isPaused = false"
+        @pause="isPaused = true"
+        @waiting="isBuffering = true"
+        @seeking="isBuffering = true"
+        @playing="isBuffering = false"
+        @seeked="isBuffering = false"
+        @canplay="isBuffering = false"
+        @loadedmetadata="onLoadedMetadata"
+        @timeupdate="onTimeUpdate"
+        @ended="$emit('ended')"
+      ></video>
       
       <div v-if="!isReady" class="vr-loading">
         <div class="loader"></div>
@@ -66,8 +87,19 @@
           </div>
 
           <div class="right-controls">
+            <!-- VR / Flat モード切替ボタン -->
+            <button
+              class="ctrl-btn mode-toggle-btn"
+              :class="{ 'is-active': viewMode === 'flat' }"
+              @click.stop="toggleViewMode"
+              :title="viewMode === 'vr' ? 'Flat (2D) モードに切替' : 'VR モードに切替'"
+            >
+              <span class="mode-badge">{{ viewMode === 'vr' ? 'VR' : 'Flat' }}</span>
+            </button>
+
             <!-- 背面映像の表示切替ボタン -->
-            <button 
+            <button
+              v-if="viewMode === 'vr'"
               class="ctrl-btn" 
               :class="{ 'is-active': isRearVisible }"
               @click.stop="toggleRearMesh" 
@@ -79,7 +111,8 @@
             </button>
 
             <!-- 1. 標準表示ボタン（広角）：広い範囲を表現 -->
-            <button 
+            <button
+              v-if="viewMode === 'vr'"
               class="ctrl-btn" 
               :class="{ 'is-active': !isDistortionCorrected }"
               @click.stop="setDistortion(false)" 
@@ -89,7 +122,8 @@
             </button>
 
             <!-- 2. ゆがみ補正ボタン (ズーム)：焦点を絞る表現 -->
-            <button 
+            <button
+              v-if="viewMode === 'vr'"
               class="ctrl-btn" 
               :class="{ 'is-active': isDistortionCorrected }"
               @click.stop="setDistortion(true)" 
@@ -98,7 +132,7 @@
               <span class="material-icons">center_focus_strong</span>
             </button>
             
-            <button class="ctrl-btn" @click.stop="onRecenter" title="正面に戻す">
+            <button v-if="viewMode === 'vr'" class="ctrl-btn" @click.stop="onRecenter" title="正面に戻す">
               <span class="material-icons">home</span>
             </button>
             <button class="ctrl-btn" :class="{ 'is-active': isMuted }" @click="onToggleMute">
@@ -113,18 +147,6 @@
 
       </div>
     </div>
-
-    <video 
-      ref="vrVideo" 
-      crossorigin="anonymous" 
-      playsinline 
-      muted 
-      style="display:none"
-      @play="isPaused = false"
-      @pause="isPaused = true"
-      @loadedmetadata="onLoadedMetadata"
-      @timeupdate="onTimeUpdate"
-    ></video>
 
     <!-- ローディングオーバーレイ -->
     <div v-if="isBuffering" class="loading-overlay">
@@ -154,6 +176,7 @@ export default {
       isBuffering: false,  // 動画ロード（バッファリング）中
       isDragging: false,
       isRearVisible: true, // 初期状態は表示
+      viewMode: 'vr', // 'vr' | 'flat'
       mouseMoved: false,
       uiVisible: true,  // UIの表示状態
       uiTimer: null,    // 非表示用タイマー
@@ -208,15 +231,20 @@ export default {
     this.resizeObserver.observe(this.$el);
     
     window.addEventListener('resize', this.handleResize);
+
+    const container = this.$el.querySelector('.vr-canvas-container');
+    if (container) {
+      container.addEventListener('wheel', this.onDocumentMouseWheel, { passive: false, capture: true });
+    }
   },
 
   beforeDestroy() {
     window.removeEventListener('resize', this.handleResize);
     if (this.resizeObserver) this.resizeObserver.disconnect();
 
-    const canvas = this.vr.renderer?.domElement;
-    if (canvas) {
-      canvas.removeEventListener('wheel', this.onDocumentMouseWheel);
+    const container = this.$el.querySelector('.vr-canvas-container');
+    if (container) {
+      container.removeEventListener('wheel', this.onDocumentMouseWheel, { capture: true });
     }
 
     this.dispose();
@@ -295,9 +323,6 @@ export default {
       this.vr.controls.minDistance = 0.1;
       this.vr.controls.maxDistance = 1000;
       this.vr.controls.zoomSpeed = 2.0;// ズームの速さも調整可能（必要に応じて）
-
-      // Ctrl + ホイールで FOV を変更するためのイベントリスナー
-      canvas.addEventListener('wheel', this.onDocumentMouseWheel, { passive: false });
     },
 
     initVRMesh() {
@@ -361,6 +386,10 @@ export default {
       const video = this.$refs.vrVideo;
       if (!video || !file) return;
 
+      this.isBuffering = false;
+      // projection に応じて初期モードを自動判定
+      this.viewMode = file.projection === 'flat' ? 'flat' : 'vr';
+
       // 1. スプライトパラメータを計算して保持
       this.updateSpriteParams(file);
 
@@ -370,6 +399,20 @@ export default {
       video.play().catch(() => {
         console.log("Autoplay blocked or video not ready.");
       });
+
+      if (this.viewMode === 'vr') {
+        this.$nextTick(() => this.handleResize());
+      }
+    },
+
+    toggleViewMode() {
+      this.viewMode = this.viewMode === 'vr' ? 'flat' : 'vr';
+      if (this.viewMode === 'vr') {
+        this.$nextTick(() => {
+          this.handleResize();
+        });
+      }
+      this.handleMouseMove();
     },
 
     /**
@@ -403,7 +446,10 @@ export default {
         video.pause();
       }
     },
-    onCanvasMouseDown() {
+    onCanvasMouseDown(event) {
+      if (event && event.button !== 0) {
+        return;
+      }
       this.isDragging = true;
       this.mouseMoved = false; // 押し下げた瞬間は移動していない
     },
@@ -413,9 +459,12 @@ export default {
       }
       this.handleMouseMove(); // UI表示用
     },
-    onCanvasMouseUp() {
+    onCanvasMouseUp(event) {
+      if (event && event.button !== 0) {
+        return;
+      }
       this.isDragging = false;
-      // マウスが動いていない（純粋なクリック）場合のみ再生/一時停止
+      // マウスが動いていない（純粋な左クリック）場合のみ再生/一時停止
       if (!this.mouseMoved) {
         this.togglePlay();
       }
@@ -580,6 +629,22 @@ export default {
     },
 
     onDocumentMouseWheel(event) {
+      // 右クリック押下中のホイール操作：前後に10秒単位でスキップ
+      if ((event.buttons & 2) !== 0) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (event.deltaY < 0) {
+          this.onFastForward();
+        } else if (event.deltaY > 0) {
+          this.onRewind();
+        }
+        return;
+      }
+
+      if (this.viewMode !== 'vr') {
+        return;
+      }
+
       // Ctrlキーが押されている場合のみ FOV を変更
       if (event.ctrlKey) {
         event.preventDefault(); // ブラウザ全体のズームを防止
@@ -634,21 +699,6 @@ export default {
       const video = this.$refs.vrVideo;
       if (video) {
         this.duration = video.duration;
-
-        const setBufferingTrue = () => { this.isBuffering = true; };
-        const setBufferingFalse = () => { this.isBuffering = false; };
-
-        video.addEventListener('waiting', setBufferingTrue);
-        video.addEventListener('seeking', setBufferingTrue);
-        video.addEventListener('playing', setBufferingFalse);
-        video.addEventListener('seeked', setBufferingFalse);
-
-        this.$once('hook:beforeDestroy', () => {
-          video.removeEventListener('waiting', setBufferingTrue);
-          video.removeEventListener('seeking', setBufferingTrue);
-          video.removeEventListener('playing', setBufferingFalse);
-          video.removeEventListener('seeked', setBufferingFalse);
-        });
       }
     },
 
@@ -662,20 +712,26 @@ export default {
 
     animate() {
       this.vr.animationId = requestAnimationFrame(this.animate);
-      
-// 1. 動画が一時停止中、かつカメラ操作（Controls）も動いていないなら描画をスキップ
-  const isVideoPlaying = !this.$refs.vrVideo.paused;
-  const isControlsChanging = this.vr.controls.enabled && this.vr.controls.isDirty; // 独自のフラグ管理が必要な場合あり
 
-  // シンプルな実装：動画が動いている時だけレンダリング
-  if (isVideoPlaying || this.needsUpdate) {
-    this.vr.controls.update();
-    this.vr.renderer.render(this.vr.scene, this.vr.camera);
-    this.needsUpdate = false; // 操作が終わったらfalseに戻す
-  }
+      // Flatモード時はWebGLレンダリングおよびVideoTexture転送を行わない
+      if (this.viewMode !== 'vr') {
+        return;
+      }
+
+      // 1. 動画が一時停止中、かつカメラ操作（Controls）も動いていないなら描画をスキップ
+      const video = this.$refs.vrVideo;
+      const isVideoPlaying = video && !video.paused;
+
+      // シンプルな実装：動画が動いている時だけレンダリング
+      if (isVideoPlaying || this.needsUpdate) {
+        this.vr.controls.update();
+        this.vr.renderer.render(this.vr.scene, this.vr.camera);
+        this.needsUpdate = false; // 操作が終わったらfalseに戻す
+      }
     },
 
     handleResize() {
+      if (this.viewMode !== 'vr') return;
       const container = this.$el;
       if (!container || !this.vr.renderer) return;
       
@@ -825,6 +881,27 @@ export default {
   width: 100%; height: 100%;
   background: #000;
   cursor: grab;
+}
+
+.vr-canvas-container.is-flat {
+  cursor: default;
+}
+
+.flat-video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  background: #000;
+}
+
+.mode-toggle-btn .mode-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 4px;
+  line-height: 1.2;
 }
 
 .vr-canvas {

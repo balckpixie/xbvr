@@ -81,6 +81,12 @@ type Scene struct {
 	IsMultipart     bool      `json:"is_multipart" xbvrbackup:"is_multipart"`
 
 	StarRating     float64         `json:"star_rating" xbvrbackup:"star_rating"`
+	// Custom Black（シーン詳細評価追加）
+	RatingVideoQuality float64 `json:"rating_video_quality" xbvrbackup:"rating_video_quality"`
+	RatingDirection    float64 `json:"rating_direction" xbvrbackup:"rating_direction"`
+	RatingPlay         float64 `json:"rating_play" xbvrbackup:"rating_play"`
+	RatingAppeal       float64 `json:"rating_appeal" xbvrbackup:"rating_appeal"`
+	// Custom END
 	Favourite      bool            `json:"favourite" gorm:"default:false" xbvrbackup:"favourite"`
 	Watchlist      bool            `json:"watchlist" gorm:"default:false" xbvrbackup:"watchlist"`
 	Wishlist       bool            `json:"wishlist" gorm:"default:false" xbvrbackup:"wishlist"`

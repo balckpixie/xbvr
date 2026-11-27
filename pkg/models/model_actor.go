@@ -59,8 +59,13 @@ type Actor struct {
 	AkaGroups          []Aka  `gorm:"many2many:actor_akas;" json:"aka_groups" xbvrbackup:"-"`
 
 	// Custom black（データ項目追加）
-	FaceImageUrl string `json:"face_image_url" xbvrbackup:"face_image_url"`
-	Furigana     string `json:"furigana" xbvrbackup:"furigana"`
+	FaceImageUrl string  `json:"face_image_url" xbvrbackup:"face_image_url"`
+	Furigana     string  `json:"furigana" xbvrbackup:"furigana"`
+	RatingFace   float64 `json:"rating_face" xbvrbackup:"rating_face"`
+	RatingStyle  float64 `json:"rating_style" xbvrbackup:"rating_style"`
+	RatingBust   float64 `json:"rating_bust" xbvrbackup:"rating_bust"`
+	RatingVibe   float64 `json:"rating_vibe" xbvrbackup:"rating_vibe"`
+	GenreTags    string  `json:"genre_tags" sql:"type:text;" xbvrbackup:"genre_tags"`
 	// Custom END
 }
 

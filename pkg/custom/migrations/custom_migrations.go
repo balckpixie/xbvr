@@ -152,5 +152,44 @@ func CustomMigrations() []*gormigrate.Migration {
 				return nil
 			},
 		},
+
+		// No.8 Actor テーブルに詳細評価・ジャンルタグカラムを追加
+		{
+			ID: "bp_0008-actor-add-detailed-ratings-and-genre-tags",
+			Migrate: func(tx *gorm.DB) error {
+				type Actor struct {
+					RatingFace  float64 `json:"rating_face"`
+					RatingStyle float64 `json:"rating_style"`
+					RatingBust  float64 `json:"rating_bust"`
+					RatingVibe  float64 `json:"rating_vibe"`
+					GenreTags   string  `json:"genre_tags" sql:"type:text;"`
+				}
+				return tx.AutoMigrate(Actor{}).Error
+			},
+		},
+
+		// No.9 Scene テーブルに画質・演出評価カラムを追加
+		{
+			ID: "bp_0009-scene-add-detailed-ratings",
+			Migrate: func(tx *gorm.DB) error {
+				type Scene struct {
+					RatingVideoQuality float64 `json:"rating_video_quality"`
+					RatingDirection    float64 `json:"rating_direction"`
+				}
+				return tx.AutoMigrate(Scene{}).Error
+			},
+		},
+
+		// No.10 Scene テーブルにプレイ・抜け感評価カラムを追加
+		{
+			ID: "bp_0010-scene-add-play-and-appeal-ratings",
+			Migrate: func(tx *gorm.DB) error {
+				type Scene struct {
+					RatingPlay   float64 `json:"rating_play"`
+					RatingAppeal float64 `json:"rating_appeal"`
+				}
+				return tx.AutoMigrate(Scene{}).Error
+			},
+		},
 	}
 }

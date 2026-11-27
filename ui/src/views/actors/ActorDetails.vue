@@ -73,20 +73,21 @@
                 </div>
                 <div class="columns is-vcentered">
                   <!-- Custom Black(顔表示追加) -->
-                  <div class="vue-load-image">
-                    <img :src="actor.face_image_url" style="width: 160px; height: auto;">
+                  <div class="vue-load-image actor-avatar-wrapper">
+                    <img
+                      :src="actor.face_image_url || getImageURL(actor.image_url, '300,fit')"
+                      style="width: 160px; height: auto;"
+                      @mouseover="showActorImageTooltip = true"
+                      @mouseout="showActorImageTooltip = false"
+                    >
+                    <div v-if="showActorImageTooltip && actor.image_url" class="actor-hover-tooltip">
+                      <img :src="getImageURL(actor.image_url, '700,fit')" alt="Actor Image" />
+                    </div>
                   </div>
                   <!-- Custom End -->
                   <div class="column pt-0">
-                    <b-field>
-                      <strong style="width: 8em;">{{ $t('Your Rating') }}</strong>
-                      <star-rating :key="actor.id" v-model="actor.star_rating" :rating="actor.star_rating" @rating-selected="setRating"
-                                   :increment="0.5" :star-size="20" :show-rating="true" />
-                      <b-tooltip :label="$t('Reset Rating')" position="is-right" :delay="250">
-                        <b-icon pack="mdi" icon="autorenew" size="is-small" @click.native="setRating(0)" style="padding-left: 1em;padding-top: .5em;"/>
-                      </b-tooltip>
-                    </b-field>
-                    <b-field>
+                    <ActorRatingAndGenres :actor="actor" />
+                    <b-field class="mt-2">
                       <strong style="width: 8em;">{{ $t('Scene Average') }}</strong>
                     <star-rating :key="actor.id" :rating="Math.round(actor.scene_rating_average * 4) / 4" read-only :increment="0.25" :star-size="20" :show-rating="true" active-color="#7957d5"/>
                     </b-field>
@@ -287,13 +288,14 @@ import ActorCard from './ActorCard'
 
 // Custom Black(Actor 画像編集ボタン追加)
 import ActorEditImageButton from '../../components/ActorEditImageButton.vue'
+import ActorRatingAndGenres from '../../components/ActorRatingAndGenres.vue'
 // Custom End
 
 export default {
   name: 'ActorDetails',
   // Custom Black(Actor 画像編集ボタン追加)
   components: { VueLoadImage, GlobalEvents, StarRating, ActorWatchlistButton, ActorFavouriteButton, SceneCard, ActorEditButton,  ActorCard, LinkStashdbButton,
-    ActorEditImageButton,
+    ActorEditImageButton, ActorRatingAndGenres,
    },
   // Custom End 
   data () {
@@ -307,6 +309,7 @@ export default {
       akas: [],
       extrefs: [],
       colleagues: [],
+      showActorImageTooltip: false,
     }
   },
   computed: {
@@ -849,6 +852,25 @@ div.scroll {
 .flexcentre {
   display: flex;
   justify-content: center;
+}
+.actor-avatar-wrapper {
+  position: relative;
+}
+.actor-hover-tooltip {
+  position: absolute;
+  z-index: 50;
+  top: 0;
+  left: 100%;
+  width: 300px;
+  background-color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  padding: 8px;
+  pointer-events: none;
+}
+.actor-hover-tooltip img {
+  max-width: 100%;
+  height: auto;
+  display: block;
 }
 
 </style>

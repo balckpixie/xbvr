@@ -178,11 +178,7 @@
                 <div class="columns is-vcentered">
                   <div class="column pt-0">
                     <b-field v-if="!displayingAlternateSource">
-                      <star-rating :key="item.id" v-model="item.star_rating" :rating="item.star_rating" @rating-selected="setRating"
-                                   :increment="0.5" :star-size="20" :show-rating="false" />
-                      <b-tooltip :label="$t('Reset Rating')" position="is-right" :delay="250">
-                        <b-icon pack="mdi" icon="autorenew" size="is-small" @click.native="setRating(0)" style="padding-left: 1em;padding-top: .5em;"/>
-                      </b-tooltip>
+                      <SceneRatings :item="item" :star-size="18" show-overall />
                     </b-field>
                     <b-field v-if="displayingAlternateSource">
                       <strong>Linked scene, Not an XBVR Scene</strong>
@@ -581,11 +577,12 @@ import { vi } from 'date-fns/locale'; // スプライト用？
 
 // VRPlayer用
 import Vr180Player from '../../components/Vr180Player';
+import SceneRatings from '../../components/SceneRatings.vue';
 
 export default {
   name: 'Details',
   components: { VueLoadImage, GlobalEvents, StarRating, WatchlistButton, FavouriteButton, LinkStashdbButton, WishlistButton, WatchedButton, EditButton, RefreshButton, RescrapeButton, TrailerlistButton, HiddenButton
-    , ThumbnailTab, DeleteButton, Splitpanes, Pane, Vr180Player
+    , ThumbnailTab, DeleteButton, Splitpanes, Pane, Vr180Player, SceneRatings
    },
 // Custom End
   data () {
