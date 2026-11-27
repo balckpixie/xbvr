@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/robfig/cron/v3"
@@ -13,6 +14,8 @@ import (
 	customtasks "github.com/xbapps/xbvr/pkg/custom/tasks"
 	// Custom END
 )
+
+var cronMu sync.Mutex
 
 var cronInstance *cron.Cron
 var rescrapTask cron.EntryID
@@ -132,9 +135,47 @@ func linkScenesCron() {
 	log.Println(fmt.Sprintf("Next Link Scenes Task at %v", cronInstance.Entry(rescrapTask).Next))
 }
 
+// SetPreviewAndThumbnailScheduleEnabled updates both PreviewGeneration and Thumbnail schedules and applies them to the running cron instance.
+func SetPreviewAndThumbnailScheduleEnabled(enabled bool) {
+	cronMu.Lock()
+	defer cronMu.Unlock()
+
+	config.Config.Cron.PreviewSchedule.Enabled = enabled
+	config.Config.Custom.ThumbnailSchedule.Enabled = enabled
+	config.SaveConfig()
+
+	if cronInstance == nil {
+		return
+	}
+
+	if previewTask != 0 {
+		cronInstance.Remove(previewTask)
+		previewTask = 0
+	}
+	if thumbTask != 0 {
+		cronInstance.Remove(thumbTask)
+		thumbTask = 0
+	}
+
+	if enabled {
+		psPreview := formatCronSchedule(config.CronSchedule(config.Config.Cron.PreviewSchedule))
+		log.Println(fmt.Sprintf("Setup Preview Generation Task %v", psPreview))
+		previewTask, _ = cronInstance.AddFunc(psPreview, generatePreviewCron)
+
+		psThumb := formatCronSchedule(config.CronSchedule(config.Config.Custom.ThumbnailSchedule))
+		log.Println(fmt.Sprintf("Setup Thumbnail Generation Task %v", psThumb))
+		thumbTask, _ = cronInstance.AddFunc(psThumb, generateThumbnailCron)
+	} else {
+		log.Println("Disabled Preview Generation and Thumbnail Generation schedules")
+	}
+}
+
 // Custom Black
 var thumbnailGenerateInProgress = false
 func generateThumbnailCron() {
+	if !config.Config.Custom.ThumbnailSchedule.Enabled {
+		return
+	}
 	if !session.HasActiveSession() || !thumbnailGenerateInProgress {
 		thumbnailGenerateInProgress = true
 		defer func() {
@@ -159,6 +200,9 @@ func CalcEndTime(startHour int, endHour int, minuteStart int) time.Time {
 var previewGenerateInProgress = false
 
 func generatePreviewCron() {
+	if !config.Config.Cron.PreviewSchedule.Enabled {
+		return
+	}
 	if !session.HasActiveSession() || !previewGenerateInProgress {
 		previewGenerateInProgress = true
 		defer func() {

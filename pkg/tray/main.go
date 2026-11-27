@@ -54,6 +54,19 @@ func onReady() {
 
 	systray.AddSeparator()
 
+	mEnableSchedule := systray.AddMenuItemCheckbox("Enable Schedule", "Enable or disable PreviewGeneration and Thumbnail schedules", isScheduleEnabled())
+	syncScheduleMenu := func() {
+		if isScheduleEnabled() {
+			mEnableSchedule.Check()
+		} else {
+			mEnableSchedule.Uncheck()
+		}
+	}
+	syncScheduleMenu()
+	config.OnConfigUpdated = syncScheduleMenu
+
+	systray.AddSeparator()
+
 	mQuit := systray.AddMenuItem("Quit", "Quit XBVR")
 
 	for {
@@ -64,9 +77,15 @@ func onReady() {
 			go open.Run(common.AppDir)
 		case <-mOpenLog.ClickedCh:
 			go open.Run(common.AppDir + "/xbvr.log")
+		case <-mEnableSchedule.ClickedCh:
+			server.SetPreviewAndThumbnailScheduleEnabled(!isScheduleEnabled())
 		case <-mQuit.ClickedCh:
 			systray.Quit()
 			return
 		}
 	}
+}
+
+func isScheduleEnabled() bool {
+	return config.Config.Cron.PreviewSchedule.Enabled || config.Config.Custom.ThumbnailSchedule.Enabled
 }

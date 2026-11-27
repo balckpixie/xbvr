@@ -203,7 +203,14 @@ var (
 	RecentIPAddresses        []string
 	ForbiddenVideoExtensions = []string{".funscript", ".cmscript", ".hsp", ".srt", ".ssa", ".ass"}
 	DefaultVideoExtensions   = []string{".mp4", ".avi", ".wmv", ".mpeg4", ".mov", ".mkv"}
+	OnConfigUpdated          func()
 )
+
+func notifyConfigUpdated() {
+	if OnConfigUpdated != nil {
+		OnConfigUpdated()
+	}
+}
 
 func LoadConfig() {
 	db, _ := models.GetDB()
@@ -219,6 +226,7 @@ func LoadConfig() {
 			Config.Server.Port = common.WebPort
 			SaveConfig()
 		}
+		notifyConfigUpdated()
 	}
 }
 
@@ -228,6 +236,7 @@ func SaveConfig() {
 		obj := models.KV{Key: "config", Value: string(data)}
 		obj.Save()
 		common.Log.Info("Saved config")
+		notifyConfigUpdated()
 	}
 }
 
