@@ -12,6 +12,7 @@
     <Details v-if="showOverlay"/>
     <EditScene v-if="showEdit" />
     <ActorDetails v-if="showActorDetails"/>
+    <ActorCollectionDetails v-if="showActorCollection"/>
     <EditActor v-if="showActorEdit" />
     <!-- Custom Black -->
     <EditActorImage v-if="showActorEditImage" />
@@ -35,6 +36,7 @@ import QuickFind from './QuickFind'
 import Details from './views/scenes/Details'
 import EditScene from './views/scenes/EditScene'
 import ActorDetails from './views/actors/ActorDetails'
+import ActorCollectionDetails from './views/actors/ActorCollectionDetails'
 import EditActor from './views/actors/EditActor'
 import SearchStashdbScenes from './views/scenes/SearchStashdbScenes'
 import SearchStashdbActors from './views/actors/SearchStashdbActors'
@@ -44,7 +46,7 @@ import EditActorImage from './views/actors/EditActorImage.vue'
 // Custom End
 
 export default {
-  components: { Navbar, Socket, QuickFind, GlobalEvents, Details, EditScene, ActorDetails, EditActor, SearchStashdbScenes, SearchStashdbActors, MigrationOverlay
+  components: { Navbar, Socket, QuickFind, GlobalEvents, Details, EditScene, ActorDetails, ActorCollectionDetails, EditActor, SearchStashdbScenes, SearchStashdbActors, MigrationOverlay
     // Custom Black
     ,EditActorImage
     // Custom End
@@ -58,6 +60,9 @@ export default {
     },
     showActorDetails() {
       return this.$store.state.overlay.actordetails.show
+    },
+    showActorCollection() {
+      return this.$store.state.overlay.actorcollection.show
     },
     showActorEdit() {
       return this.$store.state.overlay.actoredit.show

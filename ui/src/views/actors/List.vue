@@ -382,8 +382,9 @@ export default {
     },
     // Custom End
     reloadList () {
+      const targetRoute = this.$route && this.$route.name === 'actorsCollection' ? 'actorsCollection' : 'actors'
       this.$router.push({
-        name: 'actors',
+        name: targetRoute,
         query: {
           q: this.$store.getters['actorList/filterQueryParams']
         }

@@ -4,6 +4,7 @@ import Router from 'vue-router'
 import Options from './views/options/Options'
 import Scenes from './views/scenes/Scenes'
 import Actors  from './views/actors/Actors'
+import ActorsCollection from './views/actors/ActorsCollection'
 import Files from './views/files/Files'
 
 Vue.use(Router)
@@ -21,6 +22,11 @@ export default new Router({
       path: '/actors',
       name: 'actors',
       component: Actors
+    },
+    {
+      path: '/actors-collection',
+      name: 'actorsCollection',
+      component: ActorsCollection
     },
     {
       path: '/files',

@@ -26,6 +26,10 @@ const state = {
     show: false,
     actor: null
   },
+  actorcollection: {
+    show: false,
+    actor: null
+  },
   actoredit: {
     show: false,
     actor: null
@@ -94,6 +98,14 @@ const mutations = {
   hideActorDetails (state, payload) {
     state.actordetails.actor = null
     state.actordetails.show = false
+  },
+  showActorCollection (state, payload) {
+    state.actorcollection.actor = payload.actor
+    state.actorcollection.show = true
+  },
+  hideActorCollection (state) {
+    state.actorcollection.actor = null
+    state.actorcollection.show = false
   },
   editActorDetails (state, payload) {
     state.actoredit.actor = payload.actor

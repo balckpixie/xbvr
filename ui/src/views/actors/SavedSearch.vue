@@ -95,9 +95,10 @@ export default {
     },
     setPlaylist (val) {
       const obj = this.playlists.find(item => item.id === val)
+      const targetRoute = this.$route && this.$route.name === 'actorsCollection' ? 'actorsCollection' : 'actors'
 
       this.$router.push({
-        name: 'actors',
+        name: targetRoute,
         query: {
           q: this.$store.getters['actorList/getQueryParamsFromObject'](obj.search_params)
         }

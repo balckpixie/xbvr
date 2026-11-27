@@ -12,6 +12,9 @@
       <b-navbar-item tag="router-link" :to="{ path: './actors' }">
         {{$t('Actors')}}
       </b-navbar-item>
+      <b-navbar-item tag="router-link" :to="{ path: './actors-collection' }">
+        {{$t('ActorsCollection')}}
+      </b-navbar-item>
       <b-navbar-item tag="router-link" :to="{ path: './files' }">
         {{$t('Files')}}
       </b-navbar-item>

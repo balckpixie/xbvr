@@ -133,7 +133,11 @@ export default {
       }
     },
     showDetails (actor) {
-      this.$store.commit('overlay/showActorDetails', { actor: actor })
+      if (this.$route && this.$route.name === 'actorsCollection') {
+        this.$store.commit('overlay/showActorCollection', { actor: actor })
+      } else {
+        this.$store.commit('overlay/showActorDetails', { actor: actor })
+      }
     },
     isAvailable(actor) {
       let index = actor.scenes.findIndex(scene => scene.is_available == 1);

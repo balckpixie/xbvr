@@ -1,37 +1,78 @@
 {
   "version": "0.2.0",
-  "compounds": [
+  "configurations": [
     {
-      "name": "Debug by Task",
-      "configurations": ["Go: Launch", "Chrome: Vue"],
-      "preLaunchTask": "Start Go Server",
+      "name": "Go + Vue Debug",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}",
+      "cwd": "${workspaceFolder}",
+      "buildFlags": "-tags=json1",
+      "env": {
+        "CGO_ENABLED": "1",
+        "DEBUG": "true",
+        "CC": "${env:LOCALAPPDATA}\\Microsoft\\WinGet\\Packages\\BrechtSanders.WinLibs.POSIX.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe\\mingw64\\bin\\gcc.exe",
+        "CXX": "${env:LOCALAPPDATA}\\Microsoft\\WinGet\\Packages\\BrechtSanders.WinLibs.POSIX.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe\\mingw64\\bin\\g++.exe",
+        "PATH": "${env:LOCALAPPDATA}\\Microsoft\\WinGet\\Packages\\BrechtSanders.WinLibs.POSIX.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe\\mingw64\\bin;${env:PATH}"
+      },
+      "args": [],
+      "serverReadyAction": {
+        "pattern": "Web UI available at",
+        "action": "startDebugging",
+        "name": "Chrome: Vue"
+      }
     },
     {
-      "name": "Go+Vue Debug",
-      "configurations": ["Go: Launch", "Chrome: Vue"]
-    }
-  ],
-  "configurations": [
+      "name": "Go (Tray) + Vue Debug",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}/pkg/tray",
+      "cwd": "${workspaceFolder}",
+      "buildFlags": "-tags=json1",
+      "env": {
+        "CGO_ENABLED": "1",
+        "DEBUG": "true",
+        "CC": "${env:LOCALAPPDATA}\\Microsoft\\WinGet\\Packages\\BrechtSanders.WinLibs.POSIX.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe\\mingw64\\bin\\gcc.exe",
+        "CXX": "${env:LOCALAPPDATA}\\Microsoft\\WinGet\\Packages\\BrechtSanders.WinLibs.POSIX.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe\\mingw64\\bin\\g++.exe",
+        "PATH": "${env:LOCALAPPDATA}\\Microsoft\\WinGet\\Packages\\BrechtSanders.WinLibs.POSIX.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe\\mingw64\\bin;${env:PATH}"
+      },
+      "args": [],
+      "serverReadyAction": {
+        "pattern": "Web UI available at",
+        "action": "startDebugging",
+        "name": "Chrome: Vue"
+      }
+    },
     {
       "name": "Go: Launch",
       "type": "go",
       "request": "launch",
       "mode": "auto",
       "program": "${workspaceFolder}",
-      "env": {},
+      "cwd": "${workspaceFolder}",
+      "buildFlags": "-tags=json1",
+      "env": {
+        "CGO_ENABLED": "1",
+        "DEBUG": "true",
+        "CC": "${env:LOCALAPPDATA}\\Microsoft\\WinGet\\Packages\\BrechtSanders.WinLibs.POSIX.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe\\mingw64\\bin\\gcc.exe",
+        "CXX": "${env:LOCALAPPDATA}\\Microsoft\\WinGet\\Packages\\BrechtSanders.WinLibs.POSIX.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe\\mingw64\\bin\\g++.exe",
+        "PATH": "${env:LOCALAPPDATA}\\Microsoft\\WinGet\\Packages\\BrechtSanders.WinLibs.POSIX.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe\\mingw64\\bin;${env:PATH}"
+      },
       "args": []
     },
     {
       "name": "Chrome: Vue",
       "type": "pwa-chrome",
       "request": "launch",
-      "url": "http://localhost:9999",
+      "url": "http://localhost:9999/ui/",
       "webRoot": "${workspaceFolder}/ui/src",
       "sourceMaps": true,
       "sourceMapPathOverrides": {
-        "webpack:///src/*": "${webRoot}/*"
-      },
-      "postDebugTask": "Kill Go Server"  // ここに記述
+        "webpack:///src/*": "${webRoot}/*",
+        "webpack:///./src/*": "${webRoot}/*"
+      }
     }
   ]
 }
