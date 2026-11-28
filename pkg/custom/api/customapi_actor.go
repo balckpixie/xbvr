@@ -5,12 +5,15 @@ import (
 	// "fmt"
 	"math"
 	"net/http"
+	"strconv"
+	"sync"
 	// "net/url"
 	// "regexp"
 	// "strings"
 
 	restfulspec "github.com/emicklei/go-restful-openapi/v2"
 	"github.com/emicklei/go-restful/v3"
+	"github.com/jinzhu/gorm"
 	"github.com/xbapps/xbvr/pkg/models"
 
 	// "github.com/gocolly/colly/v2"
@@ -54,6 +57,10 @@ func (i ActorResource) WebService() *restful.WebService {
 		Metadata(restfulspec.KeyOpenAPITags, tags))
 
 	ws.Route(ws.POST("/enrich_all").To(i.enrichAllActors).
+		Consumes("*/*").
+		Metadata(restfulspec.KeyOpenAPITags, tags))
+
+	ws.Route(ws.POST("/recent/{actor-id}").To(i.recordRecentActor).
 		Consumes("*/*").
 		Metadata(restfulspec.KeyOpenAPITags, tags))
 
@@ -241,6 +248,70 @@ func (i ActorResource) setActorGenreTags(req *restful.Request, resp *restful.Res
 	}
 
 	resp.WriteHeaderAndEntity(http.StatusOK, actor)
+}
+
+const recentCollectionActorsKVKey = "custom_recent_collection_actors"
+
+var recentActorsMu sync.Mutex
+
+func loadRecentActorIDsLocked(db *gorm.DB) []uint {
+	var kv models.KV
+	if err := db.Where(&models.KV{Key: recentCollectionActorsKVKey}).First(&kv).Error; err != nil || kv.Value == "" {
+		return nil
+	}
+	var ids []uint
+	if err := json.Unmarshal([]byte(kv.Value), &ids); err != nil {
+		return nil
+	}
+	return ids
+}
+
+func GetRecentCollectionActorIDs() []uint {
+	recentActorsMu.Lock()
+	defer recentActorsMu.Unlock()
+
+	db, _ := models.GetDB()
+	defer db.Close()
+	return loadRecentActorIDsLocked(db)
+}
+
+func RecordRecentCollectionActorID(actorID uint) {
+	if actorID == 0 {
+		return
+	}
+	recentActorsMu.Lock()
+	defer recentActorsMu.Unlock()
+
+	db, _ := models.GetDB()
+	defer db.Close()
+
+	existing := loadRecentActorIDsLocked(db)
+	next := make([]uint, 0, len(existing)+1)
+	next = append(next, actorID)
+	for _, id := range existing {
+		if id != actorID {
+			next = append(next, id)
+		}
+		if len(next) >= 50 {
+			break
+		}
+	}
+	raw, err := json.Marshal(next)
+	if err != nil {
+		return
+	}
+	kv := models.KV{Key: recentCollectionActorsKVKey, Value: string(raw)}
+	db.Save(&kv)
+}
+
+func (i ActorResource) recordRecentActor(req *restful.Request, resp *restful.Response) {
+	actorID, err := strconv.Atoi(req.PathParameter("actor-id"))
+	if err != nil || actorID <= 0 {
+		resp.WriteErrorString(http.StatusBadRequest, "invalid actor id")
+		return
+	}
+	RecordRecentCollectionActorID(uint(actorID))
+	resp.WriteHeaderAndEntity(http.StatusOK, map[string]bool{"ok": true})
 }
 // func (i ActorResource) searchActorImage(req *restful.Request, resp *restful.Response) {
 // 	var r RequestSearchActorImage

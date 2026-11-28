@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -17,6 +18,7 @@ import (
 	"github.com/dustin/go-humanize"
 	restfulspec "github.com/emicklei/go-restful-openapi/v2"
 	"github.com/emicklei/go-restful/v3"
+	"github.com/jinzhu/gorm"
 	"github.com/markphelps/optional"
 	"github.com/tidwall/gjson"
 	"golang.org/x/crypto/bcrypt"
@@ -24,6 +26,7 @@ import (
 	"golang.org/x/text/language/display"
 
 	"github.com/xbapps/xbvr/pkg/config"
+	customapi "github.com/xbapps/xbvr/pkg/custom/api"
 	"github.com/xbapps/xbvr/pkg/models"
 	"github.com/xbapps/xbvr/pkg/scrape"
 	"github.com/xbapps/xbvr/pkg/tasks"
@@ -170,10 +173,12 @@ func (i HeresphereResource) WebService() *restful.WebService {
 
 	ws.Path("/heresphere").
 		Filter(HeresphereResponseFilter).
-		Consumes(restful.MIME_JSON, "application/x-www-form-urlencoded").
+		Consumes(restful.MIME_JSON, "application/x-www-form-urlencoded", "*/*").
 		Produces(restful.MIME_JSON)
 
 	ws.Route(ws.GET("/menu").To(i.getHeresphereMenu).
+		Produces("text/html"))
+	ws.Route(ws.GET("/mode/scenes").To(i.getHeresphereModeScenes).
 		Produces("text/html"))
 
 	ws.Route(ws.HEAD("/").To(i.getHeresphereLibrary))
@@ -188,6 +193,7 @@ func (i HeresphereResource) WebService() *restful.WebService {
 	ws.Route(ws.HEAD("/collection").To(i.getHeresphereCollection))
 	ws.Route(ws.GET("/collection").Filter(HeresphereAuthFilter).To(i.getHeresphereCollection).
 		Metadata(restfulspec.KeyOpenAPITags, tags).
+		Produces(restful.MIME_JSON, "text/html").
 		Writes(HeresphereLibrary{}))
 	ws.Route(ws.POST("/collection").Filter(HeresphereAuthFilter).To(i.getHeresphereCollection).
 		Metadata(restfulspec.KeyOpenAPITags, tags).
@@ -196,6 +202,7 @@ func (i HeresphereResource) WebService() *restful.WebService {
 	ws.Route(ws.HEAD("/collection/pickup").To(i.getHeresphereCollectionPickup))
 	ws.Route(ws.GET("/collection/pickup").Filter(HeresphereAuthFilter).To(i.getHeresphereCollectionPickup).
 		Metadata(restfulspec.KeyOpenAPITags, tags).
+		Produces(restful.MIME_JSON, "text/html").
 		Writes(HeresphereLibrary{}))
 	ws.Route(ws.POST("/collection/pickup").Filter(HeresphereAuthFilter).To(i.getHeresphereCollectionPickup).
 		Metadata(restfulspec.KeyOpenAPITags, tags).
@@ -204,6 +211,7 @@ func (i HeresphereResource) WebService() *restful.WebService {
 	ws.Route(ws.HEAD("/collection/ranking").To(i.getHeresphereCollectionRanking))
 	ws.Route(ws.GET("/collection/ranking").Filter(HeresphereAuthFilter).To(i.getHeresphereCollectionRanking).
 		Metadata(restfulspec.KeyOpenAPITags, tags).
+		Produces(restful.MIME_JSON, "text/html").
 		Writes(HeresphereLibrary{}))
 	ws.Route(ws.POST("/collection/ranking").Filter(HeresphereAuthFilter).To(i.getHeresphereCollectionRanking).
 		Metadata(restfulspec.KeyOpenAPITags, tags).
@@ -212,10 +220,28 @@ func (i HeresphereResource) WebService() *restful.WebService {
 	ws.Route(ws.HEAD("/collection/scene-ranking").To(i.getHeresphereCollectionSceneRanking))
 	ws.Route(ws.GET("/collection/scene-ranking").Filter(HeresphereAuthFilter).To(i.getHeresphereCollectionSceneRanking).
 		Metadata(restfulspec.KeyOpenAPITags, tags).
+		Produces(restful.MIME_JSON, "text/html").
 		Writes(HeresphereLibrary{}))
 	ws.Route(ws.POST("/collection/scene-ranking").Filter(HeresphereAuthFilter).To(i.getHeresphereCollectionSceneRanking).
 		Metadata(restfulspec.KeyOpenAPITags, tags).
 		Writes(HeresphereLibrary{}))
+
+	ws.Route(ws.HEAD("/collection2").To(i.getHeresphereCollection2))
+	ws.Route(ws.GET("/collection2").Filter(HeresphereAuthFilter).To(i.getHeresphereCollection2).
+		Metadata(restfulspec.KeyOpenAPITags, tags).
+		Produces(restful.MIME_JSON, "text/html").
+		Writes(HeresphereLibrary{}))
+	ws.Route(ws.POST("/collection2").Filter(HeresphereAuthFilter).To(i.getHeresphereCollection2).
+		Metadata(restfulspec.KeyOpenAPITags, tags).
+		Writes(HeresphereLibrary{}))
+
+	ws.Route(ws.HEAD("/actor/{actor-id}").To(i.getHeresphereActor))
+	ws.Route(ws.GET("/actor/{actor-id}").Filter(HeresphereAuthFilter).To(i.getHeresphereActor).
+		Metadata(restfulspec.KeyOpenAPITags, tags).
+		Writes(HeresphereVideo{}))
+	ws.Route(ws.POST("/actor/{actor-id}").Filter(HeresphereAuthFilter).To(i.getHeresphereActor).
+		Metadata(restfulspec.KeyOpenAPITags, tags).
+		Writes(HeresphereVideo{}))
 
 	ws.Route(ws.GET("/{scene-id}").Filter(HeresphereAuthFilter).To(i.getHeresphereScene).
 		Metadata(restfulspec.KeyOpenAPITags, tags).
@@ -1018,6 +1044,40 @@ func (i HeresphereResource) getHeresphereLibrary(req *restful.Request, resp *res
 		return
 	}
 
+	switch getHeresphereMode(req) {
+	case "collection":
+		i.writeHeresphereActorLibrary(req, resp, models.RequestActorList{
+			Sort:     optional.NewString("furigana_asc"),
+			MinAvail: optional.NewInt(1),
+			Limit:    optional.NewInt(10000),
+		}, "", "collection", false)
+		return
+	case "pickup":
+		i.writeHeresphereActorLibrary(req, resp, models.RequestActorList{
+			Sort:     optional.NewString("random"),
+			MinAvail: optional.NewInt(1),
+			Limit:    optional.NewInt(50),
+		}, "", "pickup", false)
+		return
+	case "ranking":
+		i.writeHeresphereActorLibrary(req, resp, models.RequestActorList{
+			Sort:     optional.NewString("rating_desc"),
+			MinAvail: optional.NewInt(1),
+			Limit:    optional.NewInt(50),
+		}, "総合", "ranking", false)
+		return
+	case "scene-ranking":
+		i.writeHeresphereActorLibrary(req, resp, models.RequestActorList{
+			Sort:     optional.NewString("scene_rating_desc"),
+			MinAvail: optional.NewInt(1),
+			Limit:    optional.NewInt(50),
+		}, "シーン総合", "scene-ranking", false)
+		return
+	case "collection2":
+		i.writeHeresphereCollection2Library(req, resp, false)
+		return
+	}
+
 	db, _ := models.GetDB()
 	defer db.Close()
 
@@ -1207,7 +1267,7 @@ func (i HeresphereResource) getHeresphereMenu(req *restful.Request, resp *restfu
       別のリストに切り替える場合はブラウザに戻って再度選択してください。
     </p>
     <div class="grid">
-      <a class="card" href="%[1]s">
+      <a class="card" href="%[1]s/mode/scenes">
         <div>
           <div class="card-title"><span class="badge">SCENE</span>従来のシーンリスト</div>
           <p class="card-desc">プレイリスト・未マッチ・トレーラー等の通常ライブラリを表示します</p>
@@ -1247,6 +1307,14 @@ func (i HeresphereResource) getHeresphereMenu(req *restful.Request, resp *restfu
         </div>
         <span class="arrow">&rsaquo;</span>
       </a>
+      <a class="card" href="%[1]s/collection2">
+        <div>
+          <div class="card-title"><span class="badge">ACTOR=SCENE</span>コレクション2（女優＝1シーン・全動画順次再生）</div>
+          <p class="card-desc">1人の女優を1シーンとして表示し、出演する全動画ファイルを順次再生します</p>
+          <div class="card-url">%[1]s/collection2</div>
+        </div>
+        <span class="arrow">&rsaquo;</span>
+      </a>
     </div>
   </div>
 </body>
@@ -1257,12 +1325,85 @@ func (i HeresphereResource) getHeresphereMenu(req *restful.Request, resp *restfu
 	_, _ = resp.Write([]byte(html))
 }
 
+var (
+	heresphereModeMu sync.RWMutex
+	heresphereModes  = map[string]string{}
+)
+
+func getHeresphereClientIP(req *restful.Request) string {
+	if xff := req.HeaderParameter("X-Forwarded-For"); xff != "" {
+		parts := strings.Split(xff, ",")
+		return strings.TrimSpace(parts[0])
+	}
+	host, _, err := net.SplitHostPort(req.Request.RemoteAddr)
+	if err == nil && host != "" {
+		return host
+	}
+	return req.Request.RemoteAddr
+}
+
+func setHeresphereMode(req *restful.Request, mode string) {
+	ip := getHeresphereClientIP(req)
+	heresphereModeMu.Lock()
+	heresphereModes[ip] = mode
+	heresphereModeMu.Unlock()
+}
+
+func getHeresphereMode(req *restful.Request) string {
+	ip := getHeresphereClientIP(req)
+	heresphereModeMu.RLock()
+	mode := heresphereModes[ip]
+	heresphereModeMu.RUnlock()
+	return mode
+}
+
+func writeHeresphereReadyPage(req *restful.Request, resp *restful.Response, title string) {
+	proto := getProto(req)
+	host := req.Request.Host
+	currentURL := fmt.Sprintf("%s://%s%s", proto, host, req.Request.URL.Path)
+	menuURL := fmt.Sprintf("%s://%s/heresphere/menu", proto, host)
+	html := fmt.Sprintf(`<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HereSphere API Ready - %s</title>
+  <style>
+    body { margin: 0; padding: 36px 24px; font-family: sans-serif; background: #0d141c; color: #f1f5f9; text-align: center; }
+    .box { max-width: 560px; margin: 0 auto; background: #16202a; border: 1px solid #2b3f54; border-radius: 12px; padding: 28px 24px; }
+    h1 { font-size: 22px; margin: 0 0 10px; color: #ffffff; }
+    .mode { font-size: 16px; font-weight: 700; color: #38bdf8; margin: 0 0 14px; }
+    p { font-size: 14px; color: #94a3b8; line-height: 1.6; margin: 0 0 20px; }
+    .url { font-family: monospace; font-size: 13px; color: #64748b; word-break: break-all; margin-bottom: 20px; }
+    .btn { display: inline-block; padding: 12px 22px; border-radius: 8px; background: #1e2d3d; border: 1px solid #00a8e1; color: #ffffff; text-decoration: none; font-weight: 700; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>HereSphere API 待機中</h1>
+    <div class="mode">%s</div>
+    <p>この状態で HereSphere の <strong>API 切替ボタン</strong> を押すと、選択したリストが表示されます。</p>
+    <div class="url">%s</div>
+    <a class="btn" href="%s">メニューに戻る</a>
+  </div>
+</body>
+</html>`, title, title, currentURL, menuURL)
+	resp.Header().Set("Content-Type", "text/html; charset=utf-8")
+	resp.WriteHeader(http.StatusOK)
+	_, _ = resp.Write([]byte(html))
+}
+
+func (i HeresphereResource) getHeresphereModeScenes(req *restful.Request, resp *restful.Response) {
+	setHeresphereMode(req, "scenes")
+	writeHeresphereReadyPage(req, resp, "従来のシーンリスト")
+}
+
 func (i HeresphereResource) getHeresphereCollection(req *restful.Request, resp *restful.Response) {
 	i.writeHeresphereActorLibrary(req, resp, models.RequestActorList{
 		Sort:     optional.NewString("furigana_asc"),
 		MinAvail: optional.NewInt(1),
 		Limit:    optional.NewInt(10000),
-	}, "")
+	}, "", "collection", true)
 }
 
 func (i HeresphereResource) getHeresphereCollectionPickup(req *restful.Request, resp *restful.Response) {
@@ -1270,7 +1411,7 @@ func (i HeresphereResource) getHeresphereCollectionPickup(req *restful.Request, 
 		Sort:     optional.NewString("random"),
 		MinAvail: optional.NewInt(1),
 		Limit:    optional.NewInt(50),
-	}, "")
+	}, "", "pickup", true)
 }
 
 func (i HeresphereResource) getHeresphereCollectionRanking(req *restful.Request, resp *restful.Response) {
@@ -1278,7 +1419,7 @@ func (i HeresphereResource) getHeresphereCollectionRanking(req *restful.Request,
 		Sort:     optional.NewString("rating_desc"),
 		MinAvail: optional.NewInt(1),
 		Limit:    optional.NewInt(50),
-	}, "総合")
+	}, "総合", "ranking", true)
 }
 
 func (i HeresphereResource) getHeresphereCollectionSceneRanking(req *restful.Request, resp *restful.Response) {
@@ -1286,11 +1427,27 @@ func (i HeresphereResource) getHeresphereCollectionSceneRanking(req *restful.Req
 		Sort:     optional.NewString("scene_rating_desc"),
 		MinAvail: optional.NewInt(1),
 		Limit:    optional.NewInt(50),
-	}, "シーン総合")
+	}, "シーン総合", "scene-ranking", true)
 }
 
-func (i HeresphereResource) writeHeresphereActorLibrary(req *restful.Request, resp *restful.Response, query models.RequestActorList, rankPrefix string) {
+func (i HeresphereResource) writeHeresphereActorLibrary(req *restful.Request, resp *restful.Response, query models.RequestActorList, rankPrefix string, mode string, allowReadyPage bool) {
 	if !config.Config.Interfaces.DeoVR.Enabled {
+		return
+	}
+
+	// ブラウザ（text/html）から直接遷移した場合はモードを保存して案内ページを返し、API切替ボタン押下時にJSONを返す
+	if allowReadyPage && req.Request.Method == http.MethodGet && strings.Contains(req.HeaderParameter("Accept"), "text/html") {
+		setHeresphereMode(req, mode)
+		modeTitle := "コレクション：全女優リスト"
+		switch mode {
+		case "pickup":
+			modeTitle = "ピックアップ（おすすめ女優）"
+		case "ranking":
+			modeTitle = "ランキング：総合"
+		case "scene-ranking":
+			modeTitle = "ランキング：シーン総合"
+		}
+		writeHeresphereReadyPage(req, resp, modeTitle)
 		return
 	}
 
@@ -1326,6 +1483,346 @@ func (i HeresphereResource) writeHeresphereActorLibrary(req *restful.Request, re
 		Access:  1,
 		Library: actorLists,
 	})
+}
+
+func (i HeresphereResource) getHeresphereCollection2(req *restful.Request, resp *restful.Response) {
+	i.writeHeresphereCollection2Library(req, resp, true)
+}
+
+func (i HeresphereResource) writeHeresphereCollection2Library(req *restful.Request, resp *restful.Response, allowReadyPage bool) {
+	if !config.Config.Interfaces.DeoVR.Enabled {
+		return
+	}
+
+	if allowReadyPage && req.Request.Method == http.MethodGet && strings.Contains(req.HeaderParameter("Accept"), "text/html") {
+		setHeresphereMode(req, "collection2")
+		writeHeresphereReadyPage(req, resp, "コレクション2（女優＝1シーン）")
+		return
+	}
+
+	proto := getProto(req)
+	host := req.Request.Host
+
+	buildActorURLList := func(query models.RequestActorList) []string {
+		out := models.QueryActors(query, false)
+		urls := make([]string, 0, len(out.Actors))
+		for _, actor := range out.Actors {
+			if actor.AvailCount <= 0 {
+				continue
+			}
+			urls = append(urls, fmt.Sprintf("%s://%s/heresphere/actor/%d", proto, host, actor.ID))
+		}
+		return urls
+	}
+
+	type groupDef struct {
+		name  string
+		query models.RequestActorList
+	}
+	groups := []groupDef{
+		{
+			name: "全女優",
+			query: models.RequestActorList{
+				Sort:     optional.NewString("furigana_asc"),
+				MinAvail: optional.NewInt(1),
+				Limit:    optional.NewInt(10000),
+			},
+		},
+		{
+			name: "ピックアップ",
+			query: models.RequestActorList{
+				Sort:     optional.NewString("random"),
+				MinAvail: optional.NewInt(1),
+				Limit:    optional.NewInt(50),
+			},
+		},
+		{
+			name: "ランキング：総合",
+			query: models.RequestActorList{
+				Sort:     optional.NewString("rating_desc"),
+				MinAvail: optional.NewInt(1),
+				Limit:    optional.NewInt(50),
+			},
+		},
+		{
+			name: "ランキング：シーン総合",
+			query: models.RequestActorList{
+				Sort:     optional.NewString("scene_rating_desc"),
+				MinAvail: optional.NewInt(1),
+				Limit:    optional.NewInt(50),
+			},
+		},
+	}
+
+	library := make([]HeresphereListScenes, 0, len(groups)+10)
+	for _, g := range groups {
+		list := buildActorURLList(g.query)
+		if len(list) == 0 {
+			continue
+		}
+		library = append(library, HeresphereListScenes{
+			Name: g.name,
+			List: list,
+		})
+	}
+
+	// 最近チェック
+	if recentIDs := customapi.GetRecentCollectionActorIDs(); len(recentIDs) > 0 {
+		db, _ := models.GetDB()
+		var recentActors []models.Actor
+		db.Select("id, avail_count").Where("id IN (?) AND avail_count > 0", recentIDs).Find(&recentActors)
+		db.Close()
+
+		availSet := make(map[uint]bool, len(recentActors))
+		for _, a := range recentActors {
+			availSet[a.ID] = true
+		}
+		recentURLs := make([]string, 0, len(recentIDs))
+		for _, id := range recentIDs {
+			if availSet[id] {
+				recentURLs = append(recentURLs, fmt.Sprintf("%s://%s/heresphere/actor/%d", proto, host, id))
+			}
+		}
+		if len(recentURLs) > 0 {
+			library = append(library, HeresphereListScenes{
+				Name: "最近チェック",
+				List: recentURLs,
+			})
+		}
+	}
+
+	// ジャンルタグ別グループ
+	genreGroups := []string{"美少女", "お姉さん", "癒し", "グラマー", "爆乳", "人妻", "ハーフ", "欧米", "エロ"}
+	for _, tag := range genreGroups {
+		list := buildActorURLList(models.RequestActorList{
+			Tags:     []optional.String{optional.NewString(tag)},
+			Sort:     optional.NewString("rating_desc"),
+			MinAvail: optional.NewInt(1),
+			Limit:    optional.NewInt(1000),
+		})
+		if len(list) == 0 {
+			continue
+		}
+		library = append(library, HeresphereListScenes{
+			Name: tag,
+			List: list,
+		})
+	}
+
+	resp.WriteHeaderAndEntity(http.StatusOK, HeresphereLibrary{
+		Access:  1,
+		Library: library,
+	})
+}
+
+func mapHeresphereProjection(videoProjection string) (projection string, stereo string, fov float64, lens string) {
+	projection = "equirectangular"
+	stereo = "sbs"
+	fov = 180.0
+	lens = "Linear"
+
+	switch videoProjection {
+	case "flat":
+		projection = "perspective"
+		stereo = "mono"
+	case "180_mono":
+		projection = "equirectangular"
+		stereo = "mono"
+	case "360_mono":
+		projection = "equirectangular360"
+		stereo = "mono"
+	case "180_sbs":
+		projection = "equirectangular"
+	case "360_tb":
+		projection = "equirectangular360"
+		stereo = "tb"
+	case "mkx200":
+		projection = "fisheye"
+		fov = 200.0
+		lens = "MKX200"
+	case "mkx220":
+		projection = "fisheye"
+		fov = 220.0
+		lens = "MKX220"
+	case "vrca220":
+		projection = "fisheye"
+		fov = 220.0
+		lens = "VRCA220"
+	case "rf52", "fisheye190":
+		projection = "fisheye"
+		fov = 190.0
+	case "fisheye":
+		projection = "fisheye"
+	}
+	return
+}
+
+func (i HeresphereResource) getHeresphereActor(req *restful.Request, resp *restful.Response) {
+	if !config.Config.Interfaces.DeoVR.Enabled {
+		return
+	}
+
+	actorID, err := strconv.Atoi(req.PathParameter("actor-id"))
+	if err != nil || actorID <= 0 {
+		return
+	}
+
+	dnt := ""
+	if !config.Config.Interfaces.DeoVR.TrackWatchTime {
+		dnt = "?dnt=true"
+	}
+
+	db, _ := models.GetDB()
+	defer db.Close()
+
+	var actor models.Actor
+	if err := db.Select(`actors.*, (select AVG(s.star_rating) from scene_cast sc join scenes s on s.id=sc.scene_id where sc.actor_id = actors.id and s.star_rating > 0 and is_hidden=0) as scene_rating_average`).
+		Preload("Scenes", func(tx *gorm.DB) *gorm.DB {
+			return tx.Where("is_available = 1 AND is_hidden = 0").Order("release_date DESC")
+		}).Where("id = ?", actorID).First(&actor).Error; err != nil {
+		log.Error(err)
+		return
+	}
+
+	proto := getProto(req)
+	host := req.Request.Host
+
+	var media []HeresphereMedia
+	var totalDuration float64
+	var firstProjection string
+	hasFirstProjection := false
+	latestRelease := ""
+	latestAdded := ""
+
+	for _, scene := range actor.Scenes {
+		if latestRelease == "" && !scene.ReleaseDate.IsZero() {
+			latestRelease = scene.ReleaseDate.Format("2006-01-02")
+		}
+		if latestAdded == "" && !scene.CreatedAt.IsZero() {
+			latestAdded = scene.CreatedAt.Format("2006-01-02")
+		}
+
+		videoFiles, err := scene.GetVideoFilesSorted(config.Config.Interfaces.Players.VideoSortSeq)
+		if err != nil || len(videoFiles) == 0 {
+			continue
+		}
+
+		for fileIdx, file := range videoFiles {
+			if !hasFirstProjection {
+				firstProjection = file.VideoProjection
+				hasFirstProjection = true
+			}
+
+			resolution := strconv.Itoa(file.VideoHeight)
+			if file.VideoProjection == "360_tb" {
+				resolution = strconv.Itoa(file.VideoHeight / 2)
+			}
+
+			mediaName := fmt.Sprintf("%d. %s", len(media)+1, scene.Title)
+			if len(videoFiles) > 1 {
+				mediaName = fmt.Sprintf("%d. %s (Part %d/%d)", len(media)+1, scene.Title, fileIdx+1, len(videoFiles))
+			}
+			mediaName = fmt.Sprintf("%s [%vp - %s]", mediaName, resolution, humanize.Bytes(uint64(file.Size)))
+
+			media = append(media, HeresphereMedia{
+				Name: mediaName,
+				Sources: []HeresphereSource{
+					{
+						Resolution: StringOrInt(resolution),
+						Height:     file.VideoHeight,
+						Width:      file.VideoWidth,
+						Size:       file.Size,
+						URL:        fmt.Sprintf("%s://%s/api/dms/file/%d%s", proto, host, file.ID, dnt),
+					},
+				},
+			})
+			totalDuration += file.VideoDuration
+		}
+	}
+
+	thumbImg := strings.TrimSpace(actor.ImageUrl)
+	if thumbImg == "" {
+		thumbImg = strings.TrimSpace(actor.FaceImageUrl)
+	}
+	if thumbImg == "" {
+		thumbImg = fmt.Sprintf("%s://%s/ui/images/blank.png", proto, host)
+	} else if strings.HasPrefix(thumbImg, "/") {
+		thumbImg = fmt.Sprintf("%s://%s%s", proto, host, thumbImg)
+	}
+
+	var descParts []string
+	if actor.CupSize != "" {
+		descParts = append(descParts, fmt.Sprintf("%sカップ", actor.CupSize))
+	}
+	if actor.BandSize > 0 || actor.WaistSize > 0 || actor.HipSize > 0 {
+		descParts = append(descParts, fmt.Sprintf("B%d-W%d-H%d", actor.BandSize, actor.WaistSize, actor.HipSize))
+	}
+	if actor.Height > 0 {
+		descParts = append(descParts, fmt.Sprintf("T%d", actor.Height))
+	}
+	descParts = append(descParts, fmt.Sprintf("動画 %d 件", len(media)))
+	if actor.Biography != "" {
+		descParts = append(descParts, actor.Biography)
+	}
+
+	var tags []HeresphereTag
+	if actor.CupSize != "" {
+		tags = append(tags, HeresphereTag{Name: "Cup:" + actor.CupSize})
+	}
+	if actor.GenreTags != "" {
+		var genreTags []string
+		if err := json.Unmarshal([]byte(actor.GenreTags), &genreTags); err == nil {
+			for _, gt := range genreTags {
+				if gt != "" {
+					tags = append(tags, HeresphereTag{Name: gt})
+				}
+			}
+		}
+	}
+
+	projection, stereo, fov, lens := mapHeresphereProjection(firstProjection)
+
+	formatStar := func(val float64) string {
+		if val <= 0 {
+			return "-"
+		}
+		return strconv.FormatFloat(math.Round(val*10)/10, 'f', -1, 64)
+	}
+	sceneAvgVal := 0.0
+	if actor.SceneRatingAverage != "" {
+		if parsed, err := strconv.ParseFloat(actor.SceneRatingAverage, 64); err == nil {
+			sceneAvgVal = parsed
+		}
+	}
+	cupText := ""
+	if actor.CupSize != "" {
+		cupText = fmt.Sprintf(" (%sカップ)", actor.CupSize)
+	}
+	displayTitle := fmt.Sprintf("%s%s  総合★%s シーン総合★%s", actor.Name, cupText, formatStar(actor.StarRating), formatStar(sceneAvgVal))
+
+	video := HeresphereVideo{
+		Access:               1,
+		Title:                displayTitle,
+		Description:          strings.Join(descParts, " / "),
+		ThumbnailImage:       thumbImg,
+		DateReleased:         latestRelease,
+		DateAdded:            latestAdded,
+		DurationMilliseconds: uint(totalDuration * 1000),
+		Rating:               actor.StarRating,
+		IsFavorite:           actor.Favourite,
+		Projection:           projection,
+		Stereo:               stereo,
+		FOV:                  fov,
+		Lens:                 lens,
+		Tags:                 tags,
+		Media:                media,
+		WriteFavorite:        false,
+		WriteRating:          false,
+		WriteTags:            false,
+		WriteHSP:             false,
+	}
+
+	resp.WriteHeaderAndEntity(http.StatusOK, video)
 }
 
 func findTrack(indexpos int, cuepointCount int, name string, trackAssignments *[]string, scene models.Scene) (int, bool) {

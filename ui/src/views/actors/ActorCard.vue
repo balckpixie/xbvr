@@ -116,6 +116,7 @@
 </template>
 
 <script>
+import ky from 'ky'
 import { format, parseISO } from 'date-fns'
 import ActorFavouriteButton from '../../components/ActorFavouriteButton'
 import ActorWatchlistButton from '../../components/ActorWatchlistButton'
@@ -219,6 +220,7 @@ export default {
         filtered.unshift(snapshot)
         localStorage.setItem(key, JSON.stringify(filtered.slice(0, 50)))
         window.dispatchEvent(new CustomEvent('xbvr-recent-actors-updated'))
+        ky.post(`/api_custom/actor/recent/${actor.id}`, { json: {} }).catch(() => {})
       } catch (e) {
         // ignore storage quota errors
       }
