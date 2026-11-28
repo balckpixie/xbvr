@@ -202,5 +202,25 @@ func CustomMigrations() []*gormigrate.Migration {
 				return tx.AutoMigrate(Scene{}).Error
 			},
 		},
+
+		// No.12 既存 Actor の cup_size を正規化 ("DD", "DDカップ", "Eカップ" -> "E" 等)
+		{
+			ID: "bp_0012-actor-normalize-cup-size",
+			Migrate: func(tx *gorm.DB) error {
+				var actors []models.Actor
+				if err := tx.Where("cup_size IS NOT NULL AND cup_size <> ''").Find(&actors).Error; err != nil {
+					return err
+				}
+				for _, actor := range actors {
+					normalized := models.NormalizeCupSize(actor.CupSize)
+					if normalized != actor.CupSize {
+						if err := tx.Model(&models.Actor{}).Where("id = ?", actor.ID).Update("cup_size", normalized).Error; err != nil {
+							return err
+						}
+					}
+				}
+				return nil
+			},
+		},
 	}
 }

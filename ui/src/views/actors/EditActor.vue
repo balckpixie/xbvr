@@ -290,11 +290,17 @@ export default {
       await ky.post(`/api/actor/edit_extrefs/${this.actor.id}`, { json: this.extrefsArray  })
       await ky.get('/api/actor/'+this.actor.id).json().then(data => {
         if (data.id != 0){
-          this.$store.state.overlay.actordetails.actor = data          
+          this.$store.state.overlay.actordetails.actor = data
+          if (this.$store.state.overlay.actorcollection.actor && this.$store.state.overlay.actorcollection.actor.id === data.id) {
+            this.$store.state.overlay.actorcollection.actor = data
+          }
+          this.$store.commit('actorList/updateActor', data)
         }          
       })
 
-      this.$store.dispatch('actorList/load', { offset: this.$store.state.actorList.offset - this.$store.state.actorList.limit })
+      if (!this.$route || this.$route.name !== 'actorsCollection') {
+        this.$store.dispatch('actorList/load', { offset: this.$store.state.actorList.offset - this.$store.state.actorList.limit })
+      }
       this.changesMade = false
       this.extrefsChangesMade = false
       this.$store.state.actorList.isLoading = false

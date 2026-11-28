@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/json"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -77,6 +78,7 @@ type RequestActorList struct {
 	Cast           []optional.String `json:"cast"`
 	Sites          []optional.String `json:"sites"`
 	Tags           []optional.String `json:"tags"`
+	CupSizes       []optional.String `json:"cup_sizes"`
 	Attributes     []optional.String `json:"attributes"`
 	JumpTo         optional.String   `json:"jumpTo"`
 	MinAge         optional.Int      `json:"min_age"`
@@ -111,7 +113,66 @@ type ActorLink struct {
 	Type string `json:"type"`
 }
 
+var cupSizeAlphaRe = regexp.MustCompile(`^[A-Z]+$`)
+
+// NormalizeCupSize normalizes cup size strings (e.g. "DDカップ", "E cup", "dd")
+// into standard single-letter cup notation ("E", "F", etc.).
+func NormalizeCupSize(raw string) string {
+	s := strings.TrimSpace(raw)
+	if s == "" {
+		return ""
+	}
+	var b strings.Builder
+	for _, r := range s {
+		if r >= 'Ａ' && r <= 'Ｚ' {
+			b.WriteRune(r - 'Ａ' + 'A')
+		} else if r >= 'ａ' && r <= 'ｚ' {
+			b.WriteRune(r - 'ａ' + 'a')
+		} else {
+			b.WriteRune(r)
+		}
+	}
+	s = strings.ToUpper(b.String())
+	s = strings.ReplaceAll(s, "カップ", "")
+	s = strings.ReplaceAll(s, "CUPS", "")
+	s = strings.ReplaceAll(s, "CUP", "")
+	s = strings.TrimSpace(s)
+	s = strings.Trim(s, "-_./()[]")
+	s = strings.TrimSpace(s)
+
+	if s == "" || s == "NA" || s == "N/A" || s == "NONE" || s == "UNKNOWN" {
+		return ""
+	}
+
+	switch s {
+	case "AA":
+		return "A"
+	case "DD":
+		return "E"
+	case "DDD", "EE":
+		return "F"
+	case "DDDD", "FF":
+		return "G"
+	case "GG":
+		return "H"
+	case "HH":
+		return "I"
+	case "II":
+		return "J"
+	case "JJ":
+		return "K"
+	case "KK":
+		return "L"
+	}
+
+	if cupSizeAlphaRe.MatchString(s) && len(s) <= 2 {
+		return s
+	}
+	return ""
+}
+
 func (i *Actor) Save() error {
+	i.CupSize = NormalizeCupSize(i.CupSize)
 	commonDb, _ := GetCommonDB()
 
 	var err error = retry.Do(
@@ -454,6 +515,19 @@ func QueryActors(r RequestActorList, enablePreload bool) ResponseActorList {
 			inTag := strings.TrimPrefix(tag, "&")
 			tx = tx.Where("actors.genre_tags LIKE ?", "%\""+inTag+"\"%")
 		}
+	}
+	// Custom END
+
+	// Custom Black（カップサイズ複数選択フィルタ）
+	var cupSizes []string
+	for _, c := range r.CupSizes {
+		cup := strings.ToUpper(strings.TrimSpace(c.OrElse("")))
+		if cup != "" {
+			cupSizes = append(cupSizes, cup)
+		}
+	}
+	if len(cupSizes) > 0 {
+		tx = tx.Where("UPPER(TRIM(actors.cup_size)) IN (?)", cupSizes)
 	}
 	// Custom END
 

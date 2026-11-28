@@ -24,32 +24,90 @@
       </div>
     </section>
 
-    <!-- 2. ランキング (総合 / 顔 / 胸 / スタイル / 雰囲気 / シーン総合) -->
-    <section
-      v-for="rankRow in visibleRankingRows"
-      :key="rankRow.key"
-      class="prime-row-section"
-    >
+    <!-- 2. ランキング：総合 -->
+    <section v-if="overallRankingRow && overallRankingRow.actors.length > 0" class="prime-row-section">
       <div class="prime-row-header">
         <div class="prime-row-title-wrap">
           <span class="prime-row-badge is-ranking">RANKING</span>
-          <h3 class="prime-row-title">{{ rankRow.title }}</h3>
-          <span class="prime-row-sub">{{ rankRow.sub }}（最大50件）</span>
+          <h3 class="prime-row-title">ランキング：総合</h3>
+          <span class="prime-row-sub">総合評価順（最大50件）</span>
         </div>
         <div class="prime-row-nav-btns">
-          <button type="button" class="prime-row-arrow-sm" @click="scrollRow(rankRow.key, -1)" title="前へ">&#9664;</button>
-          <button type="button" class="prime-row-arrow-sm" @click="scrollRow(rankRow.key, 1)" title="次へ">&#9654;</button>
+          <button type="button" class="prime-row-arrow-sm" @click="scrollRow('rank_overall', -1)" title="前へ">&#9664;</button>
+          <button type="button" class="prime-row-arrow-sm" @click="scrollRow('rank_overall', 1)" title="次へ">&#9654;</button>
         </div>
       </div>
       <div class="prime-row-viewport">
-        <button type="button" class="prime-edge-btn is-left" @click="scrollRow(rankRow.key, -1)" aria-label="Previous">&#10094;</button>
-        <div :ref="`track-${rankRow.key}`" class="prime-row-track">
-          <div v-for="(actor, idx) in rankRow.actors" :key="`${rankRow.key}-${actor.id}`" class="prime-row-card-item" :style="rowCardStyle">
+        <button type="button" class="prime-edge-btn is-left" @click="scrollRow('rank_overall', -1)" aria-label="Previous">&#10094;</button>
+        <div ref="track-rank_overall" class="prime-row-track">
+          <div v-for="(actor, idx) in overallRankingRow.actors" :key="`rank_overall-${actor.id}`" class="prime-row-card-item" :style="rowCardStyle">
             <div class="prime-rank-num" :class="{ 'is-top3': idx < 3 }">{{ idx + 1 }}</div>
             <ActorCard :actor="actor" :showFace="showFace" />
           </div>
         </div>
-        <button type="button" class="prime-edge-btn is-right" @click="scrollRow(rankRow.key, 1)" aria-label="Next">&#10095;</button>
+        <button type="button" class="prime-edge-btn is-right" @click="scrollRow('rank_overall', 1)" aria-label="Next">&#10095;</button>
+      </div>
+    </section>
+
+    <!-- 3. ランキング：詳細 (顔 / 胸 / スタイル / 雰囲気 切替) -->
+    <section v-if="activeDetailRankingRow && activeDetailRankingRow.actors.length > 0" class="prime-row-section">
+      <div class="prime-row-header">
+        <div class="prime-row-title-wrap">
+          <span class="prime-row-badge is-ranking">RANKING</span>
+          <h3 class="prime-row-title">ランキング：詳細</h3>
+          <div class="prime-detail-tabs">
+            <button
+              v-for="tab in detailRankTabs"
+              :key="tab.key"
+              type="button"
+              class="prime-detail-tab-btn"
+              :class="{ 'is-active': activeDetailRankKey === tab.key }"
+              @click="selectDetailRank(tab.key)"
+            >
+              {{ tab.label }}
+            </button>
+          </div>
+          <span class="prime-row-sub">{{ activeDetailRankingRow.sub }}（最大50件）</span>
+        </div>
+        <div class="prime-row-nav-btns">
+          <button type="button" class="prime-row-arrow-sm" @click="scrollRow('rank_detail', -1)" title="前へ">&#9664;</button>
+          <button type="button" class="prime-row-arrow-sm" @click="scrollRow('rank_detail', 1)" title="次へ">&#9654;</button>
+        </div>
+      </div>
+      <div class="prime-row-viewport">
+        <button type="button" class="prime-edge-btn is-left" @click="scrollRow('rank_detail', -1)" aria-label="Previous">&#10094;</button>
+        <div ref="track-rank_detail" class="prime-row-track">
+          <div v-for="(actor, idx) in activeDetailRankingRow.actors" :key="`${activeDetailRankKey}-${actor.id}`" class="prime-row-card-item" :style="rowCardStyle">
+            <div class="prime-rank-num" :class="{ 'is-top3': idx < 3 }">{{ idx + 1 }}</div>
+            <ActorCard :actor="actor" :showFace="showFace" />
+          </div>
+        </div>
+        <button type="button" class="prime-edge-btn is-right" @click="scrollRow('rank_detail', 1)" aria-label="Next">&#10095;</button>
+      </div>
+    </section>
+
+    <!-- 4. ランキング：シーン総合 -->
+    <section v-if="sceneRankingRow && sceneRankingRow.actors.length > 0" class="prime-row-section">
+      <div class="prime-row-header">
+        <div class="prime-row-title-wrap">
+          <span class="prime-row-badge is-ranking">RANKING</span>
+          <h3 class="prime-row-title">ランキング：シーン総合</h3>
+          <span class="prime-row-sub">シーン総合点の平均値順（最大50件）</span>
+        </div>
+        <div class="prime-row-nav-btns">
+          <button type="button" class="prime-row-arrow-sm" @click="scrollRow('rank_scene', -1)" title="前へ">&#9664;</button>
+          <button type="button" class="prime-row-arrow-sm" @click="scrollRow('rank_scene', 1)" title="次へ">&#9654;</button>
+        </div>
+      </div>
+      <div class="prime-row-viewport">
+        <button type="button" class="prime-edge-btn is-left" @click="scrollRow('rank_scene', -1)" aria-label="Previous">&#10094;</button>
+        <div ref="track-rank_scene" class="prime-row-track">
+          <div v-for="(actor, idx) in sceneRankingRow.actors" :key="`rank_scene-${actor.id}`" class="prime-row-card-item" :style="rowCardStyle">
+            <div class="prime-rank-num" :class="{ 'is-top3': idx < 3 }">{{ idx + 1 }}</div>
+            <ActorCard :actor="actor" :showFace="showFace" />
+          </div>
+        </div>
+        <button type="button" class="prime-edge-btn is-right" @click="scrollRow('rank_scene', 1)" aria-label="Next">&#10095;</button>
       </div>
     </section>
 
@@ -107,7 +165,14 @@ export default {
     return {
       pickupActors: [],
       rankingRows: RANKING_DEFS.map(def => ({ ...def, actors: [] })),
-      recentActors: []
+      recentActors: [],
+      activeDetailRankKey: 'rank_face',
+      detailRankTabs: [
+        { key: 'rank_face', label: '顔' },
+        { key: 'rank_bust', label: '胸' },
+        { key: 'rank_style', label: 'スタイル' },
+        { key: 'rank_vibe', label: '雰囲気' }
+      ]
     }
   },
   computed: {
@@ -122,8 +187,14 @@ export default {
     selectedTags () {
       return this.$store.state.actorList.filters.tags || []
     },
-    visibleRankingRows () {
-      return this.rankingRows.filter(r => r.actors.length > 0)
+    overallRankingRow () {
+      return this.rankingRows.find(r => r.key === 'rank_overall') || null
+    },
+    activeDetailRankingRow () {
+      return this.rankingRows.find(r => r.key === this.activeDetailRankKey) || null
+    },
+    sceneRankingRow () {
+      return this.rankingRows.find(r => r.key === 'rank_scene') || null
     },
     visibleRecentActors () {
       if (!this.selectedTags.length) return this.recentActors
@@ -156,6 +227,14 @@ export default {
     window.removeEventListener('xbvr-recent-actors-updated', this.loadRecentActors)
   },
   methods: {
+    selectDetailRank (key) {
+      this.activeDetailRankKey = key
+      this.$nextTick(() => {
+        const el = this.$refs['track-rank_detail']
+        const track = Array.isArray(el) ? el[0] : el
+        if (track) track.scrollLeft = 0
+      })
+    },
     baseQuery (overrides) {
       return Object.assign({
         dlState: 'available',
@@ -298,6 +377,38 @@ export default {
 .prime-row-sub {
   font-size: 0.72rem;
   color: #8197a4;
+}
+
+.prime-detail-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 2px;
+  background: #16202a;
+  border: 1px solid #2b3b4c;
+  border-radius: 6px;
+}
+
+.prime-detail-tab-btn {
+  border: none;
+  border-radius: 4px;
+  padding: 2px 10px;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.prime-detail-tab-btn:hover {
+  color: #ffffff;
+}
+
+.prime-detail-tab-btn.is-active {
+  background: #00a8e1;
+  color: #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 168, 225, 0.35);
 }
 
 .prime-row-nav-btns {

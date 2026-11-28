@@ -19,9 +19,12 @@ type GetStateResponse struct {
 
 type RequestSaveOptions struct {
 	SaveDMMSettings	  		bool   `json:"saveDMMSettings"`
+	SaveGoogleSettings      bool   `json:"saveGoogleSettings"`
 	SaveThumbnailSettings 	bool   `json:"saveThumbnailSettings"`
 	DmmApiId               string `json:"dmmApiId"`
 	DmmAffiliateId         string `json:"dmmAffiliateId"`
+	GoogleApiKey           string `json:"googleApiKey"`
+	GoogleSearchEngineId   string `json:"googleSearchEngineId"`
 	ThumbnailEnabled       bool   `json:"thumbnailEnabled"`
 	ThumbnailHourInterval  int    `json:"thumbnailHourInterval"`
 	ThumbnailUseRange      bool   `json:"thumbnailUseRange"`
@@ -83,6 +86,11 @@ func (i ConfigResource) saveOptionsTaskSchedule(req *restful.Request, resp *rest
 			config.Config.Custom.DmmAPIKey.DmmAffiliateId = r.DmmAffiliateId
 			config.Config.Custom.DmmAPIKey.DmmApiId = r.DmmApiId
 		}
+	}
+
+	if r.SaveGoogleSettings {
+		config.Config.Custom.GoogleAPIKey.GoogleApiKey = r.GoogleApiKey
+		config.Config.Custom.GoogleAPIKey.GoogleSearchEngineId = r.GoogleSearchEngineId
 	}
 	
 	if r.SaveThumbnailSettings {

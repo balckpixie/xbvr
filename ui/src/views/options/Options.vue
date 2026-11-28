@@ -31,6 +31,7 @@
           <b-menu-list :label="$t('Custom')">
             <b-menu-item :label="$t('Thumbnail')" :active="active==='custom_thumbnail'" @click="setActive('custom_thumbnail')"/>
             <b-menu-item :label="$t('DMM API')" :active="active==='custom_dmm'" @click="setActive('custom_dmm')"/>
+            <b-menu-item :label="$t('Google Image API')" :active="active==='custom_google'" @click="setActive('custom_google')"/>
           </b-menu-list>
           <!-- Custom End -->
         </b-menu>
@@ -53,6 +54,7 @@
           <SceneMatchParams v-if="showMatchParamsOverlay"/>
           <!-- Custom Black（カスタムオプションを追加） -->
           <CustomDMM v-show="active==='custom_dmm'"/>
+          <CustomGoogle v-show="active==='custom_google'"/>
           <CustomThumbnail v-show="active==='custom_thumbnail'"/>
           <!-- Custom End -->
         </div>
@@ -79,10 +81,11 @@ import SceneMatchParams from './overlays/SceneMatchParams.vue'
 // Custom Black（カスタムオプションを追加）
 import CustomThumbnail from './sections/CustomThumbnail.vue'
 import CustomDMM from './sections/CustomDMM.vue'
+import CustomGoogle from './sections/CustomGoogle.vue'
 
 export default {
   components: { Storage, SceneDataScrapers, SceneCreate, Funscripts, SceneDataImportExport, InterfaceWeb, InterfaceDLNA, InterfaceDeoVR, Cache, Previews, Schedules, InterfaceAdvanced,SceneMatchParams
-    ,CustomThumbnail, CustomDMM, },
+    ,CustomThumbnail, CustomDMM, CustomGoogle, },
 // Custom End
   data: function () {
     return {

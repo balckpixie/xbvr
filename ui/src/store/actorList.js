@@ -28,6 +28,7 @@ const defaultFilterState = {
   cast: [],
   sites: [],
   tags: [],
+  cup_sizes: [],
   attributes: [],
   jumpTo: '',
   min_age: 0,
@@ -61,7 +62,8 @@ const state = {
   filterOpts: {
     cast: [],
     sites: [],
-    tags: []
+    tags: [],
+    cup_sizes: []
   },
   filters: defaultFilterState
 }
@@ -145,18 +147,20 @@ const mutations = {
   stateFromJSON (state, payload) {
     try {
       const obj = JSON.parse(payload)
-      for (const [k, v] of Object.entries(obj)) {
-        Vue.set(state.filters, k, v)
+      const merged = Object.assign({}, defaultFilterState, obj)
+      for (const [k, v] of Object.entries(merged)) {
+        Vue.set(state.filters, k, Array.isArray(v) ? [...v] : v)
       }
     } catch (err) {
     }
   },
   stateFromQuery (state, payload) {
     try {
-      state.show_actor_id=payload.actor_id
+      state.show_actor_id = payload.actor_id
       const obj = JSON.parse(Buffer.from(payload.q, 'base64').toString('utf-8'))
-      for (const [k, v] of Object.entries(obj)) {
-        Vue.set(state.filters, k, v)
+      const merged = Object.assign({}, defaultFilterState, obj)
+      for (const [k, v] of Object.entries(merged)) {
+        Vue.set(state.filters, k, Array.isArray(v) ? [...v] : v)
       }
     } catch (err) {
     }

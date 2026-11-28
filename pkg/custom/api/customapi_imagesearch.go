@@ -3,12 +3,16 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"regexp"
+	"strings"
+	"time"
 
 	restfulspec "github.com/emicklei/go-restful-openapi/v2"
 	"github.com/emicklei/go-restful/v3"
+	"github.com/xbapps/xbvr/pkg/config"
 	"github.com/xbapps/xbvr/pkg/models"
 
 	"github.com/gocolly/colly/v2"
@@ -87,6 +91,7 @@ func (i ImagesResource) searchActorImage(req *restful.Request, resp *restful.Res
 	err := req.ReadEntity(&r)
 	if err != nil {
 		log.Error(err)
+		resp.WriteErrorString(http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -101,6 +106,7 @@ func (i ImagesResource) searchActorImage(req *restful.Request, resp *restful.Res
 	err = actor.GetIfExistByPKWithSceneAvg(r.ActorID)
 	if err != nil {
 		log.Error(err)
+		resp.WriteErrorString(http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -119,6 +125,7 @@ func (i ImagesResource) searchActorImage(req *restful.Request, resp *restful.Res
 
 	if err != nil {
 		log.Error(err)
+		resp.WriteErrorString(http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -145,35 +152,42 @@ func (i ImagesResource) searchActorImage(req *restful.Request, resp *restful.Res
 	})
 }
 
+type googleCSEResponse struct {
+	Items []struct {
+		Link string `json:"link"`
+	} `json:"items"`
+	Error *struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+	} `json:"error,omitempty"`
+}
+
 func getImageURLsFromGoogle(query string) ([]string, error) {
-	// Cookie取得
-	// cookies, err := fetchGoogleCookies()
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to fetch cookies: %w", err)
-	// }
+	apiKey := strings.TrimSpace(config.Config.Custom.GoogleAPIKey.GoogleApiKey)
+	cx := strings.TrimSpace(config.Config.Custom.GoogleAPIKey.GoogleSearchEngineId)
+	if apiKey != "" && cx != "" {
+		return getImageURLsFromGoogleCSE(query, apiKey, cx)
+	}
+	return getImageURLsFromGoogleColly(query)
+}
+
+func getImageURLsFromGoogleColly(query string) ([]string, error) {
 	searchURL, err := buildSearchURL(SiteGoogle, url.QueryEscape(query))
 	if err != nil {
 		return nil, err
 	}
 
 	fmt.Println("Google Search URL:", searchURL)
-	
+
 	imageCollector := colly.NewCollector(
 		colly.UserAgent(userAgent),
 	)
-	imageCollector.OnRequest(func(r *colly.Request) {
-		// imageCollector.SetCookies("http://www.google.com", cookies)
-	})
 
 	var imageURLs []string
 	var parseErr error
 
 	imageCollector.OnHTML("script", func(e *colly.HTMLElement) {
-		// contentType := e.Response.Headers.Get("Content-Type")
-		// fmt.Println("Content-Type:", contentType)
-
 		googleScriptRe := regexp.MustCompile(`(?s)var m\s*=\s*(\{.*?\});`)
-
 		matches := googleScriptRe.FindStringSubmatch(e.Text)
 		if len(matches) < 1 {
 			return
@@ -183,7 +197,6 @@ func getImageURLsFromGoogle(query string) ([]string, error) {
 			parseErr = fmt.Errorf("failed to parse JSON: %w", err)
 			return
 		}
-
 		imageURLs = append(imageURLs, extractGoogleImageURLs(mObj)...)
 	})
 
@@ -197,6 +210,63 @@ func getImageURLsFromGoogle(query string) ([]string, error) {
 
 	if parseErr != nil {
 		return nil, parseErr
+	}
+
+	return imageURLs, nil
+}
+
+func getImageURLsFromGoogleCSE(query, apiKey, cx string) ([]string, error) {
+
+	client := &http.Client{Timeout: 15 * time.Second}
+	var imageURLs []string
+	seen := make(map[string]struct{})
+
+	// Google Custom Search JSON API returns up to 10 items per request; fetch 2 pages (up to 20 images)
+	for _, start := range []int{1, 11} {
+		params := url.Values{}
+		params.Set("key", apiKey)
+		params.Set("cx", cx)
+		params.Set("q", query)
+		params.Set("searchType", "image")
+		params.Set("num", "10")
+		params.Set("start", fmt.Sprintf("%d", start))
+
+		apiURL := "https://www.googleapis.com/customsearch/v1?" + params.Encode()
+		res, err := client.Get(apiURL)
+		if err != nil {
+			return nil, fmt.Errorf("failed to request Google Custom Search API: %w", err)
+		}
+		body, readErr := io.ReadAll(res.Body)
+		res.Body.Close()
+		if readErr != nil {
+			return nil, fmt.Errorf("failed to read Google Custom Search API response: %w", readErr)
+		}
+
+		var cseResp googleCSEResponse
+		if err := json.Unmarshal(body, &cseResp); err != nil {
+			return nil, fmt.Errorf("failed to parse Google Custom Search API JSON: %w", err)
+		}
+		if cseResp.Error != nil {
+			return nil, fmt.Errorf("google CSE API error (%d): %s", cseResp.Error.Code, cseResp.Error.Message)
+		}
+		if res.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("google CSE API returned status %d", res.StatusCode)
+		}
+
+		for _, item := range cseResp.Items {
+			link := strings.TrimSpace(item.Link)
+			if link == "" {
+				continue
+			}
+			if _, ok := seen[link]; !ok {
+				seen[link] = struct{}{}
+				imageURLs = append(imageURLs, link)
+			}
+		}
+
+		if len(cseResp.Items) < 10 {
+			break
+		}
 	}
 
 	return imageURLs, nil

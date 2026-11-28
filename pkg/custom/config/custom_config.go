@@ -5,6 +5,11 @@ type DmmAPIKey struct {
 	DmmAffiliateId string `json:"dmmAffiliateId"`
 }
 
+type GoogleAPIKey struct {
+	GoogleApiKey         string `json:"googleApiKey"`
+	GoogleSearchEngineId string `json:"googleSearchEngineId"`
+}
+
 type ThumbnailSchedule struct {
 	Enabled         bool `default:"false" json:"enabled"`
 	HourInterval    int  `default:"2" json:"hourInterval"`

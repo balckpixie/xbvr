@@ -241,6 +241,15 @@
                           <actor-watchlist-button :actor="actor" />
                           <actor-edit-button :actor="actor" />
                           <actor-edit-image-button :actor="actor" />
+                          <button
+                            type="button"
+                            class="button is-small is-dark actor-enrich-btn"
+                            :class="{ 'is-loading': enrichingActor }"
+                            title="DMM API + JAVDatabase からカップ・3サイズ等を補完"
+                            @click="enrichCurrentActor"
+                          >
+                            <b-icon pack="mdi" icon="auto-fix" size="is-small" />
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -248,11 +257,15 @@
                     <div class="actor-stats-row">
                       <span class="actor-stat-pill">作品数: {{ detailedScenes.length }}本</span>
                       <span class="actor-stat-pill">お気に入り: {{ favouriteSceneCount }}本</span>
-                      <span class="actor-stat-pill">Cup: {{ actor.cup_size || '-' }}</span>
-                      <span class="actor-stat-pill">
-                        B{{ actor.band_size > 0 ? actor.band_size : '-' }}
-                        W{{ actor.waist_size > 0 ? actor.waist_size : '-' }}
-                        H{{ actor.hip_size > 0 ? actor.hip_size : '-' }}
+                      <span class="actor-stat-pill actor-body-pill">
+                        <span class="actor-cup-letter">{{ actor.cup_size || '-' }}</span>
+                        <span class="actor-cup-suffix">カップ</span>
+                        <span class="actor-body-sizes">
+                          B{{ actor.band_size > 0 ? actor.band_size : '-' }} -
+                          W{{ actor.waist_size > 0 ? actor.waist_size : '-' }} -
+                          H{{ actor.hip_size > 0 ? actor.hip_size : '-' }} -
+                          T{{ actor.height > 0 ? actor.height : '-' }}
+                        </span>
                       </span>
                     </div>
 
@@ -640,7 +653,8 @@ export default {
       isScenesScrolling: false,
       scenesScrollTimer: null,
       actorHeaderHeight: 190,
-      actorHeaderObserver: null
+      actorHeaderObserver: null,
+      enrichingActor: false
     }
   },
   computed: {
@@ -747,6 +761,29 @@ export default {
     }
   },
   methods: {
+    async enrichCurrentActor () {
+      if (!this.actor || !this.actor.id || this.enrichingActor) return
+      this.enrichingActor = true
+      try {
+        const res = await ky.post(`/api_custom/actor/enrich/${this.actor.id}`, {
+          json: {},
+          timeout: 30000
+        }).json()
+        if (res && res.actor) {
+          this.$store.state.overlay.actorcollection.actor = res.actor
+          this.$store.commit('actorList/updateActor', res.actor)
+          this.updateActorHeaderHeight()
+        }
+        this.$buefy.toast.open({
+          message: res && res.changed ? 'プロフィール情報を補完しました' : '補完できる新しい情報はありませんでした',
+          type: res && res.changed ? 'is-success' : 'is-info'
+        })
+      } catch (e) {
+        this.$buefy.toast.open({ message: 'プロフィール補完に失敗しました', type: 'is-danger' })
+      } finally {
+        this.enrichingActor = false
+      }
+    },
     stopAndResetPlayer () {
       const player = this.$refs.vrPlayer
       if (player && player.$refs && player.$refs.vrVideo) {
@@ -1697,6 +1734,31 @@ export default {
   background: #272a34;
   border: 1px solid #353945;
   color: #d1d5db;
+}
+
+.actor-body-pill {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.25rem;
+}
+
+.actor-cup-letter {
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: #ec4899;
+  line-height: 1;
+}
+
+.actor-cup-suffix {
+  font-size: 0.72rem;
+  color: #e2e8f0;
+  margin-right: 0.25rem;
+}
+
+.actor-body-sizes {
+  font-size: 0.75rem;
+  color: #d1d5db;
+  font-variant-numeric: tabular-nums;
 }
 
 .actor-avatar-wrapper {

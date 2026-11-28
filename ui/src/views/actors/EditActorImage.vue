@@ -316,6 +316,16 @@ export default {
     clearSelection() {
       this.selectedKeywords = []
     },
+    syncUpdatedActor (data) {
+      if (!data) return
+      this.actor = data
+      this.$store.state.overlay.actoreditimage.actor = data
+      this.$store.state.overlay.actordetails.actor = data
+      if (this.$store.state.overlay.actorcollection.actor && this.$store.state.overlay.actorcollection.actor.id === data.id) {
+        this.$store.state.overlay.actorcollection.actor = data
+      }
+      this.$store.commit('actorList/updateActor', data)
+    },
     changeActorImage(val) {
       ky.post('/api/actor/setimage', {
         json: {
@@ -323,9 +333,7 @@ export default {
           url: this.images[this.carouselSlide]
         }
       }).json().then(data => {
-        this.actor = data
-        this.$store.state.overlay.actoreditimage.actor = data
-        this.$store.state.overlay.actordetails.actor = data
+        this.syncUpdatedActor(data)
         this.carouselSlide = 0
       })
     },
@@ -336,9 +344,7 @@ export default {
           url: this.images[this.carouselSlide]
         }
       }).json().then(data => {
-        this.actor = data
-        this.$store.state.overlay.actoreditimage.actor = data
-        this.$store.state.overlay.actordetails.actor = data
+        this.syncUpdatedActor(data)
         // this.carouselSlide = 0
       })
     },
@@ -349,9 +355,7 @@ export default {
           url: this.images[this.carouselSlide]
         }
       }).json().then(data => {
-        this.actor = data
-        this.$store.state.overlay.actoreditimage.actor = data
-        this.$store.state.overlay.actordetails.actor = data
+        this.syncUpdatedActor(data)
         // this.carouselSlide = 0
       })
     },
@@ -366,9 +370,7 @@ export default {
           url: selected?.url
         }
       }).json().then(data => {
-        this.actor = data
-        this.$store.state.overlay.actoreditimage.actor = data
-        this.$store.state.overlay.actordetails.actor = data
+        this.syncUpdatedActor(data)
         this.carouselSlide = 0
         if (selectedId != null && this.getImages[selectedId - 1]) {
           this.getImages[selectedId - 1].disabled = true;
@@ -386,9 +388,7 @@ export default {
           url: selected?.url
         }
       }).json().then(data => {
-        this.actor = data
-        this.$store.state.overlay.actoreditimage.actor = data
-        this.$store.state.overlay.actordetails.actor = data
+        this.syncUpdatedActor(data)
         this.carouselSlide = 0
         if (selectedId != null && this.getImages[selectedId - 1]) {
           this.getImages[selectedId - 1].disabled = true;
@@ -403,9 +403,7 @@ export default {
           urls: this.SelectMultipleImage.map(img => img.url)
         }
       }).json().then(data => {
-        this.actor = data
-        this.$store.state.overlay.actoredit.actor = data
-        this.$store.state.overlay.actordetails.actor = data
+        this.syncUpdatedActor(data)
         this.carouselSlide = 0
         this.SelectMultipleImage.forEach(selected => {
           const target = this.getImages.find(img => img.id === selected.id);
@@ -483,11 +481,13 @@ export default {
       // await ky.post(`/api/actor/edit_extrefs/${this.actor.id}`, { json: this.extrefsArray  })
       await ky.get('/api/actor/' + this.actor.id).json().then(data => {
         if (data.id != 0) {
-          this.$store.state.overlay.actordetails.actor = data
+          this.syncUpdatedActor(data)
         }
       })
 
-      this.$store.dispatch('actorList/load', { offset: this.$store.state.actorList.offset - this.$store.state.actorList.limit })
+      if (!this.$route || this.$route.name !== 'actorsCollection') {
+        this.$store.dispatch('actorList/load', { offset: this.$store.state.actorList.offset - this.$store.state.actorList.limit })
+      }
       this.changesMade = false
       this.extrefsChangesMade = false
       this.$store.state.actorList.isLoading = false

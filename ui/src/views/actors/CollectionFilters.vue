@@ -7,29 +7,25 @@
         <span>絞り込み</span>
         <span v-if="activeFilterCount > 0" class="amz-count-badge">{{ activeFilterCount }}</span>
       </div>
-      <button
-        v-if="activeFilterCount > 0"
-        type="button"
-        class="amz-clear-btn"
-        @click="clearAllFilters"
-      >
-        すべてクリア
-      </button>
-    </div>
-
-    <!-- 適用中のフィルタチップ -->
-    <div v-if="activeChips.length > 0" class="amz-active-chips">
-      <button
-        v-for="chip in activeChips"
-        :key="chip.key"
-        type="button"
-        class="amz-active-chip"
-        @click="chip.clear()"
-        title="クリックで解除"
-      >
-        <span>{{ chip.label }}</span>
-        <span class="amz-chip-x">×</span>
-      </button>
+      <div class="amz-header-actions">
+        <button
+          type="button"
+          class="amz-enrich-all-btn"
+          :disabled="enrichingAll"
+          title="カップ・3サイズ未設定の女優をDMM/JAVDatabaseから一括補完"
+          @click="enrichAllMissing"
+        >
+          {{ enrichingAll ? '補完開始...' : 'サイズ一括補完' }}
+        </button>
+        <button
+          v-if="activeFilterCount > 0"
+          type="button"
+          class="amz-clear-btn"
+          @click="clearAllFilters"
+        >
+          すべてクリア
+        </button>
+      </div>
     </div>
 
     <!-- 並び替え (Sort) -->
@@ -84,6 +80,31 @@
             @click="toggleActorTag(tag)"
           >
             {{ tag }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- カップサイズ (複数選択) -->
+    <div class="amz-section">
+      <button type="button" class="amz-section-head" @click="toggleSection('cupSizes')">
+        <span class="amz-section-title">
+          カップサイズ
+          <span v-if="cupSizes.length > 0" class="amz-inline-val">{{ cupSizes.length }}</span>
+        </span>
+        <span class="amz-chevron">{{ sections.cupSizes ? '▾' : '▸' }}</span>
+      </button>
+      <div v-show="sections.cupSizes" class="amz-section-body">
+        <div class="amz-genre-pills amz-cup-pills">
+          <button
+            v-for="cup in cupSizeOptions"
+            :key="cup"
+            type="button"
+            class="amz-genre-pill amz-cup-pill"
+            :class="{ 'is-selected': cupSizes.includes(cup) }"
+            @click="toggleCupSize(cup)"
+          >
+            {{ cup }}
           </button>
         </div>
       </div>
@@ -428,9 +449,11 @@ export default {
       filteredCast: [],
       filteredSites: [],
       filteredAttributes: [],
+      enrichingAll: false,
       actorGenreOptions: ['美少女', 'お姉さん', '癒し', 'グラマー', '爆乳', '人妻', 'ハーフ', '欧米', 'エロ'],
       sections: {
         actorTags: true,
+        cupSizes: true,
         scenePresence: true,
         lists: true,
         rating: true,
@@ -455,6 +478,32 @@ export default {
         this[prop] = [star, 5]
       }
     },
+    async enrichAllMissing () {
+      if (this.enrichingAll) return
+      this.enrichingAll = true
+      try {
+        const res = await ky.post('/api_custom/actor/enrich_all', {
+          json: {},
+          timeout: 15000
+        }).json()
+        if (res && res.started) {
+          this.$buefy.toast.open({
+            message: `バックグラウンドで ${res.total} 人のプロフィール補完を開始しました`,
+            type: 'is-success',
+            duration: 4000
+          })
+        } else {
+          this.$buefy.toast.open({
+            message: (res && res.message) || '現在バックグラウンドで実行中です',
+            type: 'is-info'
+          })
+        }
+      } catch (e) {
+        this.$buefy.toast.open({ message: '一括補完の開始に失敗しました', type: 'is-danger' })
+      } finally {
+        this.enrichingAll = false
+      }
+    },
     setScenePresence (mode) {
       if (mode === 'with') {
         this.scenecounts = [1, 150]
@@ -471,10 +520,18 @@ export default {
         this.tags = [...this.tags, tag]
       }
     },
+    toggleCupSize (cup) {
+      if (this.cupSizes.includes(cup)) {
+        this.cupSizes = this.cupSizes.filter(c => c !== cup)
+      } else {
+        this.cupSizes = [...this.cupSizes, cup]
+      }
+    },
     clearAllFilters () {
       const f = this.$store.state.actorList.filters
       f.lists = []
       f.tags = []
+      this.$set(f, 'cup_sizes', [])
       f.cast = []
       f.sites = []
       f.attributes = []
@@ -499,12 +556,15 @@ export default {
       if (!keepView) {
         this.$store.commit('actorList/setCollectionView', 'results')
       }
+      const st = Object.assign({}, this.$store.state.actorList.filters)
+      delete st.cardSize
+      const q = Buffer.from(JSON.stringify(st)).toString('base64')
       const targetRoute = this.$route && this.$route.name === 'actorsCollection' ? 'actorsCollection' : 'actors'
       this.$router.push({
         name: targetRoute,
-        query: {
-          q: this.$store.getters['actorList/filterQueryParams']
-        }
+        query: { q }
+      }).catch(() => {
+        this.$store.dispatch('actorList/load', { offset: 0 })
       })
     },
     getFilteredCast (text) {
@@ -650,6 +710,15 @@ export default {
           }
         })
       })
+      this.cupSizes.forEach(cup => {
+        chips.push({
+          key: `cup-${cup}`,
+          label: `カップ: ${cup}`,
+          clear: () => {
+            this.cupSizes = this.cupSizes.filter(c => c !== cup)
+          }
+        })
+      })
       this.lists.forEach(item => {
         chips.push({
           key: `list-${item}`,
@@ -756,6 +825,27 @@ export default {
       set (value) {
         this.$store.state.actorList.filters.tags = value
         this.reloadList(true)
+      }
+    },
+    cupSizeOptions () {
+      const base = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K']
+      const fromDb = (this.filters && Array.isArray(this.filters.cup_sizes)) ? this.filters.cup_sizes : []
+      const merged = [...base]
+      fromDb.forEach(c => {
+        const val = (c || '').toString().trim().toUpperCase()
+        if (val && !merged.includes(val)) {
+          merged.push(val)
+        }
+      })
+      return merged
+    },
+    cupSizes: {
+      get () {
+        return this.$store.state.actorList.filters.cup_sizes || []
+      },
+      set (value) {
+        this.$set(this.$store.state.actorList.filters, 'cup_sizes', value)
+        this.reloadList()
       }
     },
     lists: {
@@ -1038,6 +1128,28 @@ export default {
   color: #7dd3fc;
 }
 
+.amz-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.amz-enrich-all-btn {
+  background: rgba(0, 168, 225, 0.16);
+  border: 1px solid rgba(0, 168, 225, 0.4);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #7dd3fc;
+  cursor: pointer;
+}
+
+.amz-enrich-all-btn:hover:not(:disabled) {
+  background: #00a8e1;
+  color: #ffffff;
+}
+
 .amz-active-chips {
   display: flex;
   flex-wrap: wrap;
@@ -1198,6 +1310,16 @@ export default {
   border-color: #00a8e1;
   color: #ffffff;
   box-shadow: 0 1px 4px rgba(0, 168, 225, 0.35);
+}
+
+.amz-cup-pills {
+  gap: 0.25rem;
+}
+
+.amz-cup-pill {
+  min-width: 1.95rem;
+  text-align: center;
+  padding: 2px 6px;
 }
 
 .amz-seg-row {

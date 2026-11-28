@@ -27,6 +27,7 @@ type ObjectConfig struct {
 	// Custom Black
 	Custom struct {
 		DmmAPIKey	  		customconfig.DmmAPIKey		  	`json:"dmmapikey"`
+		GoogleAPIKey        customconfig.GoogleAPIKey       `json:"googleapikey"`
 		ThumbnailSchedule	customconfig.ThumbnailSchedule	`json:"thumbnailSchedule"`
 		ThumbnailParams     customconfig.ThumbnailParams 	`json:"thumbnailParams"`
 	} `json:"custom"`

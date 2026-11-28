@@ -400,6 +400,7 @@ func assignField(field string, value string, actor *models.Actor, overwrite bool
 			changed = true
 		}
 	case "cup_size":
+		value = models.NormalizeCupSize(value)
 		if (overwrite || actor.CupSize == "") && value > "" && externalreference.CheckAndSetStringActorField(&actor.CupSize, field, value, actor.ID) {
 			actor.CupSize = value
 			changed = true

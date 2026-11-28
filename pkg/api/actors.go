@@ -136,6 +136,7 @@ func (i ActorResource) getFilters(req *restful.Request, resp *restful.Response) 
 		Result string
 	}
 	var results []Results
+	var outCupSizes []string
 	db.Table("actors").
 		Where("cup_size <> ''").
 		Select("distinct cup_size as result").
@@ -143,6 +144,10 @@ func (i ActorResource) getFilters(req *restful.Request, resp *restful.Response) 
 		Find(&results)
 	for _, r := range results {
 		outAttributes = append(outAttributes, "Cup Size "+r.Result)
+		cup := strings.ToUpper(strings.TrimSpace(r.Result))
+		if cup != "" {
+			outCupSizes = append(outCupSizes, cup)
+		}
 	}
 
 	db.Table("actors").
@@ -208,6 +213,7 @@ func (i ActorResource) getFilters(req *restful.Request, resp *restful.Response) 
 		Attributes: outAttributes,
 		Cast:       outCast,
 		Sites:      outSites,
+		CupSizes:   outCupSizes,
 	})
 }
 
@@ -319,6 +325,7 @@ type ResponseGetActorFilters struct {
 	Cast       []string `json:"cast"`
 	Sites      []string `json:"sites"`
 	Attributes []string `json:"attributes"`
+	CupSizes   []string `json:"cup_sizes"`
 }
 
 func (i ActorResource) toggleList(req *restful.Request, resp *restful.Response) {
@@ -412,6 +419,7 @@ func (i ActorResource) editActor(req *restful.Request, resp *restful.Response) {
 	r.HipSize = r.HipSize * 254 / 100
 
 	checkIntFieldChanged("band_size", &r.BandSize, &actor.BandSize, actor.ID)
+	r.CupSize = models.NormalizeCupSize(r.CupSize)
 	checkStringFieldChanged("cup_size", &r.CupSize, &actor.CupSize, actor.ID)
 	checkIntFieldChanged("waist_size", &r.WaistSize, &actor.WaistSize, actor.ID)
 	checkIntFieldChanged("hip_size", &r.HipSize, &actor.HipSize, actor.ID)

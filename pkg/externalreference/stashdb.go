@@ -411,7 +411,7 @@ func UpdateXbvrActor(performer models.StashPerformer, xbvrActorID uint) {
 	changed = CheckAndSetIntActorField(&actor.Height, "height", performer.Height, actor.ID) || changed
 	changed = CheckAndSetStringActorField(&actor.EyeColor, "eye_color", performer.EyeColor, actor.ID) || changed
 	changed = CheckAndSetStringActorField(&actor.HairColor, "eye_color", performer.HairColor, actor.ID) || changed
-	changed = CheckAndSetStringActorField(&actor.CupSize, "cup_size", performer.CupSize, actor.ID) || changed
+	changed = CheckAndSetStringActorField(&actor.CupSize, "cup_size", models.NormalizeCupSize(performer.CupSize), actor.ID) || changed
 	changed = CheckAndSetIntActorField(&actor.BandSize, "band_size", int(math.Round(float64(performer.BandSize)*2.54)), actor.ID) || changed
 	changed = CheckAndSetIntActorField(&actor.HipSize, "hip_size", int(math.Round(float64(performer.HipSize)*2.54)), actor.ID) || changed
 	changed = CheckAndSetIntActorField(&actor.WaistSize, "waist_size", int(math.Round(float64(performer.WaistSize)*2.54)), actor.ID) || changed

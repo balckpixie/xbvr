@@ -49,6 +49,14 @@ func (i ActorResource) WebService() *restful.WebService {
 		Metadata(restfulspec.KeyOpenAPITags, tags).
 		Writes(models.Actor{}))
 
+	ws.Route(ws.POST("/enrich/{actor-id}").To(i.enrichActor).
+		Consumes("*/*").
+		Metadata(restfulspec.KeyOpenAPITags, tags))
+
+	ws.Route(ws.POST("/enrich_all").To(i.enrichAllActors).
+		Consumes("*/*").
+		Metadata(restfulspec.KeyOpenAPITags, tags))
+
 	return ws
 }
 

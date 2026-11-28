@@ -5,6 +5,7 @@
       @mousedown="onCanvasMouseDown"
       @mousemove="onCanvasMouseMove"
       @mouseup="onCanvasMouseUp"
+      @mouseleave="handleMouseLeave"
       @contextmenu.prevent
       >
       <canvas v-show="viewMode === 'vr'" ref="vrCanvas" class="vr-canvas"></canvas>
@@ -475,6 +476,12 @@ export default {
       this.uiTimer = setTimeout(() => {
         this.uiVisible = false;
       }, 3000);
+    },
+    handleMouseLeave() {
+      if (this.uiTimer) clearTimeout(this.uiTimer);
+      this.uiTimer = setTimeout(() => {
+        this.uiVisible = false;
+      }, 350);
     },
 
     togglePlay() {

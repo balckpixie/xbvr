@@ -1580,7 +1580,7 @@ func RestoreActors(actorList []models.Actor, overwrite bool, db *gorm.DB) {
 				actor.Weight = bundleActor.Weight
 			}
 			if overwrite || actor.CupSize == "" {
-				actor.CupSize = bundleActor.CupSize
+				actor.CupSize = models.NormalizeCupSize(bundleActor.CupSize)
 			}
 			if overwrite || actor.BandSize == 0 {
 				actor.BandSize = bundleActor.BandSize
