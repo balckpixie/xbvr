@@ -1,6 +1,18 @@
 import ky from 'ky'
 import Vue from 'vue'
 
+function trimActorForList (actor) {
+  if (!actor || typeof actor !== 'object') return actor
+  return Object.assign({}, actor, {
+    biography: '',
+    urls: '',
+    aliases: '',
+    scenes: Array.isArray(actor.scenes)
+      ? actor.scenes.map(s => ({ id: s.id, is_available: s.is_available }))
+      : []
+  })
+}
+
 function defaultValue (v, d) {
   if (v === undefined) {
     return d
@@ -32,13 +44,16 @@ const defaultFilterState = {
   max_rating: 5,
   min_scene_rating: 0,
   max_scene_rating: 5,
-  sort: 'name_asc'
+  sort: 'furigana_asc'
 }
 
 const state = {
   actors: [],
   playlists: [],
+  showFace: true,
+  collectionView: 'home',
   isLoading: false,
+  isLoadingMore: false,
   offset: 0,
   total: 0,
   limit: 18,
@@ -87,6 +102,12 @@ const getters = {
 }
 
 const mutations = {
+  setShowFace (state, payload) {
+    state.showFace = !!payload
+  },
+  setCollectionView (state, payload) {
+    state.collectionView = payload === 'results' ? 'results' : 'home'
+  },
   setActors (state, payload) {
     state.actors = payload
   },
@@ -147,29 +168,42 @@ const actions = {
     state.playlists = await ky.get('/api/playlist/actor').json()
     state.filterOpts = await ky.get('/api/actor/filters').json()    
   },
-  async load ({ state, getters, commit }, params) {    
+  async load ({ state, getters, commit }, params) {
     const iOffset = params.offset || 0
+    const append = !!params.append
 
-    state.isLoading = true
+    if (append) {
+      if (state.isLoadingMore || state.isLoading) return
+      state.isLoadingMore = true
+    } else {
+      state.isLoading = true
+    }
 
     const q = Object.assign({}, state.filters)
     q.offset = iOffset
-    q.limit = state.limit
-    
-    const data = await ky
-      .post('/api/actor/list', { json: q })
-      .json()
+    q.limit = params.limit || state.limit
 
-    state.isLoading = false
-    state.filters.jumpTo = ""  // clear the jumpto value now that we have the data
+    try {
+      const data = await ky
+        .post('/api/actor/list', { json: q })
+        .json()
 
-    if (iOffset === 0) {
-      commit('setActors', [])
+      state.filters.jumpTo = '' // clear the jumpto value now that we have the data
+      const incoming = (data.actors || []).map(trimActorForList)
+
+      if (iOffset === 0 || !append) {
+        commit('setActors', incoming)
+      } else {
+        const existingIds = new Set(state.actors.map(a => a.id))
+        const next = incoming.filter(a => !existingIds.has(a.id))
+        commit('setActors', state.actors.concat(next))
+      }
+      state.offset = data.offset + q.limit
+      state.total = data.results
+    } finally {
+      state.isLoading = false
+      state.isLoadingMore = false
     }
-
-    commit('setActors', state.actors=data.actors)
-    state.offset = data.offset + state.limit
-    state.total = data.results    
   }
 }
 

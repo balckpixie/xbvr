@@ -239,6 +239,8 @@
                         <div class="actor-fav-btns">
                           <actor-favourite-button :actor="actor" />
                           <actor-watchlist-button :actor="actor" />
+                          <actor-edit-button :actor="actor" />
+                          <actor-edit-image-button :actor="actor" />
                         </div>
                       </div>
                     </div>
@@ -246,6 +248,12 @@
                     <div class="actor-stats-row">
                       <span class="actor-stat-pill">作品数: {{ detailedScenes.length }}本</span>
                       <span class="actor-stat-pill">お気に入り: {{ favouriteSceneCount }}本</span>
+                      <span class="actor-stat-pill">Cup: {{ actor.cup_size || '-' }}</span>
+                      <span class="actor-stat-pill">
+                        B{{ actor.band_size > 0 ? actor.band_size : '-' }}
+                        W{{ actor.waist_size > 0 ? actor.waist_size : '-' }}
+                        H{{ actor.hip_size > 0 ? actor.hip_size : '-' }}
+                      </span>
                     </div>
 
                     <ActorRatingAndGenres
@@ -548,7 +556,7 @@
             @click="selectActorFromRail(a)"
           >
             <img
-              :src="getImageURL(a.face_image_url || a.image_url, '120,fit')"
+              :src="getImageURL(a.face_image_url || a.image_url, '200,fit')"
               class="actor-rail-face"
               :alt="a.name"
             />
@@ -583,6 +591,8 @@ import 'splitpanes/dist/splitpanes.css'
 
 import ActorFavouriteButton from '../../components/ActorFavouriteButton'
 import ActorWatchlistButton from '../../components/ActorWatchlistButton'
+import ActorEditButton from '../../components/ActorEditButton'
+import ActorEditImageButton from '../../components/ActorEditImageButton'
 import ActorRatingAndGenres from '../../components/ActorRatingAndGenres'
 import FavouriteButton from '../../components/FavouriteButton'
 import EditButton from '../../components/EditButton'
@@ -601,6 +611,8 @@ export default {
     Pane,
     ActorFavouriteButton,
     ActorWatchlistButton,
+    ActorEditButton,
+    ActorEditImageButton,
     ActorRatingAndGenres,
     FavouriteButton,
     EditButton,
@@ -645,12 +657,19 @@ export default {
       return this.actor ? this.$store.getters['actorList/nextActor'](this.actor) : null
     },
     actorImages () {
-      if (!this.actor || !this.actor.image_arr) return []
-      try {
-        return JSON.parse(this.actor.image_arr).filter(im => im && im !== '')
-      } catch (e) {
-        return []
+      if (!this.actor) return []
+      let arr = []
+      if (this.actor.image_arr) {
+        try {
+          arr = JSON.parse(this.actor.image_arr).filter(im => im && im !== '')
+        } catch (e) {
+          arr = []
+        }
       }
+      if (arr.length === 0 && this.actor.image_url) {
+        return [this.actor.image_url]
+      }
+      return arr
     },
     selectedSceneImages () {
       if (!this.selectedScene) return []
@@ -698,6 +717,10 @@ export default {
     'actor.id': {
       immediate: true,
       handler () {
+        this.stopAndResetPlayer()
+        this.activeMedia = 0
+        this.galleryMode = 'actor'
+        this.carouselSlide = 0
         this.loadActorScenes()
         this.scrollActiveActorIntoView()
         this.updateActorHeaderHeight()
@@ -724,6 +747,20 @@ export default {
     }
   },
   methods: {
+    stopAndResetPlayer () {
+      const player = this.$refs.vrPlayer
+      if (player && player.$refs && player.$refs.vrVideo) {
+        try {
+          player.$refs.vrVideo.pause()
+        } catch (e) {
+          // ignore
+        }
+      }
+      this.currentPlayingFile = null
+      this.currentPlayingScene = null
+      this.playQueue = []
+      this.isPlayAllActive = false
+    },
     updateActorHeaderHeight () {
       this.$nextTick(() => {
         const el = this.$refs.actorHeader
@@ -2005,7 +2042,7 @@ export default {
 }
 
 .actor-rail {
-  width: 76px;
+  width: 96px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -2083,8 +2120,8 @@ export default {
 }
 
 .actor-rail-face {
-  width: 46px;
-  height: 46px;
+  width: 68px;
+  height: 68px;
   object-fit: cover;
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.35);
@@ -2097,7 +2134,7 @@ export default {
 
 .actor-rail-name {
   width: 100%;
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.2;
   color: #d1d5db;
   text-align: center;

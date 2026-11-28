@@ -64,6 +64,76 @@
       </div>
     </div>
 
+    <!-- 女優タグ (Genre Tags) -->
+    <div class="amz-section">
+      <button type="button" class="amz-section-head" @click="toggleSection('actorTags')">
+        <span class="amz-section-title">
+          女優タグ
+          <span v-if="tags.length > 0" class="amz-inline-val">{{ tags.length }}</span>
+        </span>
+        <span class="amz-chevron">{{ sections.actorTags ? '▾' : '▸' }}</span>
+      </button>
+      <div v-show="sections.actorTags" class="amz-section-body">
+        <div class="amz-genre-pills">
+          <button
+            v-for="tag in actorGenreOptions"
+            :key="tag"
+            type="button"
+            class="amz-genre-pill"
+            :class="{ 'is-selected': tags.includes(tag) }"
+            @click="toggleActorTag(tag)"
+          >
+            {{ tag }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- シーン有無 (ダイレクト選択) -->
+    <div class="amz-section">
+      <button type="button" class="amz-section-head" @click="toggleSection('scenePresence')">
+        <span class="amz-section-title">
+          シーン有無
+          <span v-if="scenePresenceMode !== 'all'" class="amz-inline-val">
+            {{ scenePresenceMode === 'with' ? 'あり' : 'なし' }}
+          </span>
+        </span>
+        <span class="amz-chevron">{{ sections.scenePresence ? '▾' : '▸' }}</span>
+      </button>
+      <div v-show="sections.scenePresence" class="amz-section-body">
+        <div class="amz-seg-row">
+          <button
+            type="button"
+            class="amz-seg-btn"
+            :class="{ 'is-selected': scenePresenceMode === 'all' }"
+            @click="setScenePresence('all')"
+          >
+            すべて
+          </button>
+          <button
+            type="button"
+            class="amz-seg-btn"
+            :class="{ 'is-selected': scenePresenceMode === 'with' }"
+            @click="setScenePresence('with')"
+          >
+            あり
+          </button>
+          <button
+            type="button"
+            class="amz-seg-btn"
+            :class="{ 'is-selected': scenePresenceMode === 'without' }"
+            @click="setScenePresence('without')"
+          >
+            なし
+          </button>
+        </div>
+        <label class="amz-check-row mt-1">
+          <input type="checkbox" v-model="onlyAvailableScenes" />
+          <span>視聴可能シーンありのみ</span>
+        </label>
+      </div>
+    </div>
+
     <!-- リスト (Watchlist / Favourite) -->
     <div class="amz-section">
       <button type="button" class="amz-section-head" @click="toggleSection('lists')">
@@ -358,7 +428,10 @@ export default {
       filteredCast: [],
       filteredSites: [],
       filteredAttributes: [],
+      actorGenreOptions: ['美少女', 'お姉さん', '癒し', 'グラマー', '爆乳', '人妻', 'ハーフ', '欧米', 'エロ'],
       sections: {
+        actorTags: true,
+        scenePresence: true,
         lists: true,
         rating: true,
         sceneRating: true,
@@ -382,9 +455,26 @@ export default {
         this[prop] = [star, 5]
       }
     },
+    setScenePresence (mode) {
+      if (mode === 'with') {
+        this.scenecounts = [1, 150]
+      } else if (mode === 'without') {
+        this.scenecounts = [0, 0]
+      } else {
+        this.scenecounts = [0, 150]
+      }
+    },
+    toggleActorTag (tag) {
+      if (this.tags.includes(tag)) {
+        this.tags = this.tags.filter(t => t !== tag)
+      } else {
+        this.tags = [...this.tags, tag]
+      }
+    },
     clearAllFilters () {
       const f = this.$store.state.actorList.filters
       f.lists = []
+      f.tags = []
       f.cast = []
       f.sites = []
       f.attributes = []
@@ -403,9 +493,12 @@ export default {
       f.max_rating = 5
       f.min_scene_rating = 0
       f.max_scene_rating = 5
-      this.reloadList()
+      this.reloadList(true)
     },
-    reloadList () {
+    reloadList (keepView = false) {
+      if (!keepView) {
+        this.$store.commit('actorList/setCollectionView', 'results')
+      }
       const targetRoute = this.$route && this.$route.name === 'actorsCollection' ? 'actorsCollection' : 'actors'
       this.$router.push({
         name: targetRoute,
@@ -535,11 +628,28 @@ export default {
     }
   },
   computed: {
+    showFace: {
+      get () {
+        return this.$store.state.actorList.showFace
+      },
+      set (value) {
+        this.$store.commit('actorList/setShowFace', value)
+      }
+    },
     filters () {
       return this.$store.state.actorList.filterOpts
     },
     activeChips () {
       const chips = []
+      this.tags.forEach(tag => {
+        chips.push({
+          key: `genre-${tag}`,
+          label: `タグ: ${tag}`,
+          clear: () => {
+            this.tags = this.tags.filter(t => t !== tag)
+          }
+        })
+      })
       this.lists.forEach(item => {
         chips.push({
           key: `list-${item}`,
@@ -623,6 +733,30 @@ export default {
     },
     activeFilterCount () {
       return this.activeChips.length
+    },
+    scenePresenceMode () {
+      const [min, max] = this.scenecounts
+      if (min >= 1 && max === 150) return 'with'
+      if (min === 0 && max === 0) return 'without'
+      if (min === 0 && max === 150) return 'all'
+      return 'custom'
+    },
+    onlyAvailableScenes: {
+      get () {
+        return this.avails[0] >= 1
+      },
+      set (checked) {
+        this.avails = checked ? [1, 150] : [0, 150]
+      }
+    },
+    tags: {
+      get () {
+        return this.$store.state.actorList.filters.tags || []
+      },
+      set (value) {
+        this.$store.state.actorList.filters.tags = value
+        this.reloadList(true)
+      }
     },
     lists: {
       get () {
@@ -794,40 +928,97 @@ export default {
 </script>
 
 <style lang="less" scoped>
+.amz-sidebar-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.amz-view-mode-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.45rem 0.65rem;
+  background: #16202a;
+  border: 1px solid #253342;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+.amz-view-mode-label {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #94a3b8;
+}
+
+.amz-view-mode-switch {
+  display: inline-flex;
+  flex: 1;
+  background: #0f171e;
+  border: 1px solid #2b3b4c;
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.amz-view-mode-btn {
+  flex: 1;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.amz-view-mode-btn:hover {
+  color: #ffffff;
+}
+
+.amz-view-mode-btn.is-active {
+  background: #00a8e1;
+  color: #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 168, 225, 0.35);
+}
+
 .amz-filters {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  background: #16202a;
+  border: 1px solid #253342;
+  border-radius: 10px;
   font-size: 0.78rem;
-  color: #1f2937;
+  color: #e2e8f0;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
 }
 
 .amz-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.5rem 0.65rem;
-  background: #f8fafc;
-  border-bottom: 1px solid #e5e7eb;
+  padding: 0.55rem 0.7rem;
+  background: #1b2836;
+  border-bottom: 1px solid #253342;
 }
 
 .amz-header-title {
   display: flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.35rem;
   font-weight: 700;
   font-size: 0.82rem;
-  color: #111827;
+  color: #ffffff;
 }
 
 .amz-count-badge {
-  background: #7957d5;
+  background: #00a8e1;
   color: #ffffff;
   font-size: 0.68rem;
   font-weight: 700;
-  padding: 0 5px;
+  padding: 0 6px;
   border-radius: 999px;
   line-height: 1.4;
 }
@@ -837,14 +1028,14 @@ export default {
   border: none;
   padding: 0;
   font-size: 0.72rem;
-  color: #2563eb;
+  color: #38bdf8;
   cursor: pointer;
   font-weight: 600;
 }
 
 .amz-clear-btn:hover {
   text-decoration: underline;
-  color: #c2410c;
+  color: #7dd3fc;
 }
 
 .amz-active-chips {
@@ -852,26 +1043,27 @@ export default {
   flex-wrap: wrap;
   gap: 0.25rem;
   padding: 0.45rem 0.65rem;
-  background: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
+  background: #121b24;
+  border-bottom: 1px solid #253342;
 }
 
 .amz-active-chip {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  padding: 2px 6px;
-  background: #ede9fe;
-  color: #5b21b6;
-  border: 1px solid #ddd6fe;
-  border-radius: 4px;
+  padding: 2px 7px;
+  background: rgba(0, 168, 225, 0.18);
+  color: #7dd3fc;
+  border: 1px solid rgba(0, 168, 225, 0.4);
+  border-radius: 999px;
   font-size: 0.7rem;
   font-weight: 600;
   cursor: pointer;
 }
 
 .amz-active-chip:hover {
-  background: #ddd6fe;
+  background: rgba(0, 168, 225, 0.3);
+  color: #ffffff;
 }
 
 .amz-chip-x {
@@ -880,7 +1072,7 @@ export default {
 }
 
 .amz-section {
-  border-bottom: 1px solid #eceff3;
+  border-bottom: 1px solid #22303e;
 }
 
 .amz-section-last {
@@ -892,14 +1084,14 @@ export default {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.42rem 0.65rem;
+  padding: 0.45rem 0.7rem;
   background: transparent;
   border: none;
   cursor: pointer;
   text-align: left;
   font-size: 0.76rem;
   font-weight: 700;
-  color: #111827;
+  color: #f1f5f9;
   transition: background 0.12s ease;
 }
 
@@ -909,7 +1101,7 @@ export default {
 }
 
 .amz-section-head:not(.is-static):hover {
-  background: #f8fafc;
+  background: #1d2a38;
 }
 
 .amz-section-title {
@@ -921,53 +1113,123 @@ export default {
 .amz-inline-val {
   font-size: 0.68rem;
   font-weight: 600;
-  color: #7957d5;
-  background: #f3e8ff;
+  color: #38bdf8;
+  background: rgba(0, 168, 225, 0.16);
   padding: 0 5px;
   border-radius: 999px;
 }
 
 .amz-chevron {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: #8197a4;
 }
 
 .amz-section-body {
-  padding: 0.25rem 0.65rem 0.55rem;
+  padding: 0.25rem 0.7rem 0.55rem;
 }
 
 .amz-select select {
   font-size: 0.76rem;
-  border-color: #d1d5db;
-  border-radius: 5px;
+  background: #0f171e;
+  color: #f1f5f9;
+  border-color: #2e4052;
+  border-radius: 6px;
+}
+
+.amz-select::after {
+  border-color: #38bdf8 !important;
 }
 
 .amz-check-row {
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.18rem 0.25rem;
+  padding: 0.22rem 0.3rem;
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.78rem;
+  color: #cbd5e1;
   user-select: none;
 }
 
 .amz-check-row:hover {
-  background: #f3f4f6;
+  background: #1d2a38;
+  color: #ffffff;
 }
 
 .amz-check-row input[type="checkbox"] {
-  accent-color: #7957d5;
+  accent-color: #00a8e1;
   cursor: pointer;
 }
 
 .amz-icon-primary {
-  color: #7957d5;
+  color: #00a8e1;
 }
 
 .amz-icon-danger {
-  color: #e11d48;
+  color: #f43f5e;
+}
+
+.amz-genre-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.amz-genre-pill {
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: #233140;
+  border: 1px solid #324457;
+  color: #cbd5e1;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.amz-genre-pill:hover {
+  background: #2d4054;
+  color: #ffffff;
+}
+
+.amz-genre-pill.is-selected {
+  background: #00a8e1;
+  border-color: #00a8e1;
+  color: #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 168, 225, 0.35);
+}
+
+.amz-seg-row {
+  display: flex;
+  gap: 2px;
+  background: #0f171e;
+  border: 1px solid #2b3b4c;
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.amz-seg-btn {
+  flex: 1;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 6px;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 0.73rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.amz-seg-btn:hover {
+  color: #ffffff;
+}
+
+.amz-seg-btn.is-selected {
+  background: #00a8e1;
+  color: #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 168, 225, 0.35);
 }
 
 .amz-star-row {
@@ -975,7 +1237,7 @@ export default {
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.16rem 0.3rem;
+  padding: 0.18rem 0.35rem;
   background: transparent;
   border: 1px solid transparent;
   border-radius: 4px;
@@ -984,12 +1246,12 @@ export default {
 }
 
 .amz-star-row:hover {
-  background: #fffbeb;
+  background: #1d2a38;
 }
 
 .amz-star-row.is-selected {
-  background: #fef3c7;
-  border-color: #fcd34d;
+  background: rgba(245, 158, 11, 0.16);
+  border-color: rgba(245, 158, 11, 0.45);
   font-weight: 700;
 }
 
@@ -1004,23 +1266,23 @@ export default {
 }
 
 .amz-stars .is-empty {
-  color: #d1d5db;
+  color: #475569;
 }
 
 .amz-star-text {
   font-size: 0.74rem;
-  color: #374151;
+  color: #cbd5e1;
 }
 
 .amz-mini-slider {
-  margin-top: 0.2rem;
+  margin-top: 0.25rem;
   padding: 0 0.25rem;
 }
 
 .amz-field-label {
   font-size: 0.7rem;
   font-weight: 700;
-  color: #4b5563;
+  color: #94a3b8;
   margin-bottom: 0.15rem;
 }
 
@@ -1028,11 +1290,20 @@ export default {
   min-height: 1.75rem;
   padding: 2px 4px;
   font-size: 0.74rem;
+  background: #0f171e;
+  border-color: #2e4052;
+  color: #f1f5f9;
 }
 
 .amz-tag-fields ::v-deep .taginput .taginput-container input {
   font-size: 0.74rem;
   height: 1.4rem;
+  color: #f1f5f9;
+  background: transparent;
+}
+
+.amz-tag-fields ::v-deep .taginput .taginput-container input::placeholder {
+  color: #64748b;
 }
 
 .amz-range-row {
@@ -1049,13 +1320,13 @@ export default {
   align-items: center;
   font-size: 0.72rem;
   font-weight: 600;
-  color: #374151;
+  color: #cbd5e1;
   margin-bottom: 0.1rem;
 }
 
 .amz-range-val {
   font-size: 0.7rem;
-  color: #6b7280;
+  color: #38bdf8;
   font-variant-numeric: tabular-nums;
 }
 

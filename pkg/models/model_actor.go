@@ -441,6 +441,27 @@ func QueryActors(r RequestActorList, enablePreload bool) ResponseActorList {
 		tx = tx.Where("(select count(*) from scene_cast sc join scenes s on s.id=sc.scene_id join sites on sites.id = s.scraper_id where sc.actor_id=actors.id and sites.name IN (?)) = 0", excludedSites)
 	}
 
+	// Custom Black（女優ジャンルタグ検索）
+	for _, t := range r.Tags {
+		tag := strings.TrimSpace(t.OrElse(""))
+		if tag == "" {
+			continue
+		}
+		if strings.HasPrefix(tag, "!") {
+			exTag := strings.TrimPrefix(tag, "!")
+			tx = tx.Where("(actors.genre_tags IS NULL OR actors.genre_tags NOT LIKE ?)", "%\""+exTag+"\"%")
+		} else {
+			inTag := strings.TrimPrefix(tag, "&")
+			tx = tx.Where("actors.genre_tags LIKE ?", "%\""+inTag+"\"%")
+		}
+	}
+	// Custom END
+
+	castType := "REAL"
+	if dbConn.Driver == "mysql" {
+		castType = "DECIMAL(10,2)"
+	}
+
 	switch r.Sort.OrElse("") {
 	//Custom black（フリガナソートを追加）
 	case "furigana_asc":
@@ -454,12 +475,23 @@ func QueryActors(r RequestActorList, enablePreload bool) ResponseActorList {
 		tx = tx.Order("name desc")
 	case "rating_desc":
 		tx = tx.
-			Where("actors.star_rating > ?", 0).
-			Order("actors.star_rating desc")
+			Order("CAST(IFNULL(actors.star_rating, 0) AS " + castType + ") desc, actors.avail_count desc, actors.`count` desc")
 	case "rating_asc":
 		tx = tx.
-			Where("actors.star_rating > ?", 0).
-			Order("actors.star_rating asc")
+			Where("CAST(IFNULL(actors.star_rating, 0) AS " + castType + ") > 0").
+			Order("CAST(IFNULL(actors.star_rating, 0) AS " + castType + ") asc")
+	case "rating_face_desc":
+		tx = tx.
+			Order("CAST(IFNULL(actors.rating_face, 0) AS " + castType + ") desc, CAST(IFNULL(actors.star_rating, 0) AS " + castType + ") desc, actors.avail_count desc, actors.`count` desc")
+	case "rating_bust_desc":
+		tx = tx.
+			Order("CAST(IFNULL(actors.rating_bust, 0) AS " + castType + ") desc, CAST(IFNULL(actors.star_rating, 0) AS " + castType + ") desc, actors.avail_count desc, actors.`count` desc")
+	case "rating_style_desc":
+		tx = tx.
+			Order("CAST(IFNULL(actors.rating_style, 0) AS " + castType + ") desc, CAST(IFNULL(actors.star_rating, 0) AS " + castType + ") desc, actors.avail_count desc, actors.`count` desc")
+	case "rating_vibe_desc":
+		tx = tx.
+			Order("CAST(IFNULL(actors.rating_vibe, 0) AS " + castType + ") desc, CAST(IFNULL(actors.star_rating, 0) AS " + castType + ") desc, actors.avail_count desc, actors.`count` desc")
 	case "scene_rating_desc":
 		tx = tx.
 			Order("(select AVG(s.star_rating) from scene_cast sc join scenes s on s.id=sc.scene_id where sc.actor_id =actors.id and s.star_rating > 0  and is_hidden=0) desc, (select count(*) from scene_cast sc join scenes s on s.id=sc.scene_id where sc.actor_id =actors.id and s.star_rating > 0 and is_hidden=0) desc, (select count(*) from scene_cast sc join scenes s on s.id=sc.scene_id where sc.actor_id =actors.id) desc")

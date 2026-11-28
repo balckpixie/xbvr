@@ -46,7 +46,7 @@
 import ky from 'ky'
 import StarRating from 'vue-star-rating'
 
-const GENRE_OPTIONS = ['美少女', 'お姉さん', '癒し', 'グラマー', '爆乳', '人妻', 'ハーフ', 'エロ']
+const GENRE_OPTIONS = ['美少女', 'お姉さん', '癒し', 'グラマー', '爆乳', '人妻', 'ハーフ', '欧米', 'エロ']
 
 export default {
   name: 'ActorRatingAndGenres',
