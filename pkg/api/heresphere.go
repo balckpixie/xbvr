@@ -155,7 +155,9 @@ func HeresphereAuthFilter(req *restful.Request, resp *restful.Response, chain *r
 }
 
 func HeresphereResponseFilter(req *restful.Request, resp *restful.Response, chain *restful.FilterChain) {
-	resp.AddHeader("HereSphere-JSON-Version", "1")
+	if req.Request.URL.Path != "/heresphere/menu" {
+		resp.AddHeader("HereSphere-JSON-Version", "1")
+	}
 	chain.ProcessFilter(req, resp)
 }
 
@@ -171,6 +173,9 @@ func (i HeresphereResource) WebService() *restful.WebService {
 		Consumes(restful.MIME_JSON, "application/x-www-form-urlencoded").
 		Produces(restful.MIME_JSON)
 
+	ws.Route(ws.GET("/menu").To(i.getHeresphereMenu).
+		Produces("text/html"))
+
 	ws.Route(ws.HEAD("/").To(i.getHeresphereLibrary))
 
 	ws.Route(ws.GET("/").Filter(HeresphereAuthFilter).To(i.getHeresphereLibrary).
@@ -179,6 +184,38 @@ func (i HeresphereResource) WebService() *restful.WebService {
 	ws.Route(ws.POST("/").Filter(HeresphereAuthFilter).To(i.getHeresphereLibrary).
 		Metadata(restfulspec.KeyOpenAPITags, tags).
 		Writes(DeoLibrary{}))
+
+	ws.Route(ws.HEAD("/collection").To(i.getHeresphereCollection))
+	ws.Route(ws.GET("/collection").Filter(HeresphereAuthFilter).To(i.getHeresphereCollection).
+		Metadata(restfulspec.KeyOpenAPITags, tags).
+		Writes(HeresphereLibrary{}))
+	ws.Route(ws.POST("/collection").Filter(HeresphereAuthFilter).To(i.getHeresphereCollection).
+		Metadata(restfulspec.KeyOpenAPITags, tags).
+		Writes(HeresphereLibrary{}))
+
+	ws.Route(ws.HEAD("/collection/pickup").To(i.getHeresphereCollectionPickup))
+	ws.Route(ws.GET("/collection/pickup").Filter(HeresphereAuthFilter).To(i.getHeresphereCollectionPickup).
+		Metadata(restfulspec.KeyOpenAPITags, tags).
+		Writes(HeresphereLibrary{}))
+	ws.Route(ws.POST("/collection/pickup").Filter(HeresphereAuthFilter).To(i.getHeresphereCollectionPickup).
+		Metadata(restfulspec.KeyOpenAPITags, tags).
+		Writes(HeresphereLibrary{}))
+
+	ws.Route(ws.HEAD("/collection/ranking").To(i.getHeresphereCollectionRanking))
+	ws.Route(ws.GET("/collection/ranking").Filter(HeresphereAuthFilter).To(i.getHeresphereCollectionRanking).
+		Metadata(restfulspec.KeyOpenAPITags, tags).
+		Writes(HeresphereLibrary{}))
+	ws.Route(ws.POST("/collection/ranking").Filter(HeresphereAuthFilter).To(i.getHeresphereCollectionRanking).
+		Metadata(restfulspec.KeyOpenAPITags, tags).
+		Writes(HeresphereLibrary{}))
+
+	ws.Route(ws.HEAD("/collection/scene-ranking").To(i.getHeresphereCollectionSceneRanking))
+	ws.Route(ws.GET("/collection/scene-ranking").Filter(HeresphereAuthFilter).To(i.getHeresphereCollectionSceneRanking).
+		Metadata(restfulspec.KeyOpenAPITags, tags).
+		Writes(HeresphereLibrary{}))
+	ws.Route(ws.POST("/collection/scene-ranking").Filter(HeresphereAuthFilter).To(i.getHeresphereCollectionSceneRanking).
+		Metadata(restfulspec.KeyOpenAPITags, tags).
+		Writes(HeresphereLibrary{}))
 
 	ws.Route(ws.GET("/{scene-id}").Filter(HeresphereAuthFilter).To(i.getHeresphereScene).
 		Metadata(restfulspec.KeyOpenAPITags, tags).
@@ -1061,6 +1098,233 @@ func (i HeresphereResource) getHeresphereLibrary(req *restful.Request, resp *res
 	resp.WriteHeaderAndEntity(http.StatusOK, HeresphereLibrary{
 		Access:  1,
 		Library: sceneLists,
+	})
+}
+
+func (i HeresphereResource) getHeresphereMenu(req *restful.Request, resp *restful.Response) {
+	proto := getProto(req)
+	host := req.Request.Host
+	base := fmt.Sprintf("%s://%s/heresphere", proto, host)
+
+	html := fmt.Sprintf(`<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>XBVR - HereSphere Menu</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 28px 20px 40px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+      background: radial-gradient(circle at 20%% 0%%, #162433 0%%, #0d141c 70%%);
+      color: #f1f5f9;
+      min-height: 100vh;
+    }
+    .wrap {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 26px;
+      font-weight: 800;
+      color: #ffffff;
+    }
+    .guide {
+      margin: 0 0 24px;
+      font-size: 14px;
+      line-height: 1.6;
+      color: #94a3b8;
+    }
+    .grid {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 22px;
+      background: #16202a;
+      border: 1px solid #2b3f54;
+      border-radius: 12px;
+      text-decoration: none;
+      color: #f8fafc;
+      transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
+    }
+    .card:hover, .card:focus {
+      background: #1e2d3d;
+      border-color: #00a8e1;
+      transform: translateY(-1px);
+      outline: none;
+    }
+    .card-title {
+      font-size: 19px;
+      font-weight: 700;
+      margin: 0 0 4px;
+      color: #ffffff;
+    }
+    .card-desc {
+      font-size: 13px;
+      color: #94a3b8;
+      margin: 0;
+    }
+    .card-url {
+      font-size: 12px;
+      color: #38bdf8;
+      margin-top: 6px;
+      font-family: monospace;
+    }
+    .arrow {
+      font-size: 22px;
+      font-weight: 700;
+      color: #00a8e1;
+      flex-shrink: 0;
+    }
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      margin-right: 8px;
+      vertical-align: middle;
+      background: rgba(0, 168, 225, 0.2);
+      color: #38bdf8;
+      border: 1px solid rgba(0, 168, 225, 0.45);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>XBVR HereSphere メニュー</h1>
+    <p class="guide">
+      利用したいリストをタップして開いた状態で、HereSphere の <strong>API 切替ボタン</strong> を押してください。<br />
+      別のリストに切り替える場合はブラウザに戻って再度選択してください。
+    </p>
+    <div class="grid">
+      <a class="card" href="%[1]s">
+        <div>
+          <div class="card-title"><span class="badge">SCENE</span>従来のシーンリスト</div>
+          <p class="card-desc">プレイリスト・未マッチ・トレーラー等の通常ライブラリを表示します</p>
+          <div class="card-url">%[1]s</div>
+        </div>
+        <span class="arrow">&rsaquo;</span>
+      </a>
+      <a class="card" href="%[1]s/collection">
+        <div>
+          <div class="card-title"><span class="badge">ACTOR</span>コレクション：全女優リスト</div>
+          <p class="card-desc">視聴可能シーンがある全女優をふりがな順で表示します</p>
+          <div class="card-url">%[1]s/collection</div>
+        </div>
+        <span class="arrow">&rsaquo;</span>
+      </a>
+      <a class="card" href="%[1]s/collection/pickup">
+        <div>
+          <div class="card-title"><span class="badge">PICKUP</span>ピックアップ（おすすめ女優）</div>
+          <p class="card-desc">視聴可能シーンがある女優からランダムで最大50名を表示します</p>
+          <div class="card-url">%[1]s/collection/pickup</div>
+        </div>
+        <span class="arrow">&rsaquo;</span>
+      </a>
+      <a class="card" href="%[1]s/collection/ranking">
+        <div>
+          <div class="card-title"><span class="badge">RANK</span>ランキング：総合</div>
+          <p class="card-desc">総合評価順の上位50名（総合1．女優名）を表示します</p>
+          <div class="card-url">%[1]s/collection/ranking</div>
+        </div>
+        <span class="arrow">&rsaquo;</span>
+      </a>
+      <a class="card" href="%[1]s/collection/scene-ranking">
+        <div>
+          <div class="card-title"><span class="badge">RANK</span>ランキング：シーン総合</div>
+          <p class="card-desc">シーン平均評価順の上位50名（シーン総合1．女優名）を表示します</p>
+          <div class="card-url">%[1]s/collection/scene-ranking</div>
+        </div>
+        <span class="arrow">&rsaquo;</span>
+      </a>
+    </div>
+  </div>
+</body>
+</html>`, base)
+
+	resp.Header().Set("Content-Type", "text/html; charset=utf-8")
+	resp.WriteHeader(http.StatusOK)
+	_, _ = resp.Write([]byte(html))
+}
+
+func (i HeresphereResource) getHeresphereCollection(req *restful.Request, resp *restful.Response) {
+	i.writeHeresphereActorLibrary(req, resp, models.RequestActorList{
+		Sort:     optional.NewString("furigana_asc"),
+		MinAvail: optional.NewInt(1),
+		Limit:    optional.NewInt(10000),
+	}, "")
+}
+
+func (i HeresphereResource) getHeresphereCollectionPickup(req *restful.Request, resp *restful.Response) {
+	i.writeHeresphereActorLibrary(req, resp, models.RequestActorList{
+		Sort:     optional.NewString("random"),
+		MinAvail: optional.NewInt(1),
+		Limit:    optional.NewInt(50),
+	}, "")
+}
+
+func (i HeresphereResource) getHeresphereCollectionRanking(req *restful.Request, resp *restful.Response) {
+	i.writeHeresphereActorLibrary(req, resp, models.RequestActorList{
+		Sort:     optional.NewString("rating_desc"),
+		MinAvail: optional.NewInt(1),
+		Limit:    optional.NewInt(50),
+	}, "総合")
+}
+
+func (i HeresphereResource) getHeresphereCollectionSceneRanking(req *restful.Request, resp *restful.Response) {
+	i.writeHeresphereActorLibrary(req, resp, models.RequestActorList{
+		Sort:     optional.NewString("scene_rating_desc"),
+		MinAvail: optional.NewInt(1),
+		Limit:    optional.NewInt(50),
+	}, "シーン総合")
+}
+
+func (i HeresphereResource) writeHeresphereActorLibrary(req *restful.Request, resp *restful.Response, query models.RequestActorList, rankPrefix string) {
+	if !config.Config.Interfaces.DeoVR.Enabled {
+		return
+	}
+
+	out := models.QueryActors(query, true)
+	proto := getProto(req)
+	host := req.Request.Host
+
+	var actorLists []HeresphereListScenes
+	rank := 0
+	for _, actor := range out.Actors {
+		var sceneURLs []string
+		for _, scene := range actor.Scenes {
+			if !scene.IsAvailable {
+				continue
+			}
+			sceneURLs = append(sceneURLs, fmt.Sprintf("%v://%v/heresphere/%v", proto, host, scene.ID))
+		}
+		if len(sceneURLs) == 0 {
+			continue
+		}
+		rank++
+		name := actor.Name
+		if rankPrefix != "" {
+			name = fmt.Sprintf("%s%d．%s", rankPrefix, rank, actor.Name)
+		}
+		actorLists = append(actorLists, HeresphereListScenes{
+			Name: name,
+			List: sceneURLs,
+		})
+	}
+
+	resp.WriteHeaderAndEntity(http.StatusOK, HeresphereLibrary{
+		Access:  1,
+		Library: actorLists,
 	})
 }
 
