@@ -8,7 +8,7 @@
           :rating="actor[item.key] || 0"
           :read-only="item.key === 'star_rating'"
           @rating-selected="val => setRating(item.key, val)"
-          :increment="item.key === 'star_rating' ? 0.1 : 0.5"
+          :increment="item.key === 'star_rating' ? 0.1 : 1"
           :star-size="compact ? 15 : 18"
           :show-rating="true"
           :active-color="item.key === 'star_rating' ? '#ffd055' : '#48c774'"
@@ -46,7 +46,7 @@
 import ky from 'ky'
 import StarRating from 'vue-star-rating'
 
-const GENRE_OPTIONS = ['美少女', 'お姉さん', '癒し', 'グラマー', '人妻', 'ハーフ', 'エロ']
+const GENRE_OPTIONS = ['美少女', 'お姉さん', '癒し', 'グラマー', '爆乳', '人妻', 'ハーフ', 'エロ']
 
 export default {
   name: 'ActorRatingAndGenres',
@@ -106,11 +106,12 @@ export default {
     async setRating (field, val) {
       if (field === 'star_rating') return
 
+      const intVal = Math.round(Number(val) || 0)
       const payload = {}
-      payload[field] = val
-      this.$set(this.actor, field, val)
+      payload[field] = intVal
+      this.$set(this.actor, field, intVal)
 
-      // 4項目の平均から総合(star_rating)を自動算出
+      // 4項目の平均から総合(star_rating)を自動算出（小数第一位まで）
       const subKeys = ['rating_face', 'rating_style', 'rating_bust', 'rating_vibe']
       const vals = subKeys.map(k => Number(this.actor[k]) || 0).filter(v => v > 0)
       const overall = vals.length > 0
@@ -119,7 +120,7 @@ export default {
       this.$set(this.actor, 'star_rating', overall)
 
       const updatedActor = Object.assign({}, this.actor)
-      updatedActor[field] = val
+      updatedActor[field] = intVal
       updatedActor.star_rating = overall
       this.$store.commit('actorList/updateActor', updatedActor)
 
@@ -232,14 +233,16 @@ export default {
 .genre-buttons {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
+  gap: 0.25rem;
 }
 
 .genre-pill-btn {
-  padding: 3px 11px;
+  padding: 2px 7px;
   border-radius: 999px;
-  font-size: 0.76rem;
+  font-size: 0.68rem;
   font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
   cursor: pointer;
   border: 1px solid #d1d5db;
   background: #f5f5f5;

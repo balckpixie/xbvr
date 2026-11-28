@@ -13,7 +13,7 @@
         {{$t('Actors')}}
       </b-navbar-item>
       <b-navbar-item tag="router-link" :to="{ path: './actors-collection' }">
-        {{$t('ActorsCollection')}}
+        {{$t('Collection')}}
       </b-navbar-item>
       <b-navbar-item tag="router-link" :to="{ path: './files' }">
         {{$t('Files')}}

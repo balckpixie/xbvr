@@ -13,21 +13,6 @@
     <div class="modal-background" @click="close"></div>
 
     <div class="modal-card actor-collection-modal">
-      <a
-        class="docked-nav-btn is-prev"
-        :class="{ 'is-disabled': !prevActorObj }"
-        @click="prevActor"
-        :title="prevActorObj ? `Prev: ${prevActorObj.name} (O)` : 'No previous actor'"
-      >
-        <span class="nav-arrow">&#10094;</span>
-        <img
-          v-if="prevActorObj"
-          :src="getImageURL(prevActorObj.face_image_url || prevActorObj.image_url, '120,fit')"
-          class="nav-actor-face"
-          :alt="prevActorObj.name"
-        />
-      </a>
-
       <section class="modal-card-body">
         <div class="top-controls">
           <div class="is-flex" style="gap: 0.25rem; flex-wrap: wrap;">
@@ -52,59 +37,94 @@
           :max-pane-size="100"
           ref="splitpanesRef"
         >
-          <!-- 左ペイン: ギャラリー兼プレイヤー -->
+          <!-- 左ペイン: ギャラリー兼プレイヤー (下段タブ切替) -->
           <pane :min-size="25" :max-size="100" :size="hideRightPane ? 100 : 60">
             <div class="left-pane-inner">
-              <b-tabs v-model="activeMedia" position="is-centered" :animated="false">
-                <b-tab-item label="Gallery">
-                  <div class="gallery-toolbar" v-if="selectedScene">
-                    <b-field grouped>
-                      <b-radio-button v-model="galleryMode" native-value="scene" size="is-small">
-                        Scene ({{ selectedSceneImages.length }})
-                      </b-radio-button>
-                      <b-radio-button v-model="galleryMode" native-value="actor" size="is-small">
-                        Actor ({{ actorImages.length }})
-                      </b-radio-button>
-                      <b-radio-button v-model="galleryMode" native-value="all" size="is-small">
-                        All ({{ allGalleryImages.length }})
-                      </b-radio-button>
-                    </b-field>
-                  </div>
-
-                  <b-carousel
-                    v-if="galleryImages.length > 0"
-                    v-model="carouselSlide"
-                    @change="scrollToActiveIndicator"
-                    :autoplay="false"
-                    :indicator-inside="false"
-                  >
-                    <b-carousel-item v-for="(imgUrl, i) in galleryImages" :key="i">
-                      <div
-                        class="image is-1by1 is-full"
-                        :style="{
-                          backgroundImage: `url('${getImageURL(imgUrl, '700,fit')}')`,
-                          backgroundSize: 'contain',
-                          backgroundPosition: 'center',
-                          backgroundRepeat: 'no-repeat'
-                        }"
-                      ></div>
-                    </b-carousel-item>
-                    <template slot="indicators" slot-scope="props">
-                      <span class="al image" style="width: max-content;">
-                        <vue-load-image>
-                          <img slot="image" :src="getIndicatorURL(props.i)" style="height: 60px;" />
-                          <img slot="preloader" src="/ui/images/blank.png" style="height: 60px;" />
-                          <img slot="error" src="/ui/images/blank_female_profile.png" style="height: 60px;" />
-                        </vue-load-image>
+              <!-- メイン表示エリア -->
+              <div class="left-pane-stage">
+                <!-- Gallery ビュー -->
+                <div v-show="activeMedia === 0" class="gallery-wrapper">
+                    <div class="gallery-toolbar">
+                      <div class="gallery-mode-pills" v-if="selectedScene">
+                        <button
+                          type="button"
+                          class="gallery-mode-btn"
+                          :class="{ 'is-active': galleryMode === 'scene' }"
+                          @click="setGalleryMode('scene')"
+                        >
+                          Scene ({{ selectedSceneImages.length }})
+                        </button>
+                        <button
+                          type="button"
+                          class="gallery-mode-btn"
+                          :class="{ 'is-active': galleryMode === 'actor' }"
+                          @click="setGalleryMode('actor')"
+                        >
+                          Actor ({{ actorImages.length }})
+                        </button>
+                        <button
+                          type="button"
+                          class="gallery-mode-btn"
+                          :class="{ 'is-active': galleryMode === 'all' }"
+                          @click="setGalleryMode('all')"
+                        >
+                          All ({{ allGalleryImages.length }})
+                        </button>
+                      </div>
+                      <div v-else></div>
+                      <span v-if="galleryImages.length > 0" class="gallery-counter">
+                        {{ carouselSlide + 1 }} / {{ galleryImages.length }}
                       </span>
-                    </template>
-                  </b-carousel>
-                  <div v-else class="has-text-centered has-text-grey py-6">
-                    No gallery images available.
-                  </div>
-                </b-tab-item>
+                    </div>
 
-                <b-tab-item label="Player">
+                    <div v-if="galleryImages.length > 0" class="gallery-stage" @wheel.prevent="onGalleryWheel">
+                      <button
+                        type="button"
+                        class="gallery-stage-nav is-left"
+                        :disabled="carouselSlide <= 0"
+                        @click="handleLeftArrow"
+                        title="Previous image"
+                      >
+                        &#10094;
+                      </button>
+                      <img
+                        :src="getImageURL(galleryImages[carouselSlide], '1200,fit')"
+                        class="gallery-main-img"
+                        alt="Gallery Image"
+                      />
+                      <button
+                        type="button"
+                        class="gallery-stage-nav is-right"
+                        :disabled="carouselSlide >= galleryImages.length - 1"
+                        @click="handleRightArrow"
+                        title="Next image"
+                      >
+                        &#10095;
+                      </button>
+                    </div>
+                    <div v-else class="gallery-stage is-empty">
+                      <span class="has-text-grey-light">No gallery images available.</span>
+                    </div>
+
+                    <div v-if="galleryImages.length > 0" class="gallery-thumbs" ref="galleryThumbsRef">
+                      <div
+                        v-for="(imgUrl, i) in galleryImages"
+                        :key="i"
+                        class="gallery-thumb-item"
+                        :class="{ 'is-active': carouselSlide === i }"
+                        @click="selectGallerySlide(i)"
+                      >
+                        <vue-load-image>
+                          <img slot="image" :src="getIndicatorURL(i)" alt="Thumb" />
+                          <img slot="preloader" src="/ui/images/blank.png" alt="Loading" />
+                          <img slot="error" src="/ui/images/blank_female_profile.png" alt="Error" />
+                        </vue-load-image>
+                      </div>
+                    </div>
+                  </div>
+
+                <!-- Player ビュー -->
+                <div v-show="activeMedia === 1" class="player-tab-panel">
                   <div class="player-container">
                     <Vr180Player
                       v-if="activeMedia === 1 && currentPlayingFile"
@@ -112,35 +132,66 @@
                       :file="currentPlayingFile"
                       @ended="onPlayerEnded"
                     />
-                    <div v-else class="has-text-centered has-text-grey py-6">
-                      Select a video file from the right list to play.
+                    <div v-else class="player-empty-state">
+                      <b-icon pack="mdi" icon="play-circle-outline" size="is-large" class="mb-2" />
+                      <span>Select a video file from the right list to play.</span>
                     </div>
                   </div>
-                  <div v-if="currentPlayingScene" class="player-footer-bar mt-2">
-                    <div class="player-file-switcher">
-                      <button
-                        v-for="(f, idx) in getVideoFiles(currentPlayingScene)"
-                        :key="f.id"
-                        class="button is-small"
-                        :class="[
-                          f.has_thumbnail ? 'is-success' : 'is-danger',
-                          currentPlayingFile && currentPlayingFile.id === f.id ? 'is-current-file' : 'is-outlined'
-                        ]"
-                        :title="f.filename"
-                        @click="playFile(currentPlayingScene, f)"
-                      >
-                        {{ idx + 1 }}
-                      </button>
-                    </div>
-                    <span v-if="isPlayAllActive" class="tag is-info is-light is-small">
-                      すべて再生中
-                    </span>
-                    <span class="player-scene-title is-size-7 has-text-grey">
+                  <div v-if="currentPlayingScene" class="player-footer-bar">
+                    <span class="player-scene-title is-size-7 has-text-grey-light" :title="currentPlayingScene.title">
                       {{ currentPlayingScene.title }}
                     </span>
+                    <div class="player-footer-right">
+                      <span v-if="isPlayAllActive" class="tag is-info is-light is-small">
+                        すべて再生中
+                      </span>
+                      <div class="player-file-switcher">
+                        <button
+                          v-for="(f, idx) in getVideoFiles(currentPlayingScene)"
+                          :key="f.id"
+                          class="button is-small"
+                          :class="[
+                            f.has_thumbnail ? 'is-success' : 'is-danger',
+                            currentPlayingFile && currentPlayingFile.id === f.id ? 'is-current-file' : 'is-outlined'
+                          ]"
+                          :title="f.filename"
+                          @click="playFile(currentPlayingScene, f)"
+                        >
+                          {{ idx + 1 }}
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </b-tab-item>
-              </b-tabs>
+                </div>
+              </div>
+
+              <!-- 下段タブスイッチャー (Gallery / Player) -->
+              <div class="media-switcher-bar">
+                <div class="media-switcher-group">
+                  <button
+                    type="button"
+                    class="media-switch-btn"
+                    :class="{ 'is-active': activeMedia === 0 }"
+                    @click="activeMedia = 0"
+                  >
+                    <b-icon pack="mdi" icon="image-multiple" size="is-small" />
+                    <span>Gallery</span>
+                    <span v-if="galleryImages.length > 0" class="media-count-badge">
+                      {{ galleryImages.length }}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    class="media-switch-btn"
+                    :class="{ 'is-active': activeMedia === 1 }"
+                    @click="activeMedia = 1"
+                  >
+                    <b-icon pack="mdi" icon="play-circle-outline" size="is-small" />
+                    <span>Player</span>
+                    <span v-if="currentPlayingFile" class="media-playing-dot" title="Playing"></span>
+                  </button>
+                </div>
+              </div>
             </div>
           </pane>
 
@@ -148,7 +199,11 @@
           <pane v-if="!hideRightPane" :min-size="25" :max-size="75" :size="40">
             <div class="right-pane-inner">
               <!-- Actor ヘッダ (添付画像レイアウト + ダークテーマ) -->
-              <div class="actor-header">
+              <div
+                ref="actorHeader"
+                class="actor-header"
+                :class="{ 'is-scrolling-hidden': isScenesScrolling }"
+              >
                 <div class="actor-header-layout">
                   <div class="actor-avatar-wrapper" v-if="actor.face_image_url || actor.image_url">
                     <img
@@ -204,27 +259,31 @@
                 </div>
               </div>
 
-              <!-- ツールバー -->
-              <div class="scenes-toolbar">
-                <div class="is-flex is-align-items-center" style="gap: 0.5rem;">
-                  <span class="tag is-info is-light">
-                    Scenes: {{ filteredScenes.length }} / {{ detailedScenes.length }}
-                  </span>
-                  <span class="tag is-success is-light">
-                    Videos: {{ totalVideoCount }}
-                  </span>
-                </div>
-                <div class="is-flex is-align-items-center" style="gap: 0.5rem;">
-                  <b-switch v-model="onlyWithVideos" size="is-small">
-                    Videos only
-                  </b-switch>
-                  <button class="button is-small is-light" @click="setAllExpanded(true)">Expand all</button>
-                  <button class="button is-small is-light" @click="setAllExpanded(false)">Collapse all</button>
-                </div>
-              </div>
-
               <!-- シーン・ファイル一覧 -->
-              <div class="scenes-scroll">
+              <div class="scenes-scroll" @scroll.passive="onScenesScroll">
+                <div
+                  class="actor-header-spacer"
+                  :style="{ height: actorHeaderHeight + 'px' }"
+                ></div>
+
+                <!-- ツールバー -->
+                <div class="scenes-toolbar">
+                  <div class="is-flex is-align-items-center" style="gap: 0.5rem;">
+                    <span class="tag is-info is-light">
+                      Scenes: {{ filteredScenes.length }} / {{ detailedScenes.length }}
+                    </span>
+                    <span class="tag is-success is-light">
+                      Videos: {{ totalVideoCount }}
+                    </span>
+                  </div>
+                  <div class="is-flex is-align-items-center" style="gap: 0.5rem;">
+                    <b-switch v-model="onlyWithVideos" size="is-small">
+                      Videos only
+                    </b-switch>
+                    <button class="button is-small is-light" @click="setAllExpanded(true)">Expand all</button>
+                    <button class="button is-small is-light" @click="setAllExpanded(false)">Collapse all</button>
+                  </div>
+                </div>
                 <div v-if="loadingScenes" class="has-text-centered py-5">
                   <b-icon pack="mdi" icon="loading" custom-class="mdi-spin" size="is-medium"></b-icon>
                   <p class="is-size-7 has-text-grey mt-2">Loading scenes and files...</p>
@@ -243,7 +302,7 @@
                 >
                   <!-- シーンヘッダ (添付画像レイアウト) -->
                   <div class="scene-group-header" @click="toggleSceneExpand(scene)">
-                    <div class="scene-header-upper">
+                    <div class="scene-header-left-col">
                       <div class="scene-header-thumb-wrap" @click.stop="selectSceneGallery(scene)">
                         <img
                           v-if="scene.cover_url"
@@ -256,89 +315,87 @@
                         </div>
                       </div>
 
-                      <div class="scene-header-info">
-                        <div class="scene-header-top-row">
-                          <div class="scene-header-title" :title="scene.title">{{ scene.title }}</div>
-                          <div class="scene-right-meta-stack">
-                            <div class="spec-badges is-right" v-if="getPrimaryVideo(scene)">
-                              <span v-if="formatResolutionBadge(getPrimaryVideo(scene))" class="spec-badge is-res">
-                                {{ formatResolutionBadge(getPrimaryVideo(scene)) }}
-                              </span>
-                              <span v-if="getPrimaryVideo(scene).video_codec_name" class="spec-badge is-codec">
-                                {{ formatCodecBadge(getPrimaryVideo(scene).video_codec_name) }}
-                              </span>
-                              <span v-if="getPrimaryVideo(scene).projection" class="spec-badge is-proj">
-                                {{ formatProjectionBadge(getPrimaryVideo(scene).projection) }}
-                              </span>
-                            </div>
-                            <div class="scene-overall-pill" @click.stop>
-                              <span class="overall-label">総合</span>
-                              <star-rating
-                                :key="`${scene.id}-scene-overall`"
-                                :rating="calcSceneOverall(scene)"
-                                read-only
-                                :increment="0.1"
-                                :star-size="14"
-                                :show-rating="true"
-                                active-color="#f43f5e"
-                              />
-                            </div>
-                          </div>
-                        </div>
+                      <div class="spec-badges" v-if="getPrimaryVideo(scene)">
+                        <span v-if="formatResolutionBadge(getPrimaryVideo(scene))" class="spec-badge is-res">
+                          {{ formatResolutionBadge(getPrimaryVideo(scene)) }}
+                        </span>
+                        <span v-if="getPrimaryVideo(scene).video_codec_name" class="spec-badge is-codec">
+                          {{ formatCodecBadge(getPrimaryVideo(scene).video_codec_name) }}
+                        </span>
+                        <span v-if="getPrimaryVideo(scene).projection" class="spec-badge is-proj">
+                          {{ formatProjectionBadge(getPrimaryVideo(scene).projection) }}
+                        </span>
+                      </div>
 
-                        <div class="mt-1" @click.stop>
-                          <SceneRatings :item="scene" dark :star-size="14" />
-                        </div>
+                      <div class="scene-overall-row" @click.stop>
+                        <span class="scene-overall-text">総合</span>
+                        <star-rating
+                          :key="`${scene.id}-scene-overall`"
+                          :rating="calcSceneOverall(scene)"
+                          read-only
+                          :increment="0.1"
+                          :star-size="14"
+                          :show-rating="true"
+                          active-color="#f43f5e"
+                        />
                       </div>
                     </div>
 
-                    <div class="scene-header-bottom-row">
-                      <div class="scene-header-sub">
-                        <span>{{ scene.site }}</span>
-                        <span v-if="scene.release_date && scene.release_date !== '0001-01-01T00:00:00Z'">
-                          • {{ format(parseISO(scene.release_date), 'yyyy-MM-dd') }}
-                        </span>
-                        <span>• {{ getVideoFiles(scene).length }} video(s)</span>
+                    <div class="scene-header-right-col">
+                      <div class="scene-header-top-row">
+                        <div class="scene-header-title" :title="scene.title">{{ scene.title }}</div>
+                        <div class="scene-header-date-id">
+                          <div v-if="scene.release_date && scene.release_date !== '0001-01-01T00:00:00Z'">
+                            {{ format(parseISO(scene.release_date), 'yyyy-MM-dd') }}
+                          </div>
+                          <div>{{ scene.scene_id || scene.site }}</div>
+                        </div>
                       </div>
 
-                      <div class="scene-header-actions-bar" @click.stop>
-                        <favourite-button :item="scene" />
-                        <edit-button :item="scene" />
-                        <delete-button :item="scene" @deleted="onSceneDeleted(scene)" />
-                        <button
-                          class="scene-icon-btn"
-                          title="Show scene gallery"
-                          @click="selectSceneGallery(scene)"
-                        >
-                          <b-icon pack="mdi" icon="image-multiple" size="is-small" />
-                        </button>
-                        <button
-                          class="scene-icon-btn"
-                          title="Open Scene Details"
-                          @click="openSceneDetails(scene)"
-                        >
-                          <b-icon pack="mdi" icon="open-in-new" size="is-small" />
-                        </button>
-                        <button
-                          v-if="getVideoFiles(scene).length > 0"
-                          class="play-all-btn"
-                          :class="{ 'is-active': isPlayAllActive && currentPlayingScene && currentPlayingScene.id === scene.id }"
-                          @click="playAllScene(scene)"
-                        >
-                          <b-icon pack="fas" icon="play" size="is-small" />
-                          <span>すべて再生</span>
-                        </button>
-                        <button
-                          class="scene-icon-btn"
-                          :title="isSceneExpanded(scene.id) ? 'Collapse' : 'Expand'"
-                          @click="toggleSceneExpand(scene)"
-                        >
-                          <b-icon
-                            pack="mdi"
-                            :icon="isSceneExpanded(scene.id) ? 'chevron-up' : 'chevron-down'"
-                            size="is-small"
-                          />
-                        </button>
+                      <div @click.stop>
+                        <SceneRatings :item="scene" dark :star-size="14" grid2x2 show-genres />
+                      </div>
+
+                      <div class="scene-header-bottom-row">
+                        <div class="scene-header-actions-bar" @click.stop>
+                          <favourite-button :item="scene" />
+                          <edit-button :item="scene" />
+                          <delete-button :item="scene" @deleted="onSceneDeleted(scene)" />
+                          <button
+                            class="scene-icon-btn"
+                            title="Show scene gallery"
+                            @click="selectSceneGallery(scene)"
+                          >
+                            <b-icon pack="mdi" icon="image-multiple" size="is-small" />
+                          </button>
+                          <button
+                            class="scene-icon-btn"
+                            title="Open Scene Details"
+                            @click="openSceneDetails(scene)"
+                          >
+                            <b-icon pack="mdi" icon="open-in-new" size="is-small" />
+                          </button>
+                          <button
+                            v-if="getVideoFiles(scene).length > 0"
+                            class="play-all-btn"
+                            :class="{ 'is-active': isPlayAllActive && currentPlayingScene && currentPlayingScene.id === scene.id }"
+                            @click="playAllScene(scene)"
+                          >
+                            <b-icon pack="fas" icon="play" size="is-small" />
+                            <span>プレイ All</span>
+                          </button>
+                          <button
+                            class="scene-icon-btn"
+                            :title="isSceneExpanded(scene.id) ? 'Collapse' : 'Expand'"
+                            @click="toggleSceneExpand(scene)"
+                          >
+                            <b-icon
+                              pack="mdi"
+                              :icon="isSceneExpanded(scene.id) ? 'chevron-up' : 'chevron-down'"
+                              size="is-small"
+                            />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -470,20 +527,44 @@
         </splitpanes>
       </section>
 
-      <a
-        class="docked-nav-btn is-next"
-        :class="{ 'is-disabled': !nextActorObj }"
-        @click="nextActor"
-        :title="nextActorObj ? `Next: ${nextActorObj.name} (P)` : 'No next actor'"
-      >
-        <img
-          v-if="nextActorObj"
-          :src="getImageURL(nextActorObj.face_image_url || nextActorObj.image_url, '120,fit')"
-          class="nav-actor-face"
-          :alt="nextActorObj.name"
-        />
-        <span class="nav-arrow">&#10095;</span>
-      </a>
+      <!-- 右側 Actor 一覧サイドレール -->
+      <aside class="actor-rail">
+        <button
+          type="button"
+          class="actor-rail-scroll-btn"
+          @click="scrollActorRail(-220)"
+          title="Scroll up"
+        >
+          &#9650;
+        </button>
+
+        <div class="actor-rail-list" ref="actorRailListRef">
+          <div
+            v-for="a in pageActors"
+            :key="a.id"
+            class="actor-rail-item"
+            :class="{ 'is-active': actor && a.id === actor.id }"
+            :title="a.name"
+            @click="selectActorFromRail(a)"
+          >
+            <img
+              :src="getImageURL(a.face_image_url || a.image_url, '120,fit')"
+              class="actor-rail-face"
+              :alt="a.name"
+            />
+            <span class="actor-rail-name">{{ a.name }}</span>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          class="actor-rail-scroll-btn"
+          @click="scrollActorRail(220)"
+          title="Scroll down"
+        >
+          &#9660;
+        </button>
+      </aside>
     </div>
 
     <button class="modal-close is-large" aria-label="close" @click="close"></button>
@@ -543,12 +624,19 @@ export default {
       currentPlayingFile: null,
       playQueue: [],
       isPlayAllActive: false,
-      showActorImageTooltip: false
+      showActorImageTooltip: false,
+      isScenesScrolling: false,
+      scenesScrollTimer: null,
+      actorHeaderHeight: 190,
+      actorHeaderObserver: null
     }
   },
   computed: {
     actor () {
       return this.$store.state.overlay.actorcollection.actor
+    },
+    pageActors () {
+      return this.$store.state.actorList.actors || []
     },
     prevActorObj () {
       return this.actor ? this.$store.getters['actorList/prevActor'](this.actor) : null
@@ -611,10 +699,49 @@ export default {
       immediate: true,
       handler () {
         this.loadActorScenes()
+        this.scrollActiveActorIntoView()
+        this.updateActorHeaderHeight()
       }
     }
   },
+  mounted () {
+    this.updateActorHeaderHeight()
+    if (typeof ResizeObserver !== 'undefined' && this.$refs.actorHeader) {
+      this.actorHeaderObserver = new ResizeObserver(() => {
+        this.updateActorHeaderHeight()
+      })
+      this.actorHeaderObserver.observe(this.$refs.actorHeader)
+    }
+  },
+  beforeDestroy () {
+    if (this.scenesScrollTimer) {
+      clearTimeout(this.scenesScrollTimer)
+      this.scenesScrollTimer = null
+    }
+    if (this.actorHeaderObserver) {
+      this.actorHeaderObserver.disconnect()
+      this.actorHeaderObserver = null
+    }
+  },
   methods: {
+    updateActorHeaderHeight () {
+      this.$nextTick(() => {
+        const el = this.$refs.actorHeader
+        if (el && el.offsetHeight) {
+          this.actorHeaderHeight = el.offsetHeight + 10
+        }
+      })
+    },
+    onScenesScroll () {
+      this.isScenesScrolling = true
+      if (this.scenesScrollTimer) {
+        clearTimeout(this.scenesScrollTimer)
+      }
+      this.scenesScrollTimer = setTimeout(() => {
+        this.isScenesScrolling = false
+        this.scenesScrollTimer = null
+      }, 500)
+    },
     format,
     parseISO,
     prettyBytes,
@@ -694,7 +821,14 @@ export default {
     calcSceneOverall (scene) {
       if (!scene) return 0
       const cast = Array.isArray(scene.cast) ? scene.cast : []
-      const castVals = cast.map(a => Number(a.star_rating) || 0).filter(v => v > 0)
+      const storeActors = this.$store.state.actorList.actors || []
+      const castVals = cast.map(a => {
+        if (this.actor && a.id === this.actor.id) {
+          return Number(this.actor.star_rating) || 0
+        }
+        const found = storeActors.find(sa => sa.id === a.id)
+        return Number(found ? found.star_rating : a.star_rating) || 0
+      }).filter(v => v > 0)
       const actorAvg = castVals.length > 0
         ? Math.round((castVals.reduce((a, b) => a + b, 0) / castVals.length) * 10) / 10
         : 0
@@ -955,27 +1089,70 @@ export default {
       this.actor.star_rating = val
       this.$store.commit('actorList/updateActor', updatedActor)
     },
+    setGalleryMode (mode) {
+      this.galleryMode = mode
+      this.carouselSlide = 0
+    },
+    selectGallerySlide (idx) {
+      this.carouselSlide = idx
+      this.scrollToActiveIndicator(idx)
+    },
     toggleGallery () {
       this.activeMedia = this.activeMedia === 0 ? 1 : 0
+    },
+    onGalleryWheel (event) {
+      if (event.deltaY > 0) {
+        this.handleRightArrow()
+      } else if (event.deltaY < 0) {
+        this.handleLeftArrow()
+      }
     },
     handleLeftArrow () {
       if (this.activeMedia === 0 && this.carouselSlide > 0) {
         this.carouselSlide -= 1
+        this.scrollToActiveIndicator(this.carouselSlide)
       }
     },
     handleRightArrow () {
       if (this.activeMedia === 0 && this.carouselSlide < this.galleryImages.length - 1) {
         this.carouselSlide += 1
+        this.scrollToActiveIndicator(this.carouselSlide)
       }
     },
     scrollToActiveIndicator (value) {
-      const indicators = document.querySelector('.actor-collection-modal .carousel-indicator')
-      if (indicators) {
-        const active = indicators.children[value]
+      this.$nextTick(() => {
+        const container = this.$refs.galleryThumbsRef
+        if (!container) return
+        const active = container.children[value]
         if (active) {
-          indicators.scrollLeft = active.offsetLeft - indicators.offsetWidth / 2
+          container.scrollTo({
+            left: active.offsetLeft - container.clientWidth / 2 + active.clientWidth / 2,
+            behavior: 'smooth'
+          })
         }
-      }
+      })
+    },
+    selectActorFromRail (targetActor) {
+      if (!targetActor || (this.actor && targetActor.id === this.actor.id)) return
+      this.$store.commit('overlay/showActorCollection', { actor: targetActor })
+    },
+    scrollActorRail (delta) {
+      const el = this.$refs.actorRailListRef
+      if (!el) return
+      el.scrollBy({ top: delta, behavior: 'smooth' })
+    },
+    scrollActiveActorIntoView () {
+      this.$nextTick(() => {
+        const container = this.$refs.actorRailListRef
+        if (!container) return
+        const active = container.querySelector('.actor-rail-item.is-active')
+        if (active) {
+          container.scrollTo({
+            top: active.offsetTop - container.clientHeight / 2 + active.clientHeight / 2,
+            behavior: 'smooth'
+          })
+        }
+      })
     },
     nextActor () {
       const data = this.$store.getters['actorList/nextActor'](this.actor)
@@ -1034,28 +1211,257 @@ export default {
   flex-direction: column;
   overflow: hidden;
   padding-right: 0.5rem;
+  gap: 0.5rem;
 }
 
-.left-pane-inner ::v-deep .b-tabs {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.left-pane-inner ::v-deep section.tab-content {
+.left-pane-stage {
   flex: 1;
   min-height: 0;
-  height: 100% !important;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
-.left-pane-inner ::v-deep .tab-item {
+.player-tab-panel {
+  flex: 1;
+  min-height: 0;
   height: 100%;
   display: flex;
   flex-direction: column;
+  gap: 0.45rem;
+  background: #181a20;
+  border: 1px solid #353945;
+  border-radius: 8px;
+  padding: 0.5rem;
+}
+
+.player-empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  font-size: 0.9rem;
+}
+
+.media-switcher-bar {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.media-switcher-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  background: #1b1e25;
+  border: 1px solid #353945;
+  border-radius: 10px;
+}
+
+.media-switch-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 6px 20px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.media-switch-btn:hover {
+  color: #ffffff;
+  background: #272b36;
+}
+
+.media-switch-btn.is-active {
+  background: #7957d5;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(121, 87, 213, 0.45);
+}
+
+.media-count-badge {
+  font-size: 0.72rem;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.25);
+  color: inherit;
+}
+
+.media-playing-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #48c774;
+  box-shadow: 0 0 6px #48c774;
+}
+
+.gallery-wrapper {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: #181a20;
+  border-radius: 8px;
+  padding: 0.6rem;
+  border: 1px solid #353945;
+}
+
+.gallery-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 0.5rem;
+}
+
+.gallery-mode-pills {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.gallery-mode-btn {
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: #272a34;
+  border: 1px solid #3e4352;
+  color: #cbd5e1;
+  transition: all 0.15s ease;
+}
+
+.gallery-mode-btn:hover {
+  background: #333846;
+  color: #ffffff;
+}
+
+.gallery-mode-btn.is-active {
+  background: #7957d5;
+  border-color: #8b6ce0;
+  color: #ffffff;
+}
+
+.gallery-counter {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #9ca3af;
+  background: #22252d;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid #353945;
+}
+
+.gallery-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #111318;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.gallery-main-img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+
+.gallery-stage-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 54px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(24, 26, 32, 0.72);
+  color: #ffffff;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+}
+
+.gallery-stage-nav:hover:not(:disabled) {
+  background: rgba(121, 87, 213, 0.9);
+}
+
+.gallery-stage-nav:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+.gallery-stage-nav.is-left {
+  left: 8px;
+}
+
+.gallery-stage-nav.is-right {
+  right: 8px;
+}
+
+.gallery-thumbs {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 4px 2px;
+  background: #22252d;
+  border-radius: 6px;
+  border: 1px solid #353945;
+}
+
+.gallery-thumb-item {
+  flex-shrink: 0;
+  width: 68px;
+  height: 68px;
+  border-radius: 5px;
+  overflow: hidden;
+  cursor: pointer;
+  border: 2px solid transparent;
+  opacity: 0.65;
+  transition: opacity 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.gallery-thumb-item:hover {
+  opacity: 0.95;
+}
+
+.gallery-thumb-item.is-active {
+  border-color: #8b6ce0;
+  opacity: 1;
+}
+
+.gallery-thumb-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .right-pane-inner {
+  position: relative;
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -1081,8 +1487,15 @@ export default {
 .player-footer-bar {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.5rem;
-  flex-wrap: wrap;
+}
+
+.player-footer-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-shrink: 0;
 }
 
 .player-file-switcher {
@@ -1098,6 +1511,7 @@ export default {
 }
 
 .player-scene-title {
+  flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1110,12 +1524,32 @@ export default {
 }
 
 .actor-header {
+  position: absolute;
+  top: 0;
+  left: 0.5rem;
+  right: 0.25rem;
+  z-index: 20;
   padding: 0.75rem;
-  margin-bottom: 0.6rem;
   background: #22252d;
   border: 1px solid #353945;
   border-radius: 8px;
   color: #e6e8ef;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity 0.24s ease,
+    transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.actor-header.is-scrolling-hidden {
+  opacity: 0;
+  transform: translateY(-16px);
+  pointer-events: none;
+}
+
+.actor-header-spacer {
+  flex-shrink: 0;
 }
 
 .actor-header-layout {
@@ -1281,27 +1715,46 @@ export default {
 
 .scene-group-header {
   display: flex;
-  flex-direction: column;
+  align-items: flex-start;
   padding: 0.75rem;
   background: #272a34;
   border-bottom: 1px solid #353945;
   cursor: pointer;
-  gap: 0.55rem;
+  gap: 0.9rem;
 }
 
-.scene-header-upper {
+.scene-header-left-col {
+  width: 162px;
+  flex-shrink: 0;
   display: flex;
-  align-items: flex-start;
-  gap: 0.85rem;
+  flex-direction: column;
+  gap: 0.45rem;
 }
 
 .scene-header-thumb-wrap {
-  width: 148px;
-  height: 86px;
-  flex-shrink: 0;
+  width: 162px;
+  height: 94px;
   border-radius: 6px;
   overflow: hidden;
   background: #181a20;
+}
+
+.scene-overall-row {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.scene-overall-text {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #d1d5db;
+}
+
+.scene-overall-row ::v-deep .vue-star-rating-rating-text {
+  color: #d1d5db;
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
 .scene-header-cover {
@@ -1320,27 +1773,26 @@ export default {
   color: #6b7280;
 }
 
-.scene-header-info {
+.scene-header-right-col {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  gap: 0.35rem;
+  gap: 0.5rem;
 }
 
 .scene-header-top-row {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 0.5rem;
+  gap: 0.65rem;
 }
 
 .scene-header-title {
   font-weight: 700;
   font-size: 0.96rem;
   color: #ffffff;
-  line-height: 1.3;
+  line-height: 1.35;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -1349,46 +1801,37 @@ export default {
   min-width: 0;
 }
 
-.spec-badges.is-right {
-  justify-content: flex-end;
+.scene-header-date-id {
   flex-shrink: 0;
-}
-
-.scene-right-meta-stack {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.3rem;
-  flex-shrink: 0;
-}
-
-.scene-overall-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 2px 8px;
-  border-radius: 6px;
-  background: rgba(244, 63, 94, 0.14);
-  border: 1px solid rgba(244, 63, 94, 0.35);
-}
-
-.scene-overall-pill ::v-deep .vue-star-rating-rating-text {
-  color: #fecdd3;
+  text-align: right;
   font-size: 0.76rem;
-  font-weight: 700;
-}
-
-.scene-header-sub {
-  font-size: 0.78rem;
+  line-height: 1.3;
   color: #9ca3af;
 }
 
 .scene-header-bottom-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 0.5rem;
-  flex-wrap: wrap;
+}
+
+.play-all-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #5b6be1;
+  color: #fff;
+  border: 1px solid #7180ee;
+  border-radius: 4px;
+  padding: 0.28rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.play-all-btn:hover {
+  background: #4f5fd6;
 }
 
 .scene-header-actions-bar {
@@ -1407,24 +1850,6 @@ export default {
 .scene-header-actions-bar ::v-deep .button.is-dark.is-outlined:hover {
   color: #fff;
   background: #374151;
-}
-
-.play-all-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  background: #363a45;
-  color: #fff;
-  border: 1px solid #4b505e;
-  border-radius: 4px;
-  padding: 0.28rem 0.65rem;
-  font-size: 0.78rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.play-all-btn:hover {
-  background: #464b59;
 }
 
 .scene-icon-btn {
@@ -1579,57 +2004,110 @@ export default {
   background: #374151;
 }
 
-.docked-nav-btn {
-  width: 52px;
+.actor-rail {
+  width: 76px;
   flex-shrink: 0;
-  cursor: pointer;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 8px 4px;
-  background: #22252d;
+  background: #1b1e25;
   border: 1px solid #353945;
-  color: #e6e8ef;
-  font-weight: bold;
-  font-size: 16px;
-  user-select: none;
-  transition: background 0.15s ease, border-color 0.15s ease;
-}
-
-.docked-nav-btn.is-prev {
-  border-right: none;
-  border-radius: 8px 0 0 8px;
-}
-
-.docked-nav-btn.is-next {
   border-left: none;
   border-radius: 0 8px 8px 0;
+  overflow: hidden;
+  user-select: none;
 }
 
-.docked-nav-btn:hover:not(.is-disabled) {
+.actor-rail-scroll-btn {
+  height: 28px;
+  flex-shrink: 0;
+  border: none;
+  background: #252933;
+  color: #cbd5e1;
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.actor-rail-scroll-btn:hover {
   background: #7957d5;
-  border-color: #8b6ce0;
   color: #ffffff;
 }
 
-.docked-nav-btn.is-disabled {
-  opacity: 0.25;
-  cursor: default;
-  pointer-events: none;
+.actor-rail-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 6px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: #4b5563 transparent;
 }
 
-.nav-actor-face {
-  width: 38px;
-  height: 38px;
+.actor-rail-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.actor-rail-list::-webkit-scrollbar-thumb {
+  background: #4b5563;
+  border-radius: 4px;
+}
+
+.actor-rail-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 5px 3px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  opacity: 0.72;
+  transition: all 0.15s ease;
+}
+
+.actor-rail-item:hover {
+  opacity: 1;
+  background: #272b36;
+}
+
+.actor-rail-item.is-active {
+  opacity: 1;
+  background: rgba(121, 87, 213, 0.24);
+  border-color: #8b6ce0;
+}
+
+.actor-rail-face {
+  width: 46px;
+  height: 46px;
   object-fit: cover;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.35);
   display: block;
 }
 
-.nav-arrow {
-  line-height: 1;
+.actor-rail-item.is-active .actor-rail-face {
+  border: 2px solid #a78bfa;
+}
+
+.actor-rail-name {
+  width: 100%;
+  font-size: 10px;
+  line-height: 1.2;
+  color: #d1d5db;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.actor-rail-item.is-active .actor-rail-name {
+  color: #ffffff;
+  font-weight: 700;
 }
 </style>

@@ -1,16 +1,16 @@
 <template>
-  <div class="container is-fluid">
-    <div class="columns">
+  <div class="container is-fluid collection-page">
+    <div class="collection-layout">
 
-      <div class="column is-one-fifth">
-        <Filters/>
+      <div class="collection-sidebar">
+        <CollectionFilters/>
 
         <a id="toTop">
           <b-icon pack="mdi" icon="navigation" />
         </a>
       </div>
 
-      <div class="column is-four-fifths">
+      <div class="collection-main">
         <List/>
       </div>
 
@@ -19,12 +19,12 @@
 </template>
 
 <script>
-import Filters from './Filters'
+import CollectionFilters from './CollectionFilters'
 import List from './List'
 
 export default {
   name: 'ActorsCollection',
-  components: { Filters, List },
+  components: { CollectionFilters, List },
   mounted () {
     const toTop = document.getElementById('toTop')
     addEventListener('scroll', function () {
@@ -66,6 +66,36 @@ export default {
 </script>
 
 <style scoped>
+  .collection-page {
+    padding-top: 0.65rem;
+  }
+
+  .collection-layout {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .collection-sidebar {
+    width: 248px;
+    flex-shrink: 0;
+  }
+
+  .collection-main {
+    flex: 1;
+    min-width: 0;
+  }
+
+  @media (max-width: 768px) {
+    .collection-layout {
+      flex-direction: column;
+    }
+
+    .collection-sidebar {
+      width: 100%;
+    }
+  }
+
   #toTop {
     display: none;
     position: fixed;

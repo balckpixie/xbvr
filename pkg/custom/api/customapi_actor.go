@@ -164,16 +164,16 @@ func (i ActorResource) setActorDetailedRatings(req *restful.Request, resp *restf
 	}
 
 	if r.RatingFace != nil {
-		actor.RatingFace = *r.RatingFace
+		actor.RatingFace = math.Round(*r.RatingFace)
 	}
 	if r.RatingStyle != nil {
-		actor.RatingStyle = *r.RatingStyle
+		actor.RatingStyle = math.Round(*r.RatingStyle)
 	}
 	if r.RatingBust != nil {
-		actor.RatingBust = *r.RatingBust
+		actor.RatingBust = math.Round(*r.RatingBust)
 	}
 	if r.RatingVibe != nil {
-		actor.RatingVibe = *r.RatingVibe
+		actor.RatingVibe = math.Round(*r.RatingVibe)
 	}
 
 	// 総合評価(StarRating)は顔・スタイル・胸・雰囲気の評価済み項目の平均から自動算出

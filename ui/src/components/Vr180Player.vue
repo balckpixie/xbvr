@@ -652,7 +652,8 @@ export default {
         // OrbitControls のズームを一時的に無効化
         this.vr.controls.enableZoom = false;
 
-        const zoomStep = 2; // 1回で変化させるFOV量
+        // 初期FOV付近では大きく、ズーム終盤(低FOV)では2°に近づく段階的ステップ
+        const zoomStep = Math.max(2, this.vr.camera.fov * 0.08);
         if (event.deltaY < 0) {
           // ホイール上：FOVを小さく（ゆがみ補正/ズーム）
           this.vr.camera.fov = Math.max(10, this.vr.camera.fov - zoomStep);
@@ -664,6 +665,10 @@ export default {
         this.vr.camera.updateProjectionMatrix();
       } else {
         // Ctrlが押されていない場合は OrbitControls のズーム（距離移動）を有効にする
+        // 初期距離(dist=100)付近では zoomSpeed を大きくし、終盤(dist>=700)で 2.0 に近づける
+        const dist = this.vr.camera.position.distanceTo(this.vr.controls.target);
+        const t = Math.min(1, Math.max(0, (dist - 100) / 600));
+        this.vr.controls.zoomSpeed = 2.0 + 6.0 * Math.pow(1 - t, 1.5);
         this.vr.controls.enableZoom = true;
       }
     },

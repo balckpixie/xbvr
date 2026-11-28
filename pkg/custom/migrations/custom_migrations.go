@@ -191,5 +191,16 @@ func CustomMigrations() []*gormigrate.Migration {
 				return tx.AutoMigrate(Scene{}).Error
 			},
 		},
+
+		// No.11 Scene テーブルにジャンルタグカラムを追加
+		{
+			ID: "bp_0011-scene-add-genre-tags",
+			Migrate: func(tx *gorm.DB) error {
+				type Scene struct {
+					GenreTags string `json:"genre_tags" sql:"type:text;"`
+				}
+				return tx.AutoMigrate(Scene{}).Error
+			},
+		},
 	}
 }

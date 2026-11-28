@@ -84,46 +84,41 @@
 
       </div>
     </div>
-        <div class="columns is-gapless is-centered" v-if="hideLetters">
-          <b-radio-button v-model="jumpTo" native-value="" size="is-small"></b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="A" size="is-small">A</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="B" size="is-small">B</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="C" size="is-small">C</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="D" size="is-small">D</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="E" size="is-small">E</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="F" size="is-small">F</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="G" size="is-small">G</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="H" size="is-small">H</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="I" size="is-small">I</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="J" size="is-small">J</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="K" size="is-small">K</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="L" size="is-small">L</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="M" size="is-small">M</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="N" size="is-small">N</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="O" size="is-small">O</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="P" size="is-small">P</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="Q" size="is-small">Q/R</b-radio-button>          
-          <b-radio-button v-model="jumpTo" native-value="S" size="is-small">S</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="T" size="is-small">T</b-radio-button>
-          <b-radio-button v-model="jumpTo" native-value="U" size="is-small">U/V</b-radio-button>          
-          <b-radio-button v-model="jumpTo" native-value="W" size="is-small">W/X/Y/Z</b-radio-button>
-        </div>
-
-        <!-- Custom Black（Hiragana Jump to） -->
-        <div v-if="hideHiragana" style="margin-top: -0.9rem; margin-bottom: 1.0rem;">
-          <div class="columns is-gapless is-centered" style="margin-bottom: 0.2rem;">
-            <b-radio-button v-model="jumpToKana" native-value="" size="is-small"></b-radio-button>
-            <div v-for="group in groups" :key="group">
-              <b-radio-button v-model="selectedGroup" :native-value="group" size="is-small">{{ group }}</b-radio-button>
-            </div>
+        <!-- 頭文字検索 (画像①レイアウト + 画像②デザイン) -->
+        <div class="initial-search-card">
+          <div class="initial-group-row">
+            <button
+              v-for="grp in initialGroups"
+              :key="grp.key"
+              type="button"
+              class="initial-pill"
+              :class="{ 'is-active': activeInitialGroup === grp.key }"
+              @click="selectInitialGroup(grp)"
+            >
+              {{ grp.label }}
+            </button>
           </div>
-          <div class="columns is-gapless is-centered" style="display:block" v-for="group in groups" v-if="selectedGroup === group">
-            <div class="buttons is-centered is-multiline">
-              <b-radio-button v-for="letter in hiragana[group]" :key="letter" v-model="jumpToKana" :native-value="letter" size="is-small">{{ letter }}</b-radio-button>
-            </div>
+          <div v-if="activeInitialGroupObj" class="initial-sub-row">
+            <button
+              v-for="letter in activeInitialGroupObj.letters"
+              :key="letter"
+              type="button"
+              class="initial-pill initial-sub-pill"
+              :class="{ 'is-active': jumpTo === letter }"
+              @click="selectInitialLetter(activeInitialGroupObj, letter)"
+            >
+              {{ letter }}
+            </button>
+            <button
+              v-if="jumpTo"
+              type="button"
+              class="initial-pill initial-clear-pill"
+              @click="clearInitialJump"
+            >
+              クリア
+            </button>
           </div>
         </div>
-        <!-- Custom End -->
          
     <div class="is-clearfix"></div>
 
@@ -223,6 +218,24 @@ export default {
       },
       selectedGroup: 'あ',
       selectedLetter: '',
+      activeInitialGroup: 'あ',
+      initialGroups: [
+        { key: 'あ', label: 'あ行', kind: 'kana', letters: ['あ', 'い', 'う', 'え', 'お'] },
+        { key: 'か', label: 'か行', kind: 'kana', letters: ['か', 'き', 'く', 'け', 'こ'] },
+        { key: 'さ', label: 'さ行', kind: 'kana', letters: ['さ', 'し', 'す', 'せ', 'そ'] },
+        { key: 'た', label: 'た行', kind: 'kana', letters: ['た', 'ち', 'つ', 'て', 'と'] },
+        { key: 'な', label: 'な行', kind: 'kana', letters: ['な', 'に', 'ぬ', 'ね', 'の'] },
+        { key: 'は', label: 'は行', kind: 'kana', letters: ['は', 'ひ', 'ふ', 'へ', 'ほ'] },
+        { key: 'ま', label: 'ま行', kind: 'kana', letters: ['ま', 'み', 'む', 'め', 'も'] },
+        { key: 'や', label: 'や行', kind: 'kana', letters: ['や', 'ゆ', 'よ'] },
+        { key: 'ら', label: 'ら行', kind: 'kana', letters: ['ら', 'り', 'る', 'れ', 'ろ'] },
+        { key: 'わ', label: 'わ行', kind: 'kana', letters: ['わ', 'を', 'ん'] },
+        { key: 'A-G', label: 'A-G', kind: 'alpha', letters: ['A', 'B', 'C', 'D', 'E', 'F', 'G'] },
+        { key: 'H-N', label: 'H-N', kind: 'alpha', letters: ['H', 'I', 'J', 'K', 'L', 'M', 'N'] },
+        { key: 'O-T', label: 'O-T', kind: 'alpha', letters: ['O', 'P', 'Q', 'R', 'S', 'T'] },
+        { key: 'U-Z', label: 'U-Z', kind: 'alpha', letters: ['U', 'V', 'W', 'X', 'Y', 'Z'] },
+        { key: '0-9', label: '数字/記号', kind: 'alpha', letters: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'] }
+      ]
     }
   },
   watch: {
@@ -360,6 +373,9 @@ export default {
       
       return this.$store.state.actorList.show_actor_id
     },
+    activeInitialGroupObj () {
+      return this.initialGroups.find(g => g.key === this.activeInitialGroup) || null
+    },
     hideLetters: {
       get () {        
         switch (this.$store.state.actorList.filters.sort) {
@@ -375,6 +391,38 @@ export default {
     },
   },
   methods: {
+    selectInitialGroup (grp) {
+      this.activeInitialGroup = grp.key
+      if (grp.kind === 'kana') {
+        if (this.$store.state.actorList.filters.sort !== 'furigana_asc' && this.$store.state.actorList.filters.sort !== 'furigana_desc') {
+          this.$store.state.actorList.filters.sort = 'furigana_asc'
+        }
+      } else {
+        if (this.$store.state.actorList.filters.sort !== 'name_asc' && this.$store.state.actorList.filters.sort !== 'name_desc') {
+          this.$store.state.actorList.filters.sort = 'name_asc'
+        }
+      }
+      this.jumpTo = grp.letters[0]
+    },
+    selectInitialLetter (grp, letter) {
+      if (this.jumpTo === letter) {
+        this.clearInitialJump()
+        return
+      }
+      if (grp.kind === 'kana') {
+        if (this.$store.state.actorList.filters.sort !== 'furigana_asc' && this.$store.state.actorList.filters.sort !== 'furigana_desc') {
+          this.$store.state.actorList.filters.sort = 'furigana_asc'
+        }
+      } else {
+        if (this.$store.state.actorList.filters.sort !== 'name_asc' && this.$store.state.actorList.filters.sort !== 'name_desc') {
+          this.$store.state.actorList.filters.sort = 'name_asc'
+        }
+      }
+      this.jumpTo = letter
+    },
+    clearInitialJump () {
+      this.jumpTo = ''
+    },
     // Custom Black（ひらがな選択用の関数追加）
     onOffsetChange(newOffset) {
       this.offset = newOffset;
@@ -432,6 +480,76 @@ export default {
 <style scoped>
   .list-header-label {
     padding-right: 1em;
+  }
+
+  .initial-search-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+    padding: 0.65rem 0.85rem;
+    margin-bottom: 0.9rem;
+  }
+
+  .initial-group-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .initial-sub-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid #f1f5f9;
+  }
+
+  .initial-pill {
+    appearance: none;
+    border: none;
+    border-radius: 999px;
+    background: #e9edf2;
+    color: #374151;
+    font-size: 0.78rem;
+    font-weight: 500;
+    line-height: 1.2;
+    padding: 0.34rem 0.8rem;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .initial-pill:hover {
+    background: #dde3eb;
+    color: #111827;
+  }
+
+  .initial-pill.is-active {
+    background: #2b4c73;
+    color: #ffffff;
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(43, 76, 115, 0.3);
+  }
+
+  .initial-sub-pill {
+    padding: 0.26rem 0.72rem;
+    font-size: 0.76rem;
+  }
+
+  .initial-clear-pill {
+    background: #f3f4f6;
+    color: #6b7280;
+    font-size: 0.72rem;
+    padding: 0.24rem 0.65rem;
+    margin-left: auto;
+  }
+
+  .initial-clear-pill:hover {
+    background: #fee2e2;
+    color: #b91c1c;
   }
 
   /* Custom Black */

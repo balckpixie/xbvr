@@ -86,6 +86,7 @@ type Scene struct {
 	RatingDirection    float64 `json:"rating_direction" xbvrbackup:"rating_direction"`
 	RatingPlay         float64 `json:"rating_play" xbvrbackup:"rating_play"`
 	RatingAppeal       float64 `json:"rating_appeal" xbvrbackup:"rating_appeal"`
+	GenreTags          string  `json:"genre_tags" sql:"type:text;" xbvrbackup:"genre_tags"`
 	// Custom END
 	Favourite      bool            `json:"favourite" gorm:"default:false" xbvrbackup:"favourite"`
 	Watchlist      bool            `json:"watchlist" gorm:"default:false" xbvrbackup:"watchlist"`
